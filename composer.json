@@ -1,0 +1,54 @@
+{
+    "name": "cybex/protector",
+    "description": "Protect Databases by generating Backups and Import those on non-productive Environments.",
+    "keywords": [
+        "cybex",
+        "protector"
+    ],
+    "homepage": "https://bitbucket.org/cybexgmbh/protector",
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Marco Szulik",
+            "email": "marco.szulik@goodbabyint.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^7.1",
+        "illuminate/support": "^6.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^4.0",
+        "phpunit/phpunit": "^8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Cybex\\Protector\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Cybex\\Protector\\Tests\\": "tests"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
+
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Cybex\\Protector\\ProtectorServiceProvider"
+            ],
+            "aliases": {
+                "Protector": "Cybex\\Protector\\ProtectorFacade"
+            }
+        }
+    }
+}
