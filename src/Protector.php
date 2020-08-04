@@ -58,8 +58,8 @@ class Protector
     /**
      * Imports a specific SQL dump.
      *
-     * @param $sourceFilePath
-     * @param $options
+     * @param string $sourceFilePath
+     * @param array $options
      *
      * @return bool
      *
@@ -68,7 +68,7 @@ class Protector
      * @throws FileNotFoundException
      * @throws \Exception
      */
-    public function importDump($sourceFilePath, $options): bool
+    public function importDump(string $sourceFilePath, array $options): bool
     {
         // Production environment is not allowed unless set in options.
         if (App::environment('production') && !($options['allow-production'] ?? false)) {
@@ -141,11 +141,11 @@ class Protector
     /**
      * Returns the appended Meta-Data from a file
      *
-     * @param $dumpFile
+     * @param string $dumpFile
      *
      * @return array|bool
      */
-    public function getDumpMetaData($dumpFile)
+    public function getDumpMetaData(string $dumpFile)
     {
         $desiredMetaLines = [
             'options',
@@ -216,12 +216,12 @@ class Protector
     /**
      * Generates an SQL dump from the current app database and returns the path to the file.
      *
-     * @param       $destinationFilePath
-     * @param array $options
+     * @param string $destinationFilePath
+     * @param array  $options
      *
      * @return bool
      */
-    protected function generateDump($destinationFilePath, array $options = []): bool
+    protected function generateDump(string $destinationFilePath, array $options = []): bool
     {
         $dumpOptions = collect();
         $dumpOptions->push(sprintf('-h%s', escapeshellarg($this->connectionConfig['host'])));
@@ -277,7 +277,7 @@ class Protector
             Arr::get($metadata, 'dumpedAtDate.mon', '00'),
             Arr::get($metadata, 'dumpedAtDate.day', '00'),
             Arr::get($metadata, 'dumpedAtDate.hours', '00'),
-            Arr::get($metadata, 'dumpedAtDate.minutes', '00')
+            Arr::get($metadata, 'dumpedAtDate.minutes', '00'),
         ];
 
         return sprintf(config('protector.filename'), $database, $connection, $year, $month, $day, $hour, $minute);
@@ -313,13 +313,13 @@ class Protector
     /**
      * Returns the last x lines from a file in correct order.
      *
-     * @param     $file
-     * @param     $lines
-     * @param int $buffer
+     * @param string $file
+     * @param        $lines
+     * @param int    $buffer
      *
      * @return array
      */
-    protected function tail($file, $lines, $buffer = 1024): array
+    protected function tail(string $file, $lines, $buffer = 1024): array
     {
         // Open file-handle using spl.
         $fileHandle = new \SplFileObject($file);
