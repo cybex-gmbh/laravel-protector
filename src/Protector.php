@@ -33,7 +33,6 @@ class Protector
      */
     protected $cacheMetaData;
 
-
     public function __construct()
     {
         $this->configure();
@@ -181,7 +180,6 @@ class Protector
 
         return $data;
     }
-
 
     /**
      * Returns the current git-revision.

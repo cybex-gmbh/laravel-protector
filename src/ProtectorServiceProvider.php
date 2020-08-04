@@ -27,9 +27,6 @@ class ProtectorServiceProvider extends ServiceProvider
         // Automatically apply the package configuration
         $this->mergeConfigFrom(__DIR__ . '/../config/protector.php', 'protector');
 
-        // Register the EventServiceProvider.
-        $this->app->register(ProtectorServiceProvider::class);
-
         // Register the main class to use with the facade
         $this->app->singleton('protector', function () {
             return new Protector;
