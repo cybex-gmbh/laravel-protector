@@ -8,6 +8,7 @@ use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\File;
 use League\Flysystem\FileNotFoundException;
 
 class Protector
@@ -436,5 +437,25 @@ class Protector
         $value = config(sprintf('protector.%s', $key));
 
         return is_callable($value) ? $value() : $value;
+    }
+
+    public function generateFile()
+    {
+        if ($this->configure()) {
+            $fullPath = $this->createDump();
+            $fileData = file_get_contents($fullPath, false);
+            $fileSize = filesize($fullPath);
+            $fileName = basename($fullPath);
+            File::delete($fullPath);
+            return response($fileData)
+                ->withHeaders([
+                    'Content-Type'        => 'text/plain',
+                    'Pragma'              => 'no-cache',
+                    'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+                    'Content-Length'      => $fileSize,
+                    'Expires'             => gmdate('D, d M Y H:i:s', time()-3600) . ' GMT',
+                ]);
+        }
+        return null;
     }
 }
