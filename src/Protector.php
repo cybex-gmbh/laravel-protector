@@ -185,20 +185,19 @@ class Protector
     }
 
     /**
-     * @param string $destinationPath
      * @param string $destinationFilename
      *
      * @return array
      */
-    public function getRemoteDump(string $destinationFilename, string $destinationPath = ''): array
+    public function getRemoteDump(string $destinationFilename): array
     {
         if (App::environment('production')) {
             return [false, sprintf('Retrieving a dump is not allowed on production systems.')];
         }
 
-        $serverUrl               = $this->getConfigValueForKey('liveDump.serverUrl');
-        $htaccessLogin           = $this->getConfigValueForKey('liveDump.htaccessLogin');
-        $destinationPath         = $destinationPath ?: $this->getConfigValueForKey('dumpPath');
+        $serverUrl               = $this->getConfigValueForKey('remoteEndpoint.serverUrl');
+        $htaccessLogin           = $this->getConfigValueForKey('remoteEndpoint.htaccessLogin');
+        $destinationPath         = $this->getConfigValueForKey('dumpPath');
         $fullDestinationFilename = $destinationPath . DIRECTORY_SEPARATOR . $destinationFilename;
         $fullTempFilename        = sprintf('%s.temp', $fullDestinationFilename);
 
@@ -341,7 +340,7 @@ class Protector
      *
      * @return string
      */
-    protected function createFilename(): string
+    public function createFilename(): string
     {
         $metadata = $this->getMetaData();
         [$database, $connection, $year, $month, $day, $hour, $minute,] = [
