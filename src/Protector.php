@@ -314,12 +314,12 @@ class Protector
      * Returns the last x lines from a file in correct order.
      *
      * @param string $file
-     * @param        $lines
+     * @param int    $lines
      * @param int    $buffer
      *
      * @return array
      */
-    protected function tail(string $file, $lines, $buffer = 1024): array
+    protected function tail(string $file, int $lines, int $buffer = 1024): array
     {
         // Open file-handle using spl.
         $fileHandle = new \SplFileObject($file);
