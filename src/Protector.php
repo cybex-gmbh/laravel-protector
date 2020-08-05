@@ -39,13 +39,15 @@ class Protector
     }
 
     /**
-     * @param string $connectionName
+     * Configures the current instance based on the passed configuration or defaults.
+     *
+     * @param array $configuration
      *
      * @return bool
      */
-    public function configure(string $connectionName = null): bool
+    public function configure(array $configuration = []): bool
     {
-        $this->connection = $connectionName ?? config('database.default');
+        $this->connection = $configuration['connection'] ?? config('database.default');;
 
         if (($this->connectionConfig = $this->getDatabaseConfig()) === false) {
             return false;
