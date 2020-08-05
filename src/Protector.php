@@ -131,7 +131,7 @@ class Protector
 
         $destinationFileName = $fileName ?: $this->createFilename();
 
-        $destinationFilePath = sprintf($this->getConfigValueForKey('dumpPath') . '%s', $destinationFileName);
+        $destinationFilePath = sprintf($this->getConfigValueForKey('dumpPath') . '/%s', $destinationFileName);
 
         if (!$this->generateDump($destinationFilePath, $options)) {
             throw new FailedDumpGenerationException('Error while creating the dump.');

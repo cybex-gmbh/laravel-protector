@@ -38,7 +38,7 @@ return [
     | Here you may customize the path for the database dumps.
     |
     */
-    'dumpPath' => database_path('/dumps/'),
+    'dumpPath' => database_path('dumps'),
 
     /*
    |--------------------------------------------------------------------------
