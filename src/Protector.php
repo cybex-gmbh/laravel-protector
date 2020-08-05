@@ -82,7 +82,7 @@ class Protector
         }
 
         if (!file_exists($sourceFilePath)) {
-            throw new FileNotFoundException('File not found at given path: %s', $sourceFilePath);
+            throw new FileNotFoundException($sourceFilePath);
         }
 
         try {
