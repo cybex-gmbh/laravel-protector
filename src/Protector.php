@@ -270,17 +270,17 @@ class Protector
     protected function createFilename(): string
     {
         $metadata = $this->getMetaData();
-        [$database, $connection, $year, $month, $day, $hour, $minute] = [
+        [$database, $connection, $year, $month, $day, $hour, $minute,] = [
             $metadata['database'] ?? '',
             $metadata['connection'] ?? '',
             Arr::get($metadata, 'dumpedAtDate.year', '0000'),
             Arr::get($metadata, 'dumpedAtDate.mon', '00'),
-            Arr::get($metadata, 'dumpedAtDate.day', '00'),
+            Arr::get($metadata, 'dumpedAtDate.mday', '00'),
             Arr::get($metadata, 'dumpedAtDate.hours', '00'),
             Arr::get($metadata, 'dumpedAtDate.minutes', '00'),
         ];
 
-        return sprintf(config('protector.filename'), $database, $connection, $year, $month, $day, $hour, $minute);
+        return sprintf(config('protector.fileName'), $database, $connection, $year, $month, $day, $hour, $minute);
     }
 
     /**
