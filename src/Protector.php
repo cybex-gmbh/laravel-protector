@@ -60,7 +60,7 @@ class Protector
      * Imports a specific SQL dump.
      *
      * @param string $sourceFilePath
-     * @param array $options
+     * @param array  $options
      *
      * @return bool
      *
@@ -122,13 +122,13 @@ class Protector
      * @throws InvalidConnectionException
      * @throws FailedDumpGenerationException
      */
-    public function createDump(string $fileName = null, array $options = []): string
+    public function createDump(string $fileName = '', array $options = []): string
     {
         if (!$this->connectionConfig) {
             throw new InvalidConnectionException('Connection is not configured properly.');
         }
 
-        $destinationFileName = $fileName ?? $this->createFilename();
+        $destinationFileName = $fileName ?: $this->createFilename();
 
         $destinationFilePath = database_path(sprintf('dumps/%s', $destinationFileName));
 
