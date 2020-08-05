@@ -350,4 +350,18 @@ class Protector
         // Get the last x lines from file.
         return array_slice(explode("\n", $contents), -$lines);
     }
+
+    /**
+     * Returns a config value for a specific key and checks for Callables.
+     *
+     * @param string $key
+     *
+     * @return string
+     */
+    protected function getConfigValueForKey(string $key): string
+    {
+        $value = config(sprintf('protector.%s', $key));
+
+        return is_callable($value) ? $value() : $value;
+    }
 }
