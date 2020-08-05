@@ -195,8 +195,8 @@ class Protector
             return [false, sprintf('Retrieving a dump is not allowed on production systems.')];
         }
 
-        $serverUrl               = $this->getConfigValueForKey('liveDump.serverUrl');
-        $htaccessLogin           = $this->getConfigValueForKey('liveDump.htaccessLogin');
+        $serverUrl               = $this->getConfigValueForKey('remoteEndpoint.serverUrl');
+        $htaccessLogin           = $this->getConfigValueForKey('remoteEndpoint.htaccessLogin');
         $destinationPath         = $destinationPath ?: $this->getConfigValueForKey('dumpPath');
         $fullDestinationFilename = $destinationPath . DIRECTORY_SEPARATOR . $destinationFilename;
         $fullTempFilename        = sprintf('%s.temp', $fullDestinationFilename);
