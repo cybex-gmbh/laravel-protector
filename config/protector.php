@@ -29,4 +29,27 @@ return [
     |
     */
     'maxPacketLength' => '8M',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Dump Path
+    |--------------------------------------------------------------------------
+    |
+    | Here you may customize the path for the database dumps.
+    |
+    */
+    'dumpPath' => database_path('/dumps/'),
+
+    /*
+   |--------------------------------------------------------------------------
+   | Remote Endpoint Configuration
+   |--------------------------------------------------------------------------
+   |
+   | Here you may configure the remote endpoint.
+   |
+   */
+    'remoteEndpoint' => [
+        'serverUrl' => '',
+        'htaccessLogin' => '',
+    ],
 ];

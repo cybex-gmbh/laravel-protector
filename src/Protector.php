@@ -130,7 +130,7 @@ class Protector
 
         $destinationFileName = $fileName ?: $this->createFilename();
 
-        $destinationFilePath = database_path(sprintf('dumps/%s', $destinationFileName));
+        $destinationFilePath = sprintf($this->getConfigValueForKey('dumpPath') . '%s', $destinationFileName);
 
         if (!$this->generateDump($destinationFilePath, $options)) {
             throw new FailedDumpGenerationException('Error while creating the dump.');
@@ -181,6 +181,79 @@ class Protector
         }
 
         return $data;
+    }
+
+    /**
+     * @param string $destinationPath
+     * @param string $destinationFilename
+     *
+     * @return array
+     */
+    public function getRemoteDump(string $destinationFilename, string $destinationPath = ''): array
+    {
+        if (App::environment('production')) {
+            return [false, sprintf('Retrieving a dump is not allowed on production systems.')];
+        }
+
+        $serverUrl               = $this->getConfigValueForKey('liveDump.serverUrl');
+        $htaccessLogin           = $this->getConfigValueForKey('liveDump.htaccessLogin');
+        $destinationPath         = $destinationPath ?: $this->getConfigValueForKey('dumpPath');
+        $fullDestinationFilename = $destinationPath . DIRECTORY_SEPARATOR . $destinationFilename;
+        $fullTempFilename        = sprintf('%s.temp', $fullDestinationFilename);
+
+        // Create destination dir if it does not exist.
+        if (!is_dir($destinationPath)) {
+            if (mkdir($destinationPath, 0777, true) === false) {
+                return [false, sprintf('Could not create the non-existing destination path %s.', $destinationPath)];
+            }
+        }
+
+        $dumpApiCall = curl_init($serverUrl);
+
+        if ($htaccessLogin) {
+            curl_setopt($dumpApiCall, CURLOPT_USERPWD, $htaccessLogin);
+        }
+
+        curl_setopt($dumpApiCall, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($dumpApiCall, CURLOPT_POST, 1);
+        curl_setopt($dumpApiCall, CURLOPT_BINARYTRANSFER, 1);
+        curl_setopt($dumpApiCall, CURLOPT_FAILONERROR, true);
+
+        // Try to open file for writing in mode 'c' instead of 'w', because mode 'w' may truncate the file before a flock() is acquired.
+        if ($fileHandle = fopen($fullTempFilename, 'c')) {
+            if (flock($fileHandle, LOCK_EX)) {
+                // We need to truncate the file manually: opening a file for writing in mode c does not do this for us.
+                ftruncate($fileHandle, 0);
+            } else {
+                fclose($fileHandle);
+                return [false, 'Could not acquire exclusive lock to destination file.'];
+            }
+        } else {
+            return [false, 'Could not open destination file for writing.'];
+        }
+
+        curl_setopt($dumpApiCall, CURLOPT_FILE, $fileHandle);
+
+        $curlResult = curl_exec($dumpApiCall);
+        $httpCode   = curl_getinfo($dumpApiCall, CURLINFO_HTTP_CODE);
+
+        // Write all data to disk, release the lock and close the file handle.
+        fflush($fileHandle);
+        flock($fileHandle, LOCK_UN);
+        fclose($fileHandle);
+
+        if ($curlResult === false) {
+            $curlError = curl_error($dumpApiCall);
+
+            return [false, sprintf('Could not fetch database from remote server: %s (HTTP %s).', $curlError, $httpCode)];
+        }
+
+        curl_close($dumpApiCall);
+
+        if (file_exists($fullTempFilename)) {
+            rename($fullTempFilename, $fullDestinationFilename);
+        }
+        return [true, sprintf('Successfully retrieved live dump from %s (HTTP %s).', $serverUrl, $httpCode)];
     }
 
     /**
