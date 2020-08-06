@@ -343,7 +343,8 @@ class Protector
     protected function createFilename(): string
     {
         $metadata = $this->getMetaData();
-        [$database, $connection, $year, $month, $day, $hour, $minute,] = [
+        [$appUrl, $database, $connection, $year, $month, $day, $hour, $minute,] = [
+            $appUrl = parse_url(env('APP_URL'), PHP_URL_HOST),
             $metadata['database'] ?? '',
             $metadata['connection'] ?? '',
             Arr::get($metadata, 'dumpedAtDate.year', '0000'),
@@ -353,7 +354,7 @@ class Protector
             Arr::get($metadata, 'dumpedAtDate.minutes', '00'),
         ];
 
-        return sprintf(config('protector.fileName'), $database, $connection, $year, $month, $day, $hour, $minute);
+        return sprintf(config('protector.fileName'), $appUrl, $database, $connection, $year, $month, $day, $hour, $minute);
     }
 
     /**
