@@ -48,7 +48,7 @@ class Protector
      */
     public function configure(string $connectionName = null): bool
     {
-        $this->connection = $connectionName ?? config('database.default');;
+        $this->connection = $connectionName ?? config('database.default');
 
         if (($this->connectionConfig = $this->getDatabaseConfig()) === false) {
             return false;
