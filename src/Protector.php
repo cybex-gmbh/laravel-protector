@@ -304,14 +304,14 @@ class Protector
         $dumpOptions->push(sprintf('--max-allowed-packet=%s', escapeshellarg(config('protector.maxPacketLength'))));
         $dumpOptions->push('--no-create-db');
 
-        if (array_key_exists('no-data', $options) && $options['no-data']) {
+        if ($options['no-data'] ?? false) {
             $dumpOptions->push('--no-data');
         }
 
         $dumpOptions->push(sprintf('%s', escapeshellarg($this->connectionConfig['database'])));
 
         try {
-            // Write dump with specific options using.
+            // Write dump using specific options.
             exec(sprintf('mysqldump %s > %s 2> /dev/null',
                 $dumpOptions->implode(' '),
                 escapeshellarg($destinationFilePath)));
