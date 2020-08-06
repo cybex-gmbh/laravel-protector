@@ -9,6 +9,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
 use League\Flysystem\FileNotFoundException;
+use SplFileObject;
 
 class Protector
 {
@@ -396,7 +397,7 @@ class Protector
     protected function tail(string $file, int $lines, int $buffer = 1024): array
     {
         // Open file-handle using spl.
-        $fileHandle = new \SplFileObject($file);
+        $fileHandle = new SplFileObject($file);
         // Jump to last character.
         $fileHandle->fseek(0, SEEK_END);
 
