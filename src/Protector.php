@@ -439,9 +439,16 @@ class Protector
         return is_callable($value) ? $value() : $value;
     }
 
-    public function generateFile()
+    /**
+     * Generates a response which allows downloading the dump file.
+     *
+     * @param array $configuration
+     *
+     * @return \Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\Response|null
+     */
+    public function generateFileDownloadResponse(array $configuration = [])
     {
-        if ($this->configure()) {
+        if ($this->configure($configuration)) {
             $fullPath = $this->createDump();
             $fileData = file_get_contents($fullPath, false);
             $fileSize = filesize($fullPath);
