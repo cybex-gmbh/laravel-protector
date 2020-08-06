@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use League\Flysystem\FileNotFoundException;
+use SplFileObject;
 
 class Protector
 {
@@ -42,13 +43,13 @@ class Protector
     /**
      * Configures the current instance based on the passed configuration or defaults.
      *
-     * @param array $configuration
+     * @param string|null $connectionName
      *
      * @return bool
      */
-    public function configure(array $configuration = []): bool
+    public function configure(string $connectionName = null): bool
     {
-        $this->connection = $configuration['connection'] ?? config('database.default');;
+        $this->connection = $connectionName ?? config('database.default');
 
         if (($this->connectionConfig = $this->getDatabaseConfig()) === false) {
             return false;
@@ -115,23 +116,23 @@ class Protector
     /**
      * Public function to create a dump for the given configuration.
      *
-     * @param string $fileName
-     * @param array  $options
+     * @param string|null $fileName
+     * @param array       $options
      *
      * @return string
      *
-     * @throws InvalidConnectionException
      * @throws FailedDumpGenerationException
+     * @throws InvalidConnectionException
      */
-    public function createDump(string $fileName = '', array $options = []): string
+    public function createDump(string $fileName = null, array $options = []): string
     {
         if (!$this->connectionConfig) {
             throw new InvalidConnectionException('Connection is not configured properly.');
         }
 
-        $destinationFileName = $fileName ?: $this->createFilename();
+        $destinationFileName = $fileName ?? $this->createFilename();
 
-        $destinationFilePath = sprintf($this->getConfigValueForKey('dumpPath') . '%s', $destinationFileName);
+        $destinationFilePath = sprintf('%s%s%s', $this->getConfigValueForKey('dumpPath'), DIRECTORY_SEPARATOR, $destinationFileName);
 
         if (!$this->generateDump($destinationFilePath, $options)) {
             throw new FailedDumpGenerationException('Error while creating the dump.');
@@ -185,20 +186,20 @@ class Protector
     }
 
     /**
-     * @param string $destinationPath
-     * @param string $destinationFilename
+     * @param string      $destinationFilename
+     * @param string|null $destinationPath
      *
      * @return array
      */
-    public function getRemoteDump(string $destinationFilename, string $destinationPath = ''): array
+    public function getRemoteDump(string $destinationFilename, string $destinationPath = null): array
     {
         if (App::environment('production')) {
             return [false, sprintf('Retrieving a dump is not allowed on production systems.')];
         }
 
-        $serverUrl               = $this->getConfigValueForKey('liveDump.serverUrl');
-        $htaccessLogin           = $this->getConfigValueForKey('liveDump.htaccessLogin');
-        $destinationPath         = $destinationPath ?: $this->getConfigValueForKey('dumpPath');
+        $serverUrl               = $this->getConfigValueForKey('remoteEndpoint.serverUrl');
+        $htaccessLogin           = $this->getConfigValueForKey('remoteEndpoint.htaccessLogin');
+        $destinationPath         = $destinationPath ?? $this->getConfigValueForKey('dumpPath');
         $fullDestinationFilename = $destinationPath . DIRECTORY_SEPARATOR . $destinationFilename;
         $fullTempFilename        = sprintf('%s.temp', $fullDestinationFilename);
 
@@ -344,7 +345,8 @@ class Protector
     protected function createFilename(): string
     {
         $metadata = $this->getMetaData();
-        [$database, $connection, $year, $month, $day, $hour, $minute,] = [
+        [$appUrl, $database, $connection, $year, $month, $day, $hour, $minute,] = [
+            $appUrl = parse_url(env('APP_URL'), PHP_URL_HOST),
             $metadata['database'] ?? '',
             $metadata['connection'] ?? '',
             Arr::get($metadata, 'dumpedAtDate.year', '0000'),
@@ -354,7 +356,7 @@ class Protector
             Arr::get($metadata, 'dumpedAtDate.minutes', '00'),
         ];
 
-        return sprintf(config('protector.fileName'), $database, $connection, $year, $month, $day, $hour, $minute);
+        return sprintf(config('protector.fileName'), $appUrl, $database, $connection, $year, $month, $day, $hour, $minute);
     }
 
     /**
@@ -396,7 +398,7 @@ class Protector
     protected function tail(string $file, int $lines, int $buffer = 1024): array
     {
         // Open file-handle using spl.
-        $fileHandle = new \SplFileObject($file);
+        $fileHandle = new SplFileObject($file);
         // Jump to last character.
         $fileHandle->fseek(0, SEEK_END);
 
