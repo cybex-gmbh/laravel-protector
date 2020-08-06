@@ -8,6 +8,7 @@ use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\File;
 use League\Flysystem\FileNotFoundException;
 use SplFileObject;
 
@@ -304,14 +305,14 @@ class Protector
         $dumpOptions->push(sprintf('--max-allowed-packet=%s', escapeshellarg(config('protector.maxPacketLength'))));
         $dumpOptions->push('--no-create-db');
 
-        if (array_key_exists('no-data', $options) && $options['no-data']) {
+        if ($options['no-data'] ?? false) {
             $dumpOptions->push('--no-data');
         }
 
         $dumpOptions->push(sprintf('%s', escapeshellarg($this->connectionConfig['database'])));
 
         try {
-            // Write dump with specific options using.
+            // Write dump using specific options.
             exec(sprintf('mysqldump %s > %s 2> /dev/null',
                 $dumpOptions->implode(' '),
                 escapeshellarg($destinationFilePath)));
@@ -438,5 +439,32 @@ class Protector
         $value = config(sprintf('protector.%s', $key));
 
         return is_callable($value) ? $value() : $value;
+    }
+
+    /**
+     * Generates a response which allows downloading the dump file.
+     *
+     * @param array $configuration
+     *
+     * @return \Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\Response|null
+     */
+    public function generateFileDownloadResponse(array $configuration = [])
+    {
+        if ($this->configure($configuration)) {
+            $fullPath = $this->createDump();
+            $fileData = file_get_contents($fullPath, false);
+            $fileSize = filesize($fullPath);
+            $fileName = basename($fullPath);
+            File::delete($fullPath);
+            return response($fileData)
+                ->withHeaders([
+                    'Content-Type'        => 'text/plain',
+                    'Pragma'              => 'no-cache',
+                    'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+                    'Content-Length'      => $fileSize,
+                    'Expires'             => gmdate('D, d M Y H:i:s', time()-3600) . ' GMT',
+                ]);
+        }
+        return null;
     }
 }

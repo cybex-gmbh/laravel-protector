@@ -2,6 +2,7 @@
 
 namespace Cybex\Protector;
 
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
 class ProtectorServiceProvider extends ServiceProvider
@@ -13,6 +14,8 @@ class ProtectorServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->registerRoutes();
+
         // Publish package config to app config space.
         $this->publishes([__DIR__ . '/../config/protector.php' => config_path('protector.php')]);
     }
@@ -31,5 +34,13 @@ class ProtectorServiceProvider extends ServiceProvider
         $this->app->singleton('protector', function () {
             return new Protector;
         });
+    }
+
+    protected function registerRoutes()
+    {
+        Route::get(config('protector.routeEndpoint') ?: '/protector/exportDump', [
+            Protector::class,
+            'generateFileDownloadResponse',
+        ])->middleware(config('protector.routeMiddleware'));
     }
 }

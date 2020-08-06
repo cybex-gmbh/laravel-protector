@@ -53,4 +53,27 @@ return [
         'serverUrl' => '',
         'htaccessLogin' => '',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Route Endpoint
+    |--------------------------------------------------------------------------
+    |
+    | Here you may customize the download route endpoint.
+    |
+    */
+    'routeEndpoint' => '',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Route Middleware
+    |--------------------------------------------------------------------------
+    |
+    | Here you may customize middleware that will be applied.
+    | By default, web and auth middleware are active.
+    |
+    */
+    'routeMiddleware' => [
+
+    ],
 ];
