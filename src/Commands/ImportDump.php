@@ -105,11 +105,12 @@ class ImportDump extends Command
                 File::delete(File::files($destinationPath));
             }
 
-            $this->line(sprintf('<<< Downloading dump from live server to <comment>%s</comment>', $fullDestinationFilename));
+            $this->line(sprintf('<<< Downloading dump from remote server to directory: <comment>%s</comment>', $destinationPath));
             [
                 $success,
                 $message,
-            ] = $protector->getRemoteDump($destinationFilename);
+                $fullRemoteDumpFileName
+            ] = $protector->getRemoteDump();
 
             if ($success === false) {
                 $this->error(sprintf('Error retrieving dump from live server: %s', $message));
@@ -118,7 +119,7 @@ class ImportDump extends Command
 
             $this->line(sprintf('>>> %s', $message));
 
-            $importFilePath = $fullDestinationFilename;
+            $importFilePath = $fullRemoteDumpFileName;
         } elseif ($optionFile || $optionDump) {
             $importFilePath = $fullDestinationFilename;
         } else {
