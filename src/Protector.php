@@ -9,6 +9,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
 use League\Flysystem\FileNotFoundException;
+use SplFileObject;
 
 class Protector
 {
@@ -33,14 +34,15 @@ class Protector
      */
     protected $cacheMetaData;
 
-
     public function __construct()
     {
         $this->configure();
     }
 
     /**
-     * @param string $connectionName
+     * Configures the current instance based on the passed configuration or defaults.
+     *
+     * @param string|null $connectionName
      *
      * @return bool
      */
@@ -58,8 +60,8 @@ class Protector
     /**
      * Imports a specific SQL dump.
      *
-     * @param $sourceFilePath
-     * @param $options
+     * @param string $sourceFilePath
+     * @param array  $options
      *
      * @return bool
      *
@@ -68,7 +70,7 @@ class Protector
      * @throws FileNotFoundException
      * @throws \Exception
      */
-    public function importDump($sourceFilePath, $options): bool
+    public function importDump(string $sourceFilePath, array $options): bool
     {
         // Production environment is not allowed unless set in options.
         if (App::environment('production') && !($options['allow-production'] ?? false)) {
@@ -113,13 +115,13 @@ class Protector
     /**
      * Public function to create a dump for the given configuration.
      *
-     * @param string $fileName
-     * @param array  $options
+     * @param string|null $fileName
+     * @param array       $options
      *
      * @return string
      *
-     * @throws InvalidConnectionException
      * @throws FailedDumpGenerationException
+     * @throws InvalidConnectionException
      */
     public function createDump(string $fileName = null, array $options = []): string
     {
@@ -129,7 +131,7 @@ class Protector
 
         $destinationFileName = $fileName ?? $this->createFilename();
 
-        $destinationFilePath = database_path(sprintf('dumps/%s', $destinationFileName));
+        $destinationFilePath = sprintf('%s%s%s', $this->getConfigValueForKey('dumpPath'), DIRECTORY_SEPARATOR, $destinationFileName);
 
         if (!$this->generateDump($destinationFilePath, $options)) {
             throw new FailedDumpGenerationException('Error while creating the dump.');
@@ -141,11 +143,11 @@ class Protector
     /**
      * Returns the appended Meta-Data from a file
      *
-     * @param $dumpFile
+     * @param string $dumpFile
      *
      * @return array|bool
      */
-    public function getDumpMetaData($dumpFile)
+    public function getDumpMetaData(string $dumpFile)
     {
         $desiredMetaLines = [
             'options',
@@ -182,6 +184,78 @@ class Protector
         return $data;
     }
 
+    /**
+     * @param string      $destinationFilename
+     * @param string|null $destinationPath
+     *
+     * @return array
+     */
+    public function getRemoteDump(string $destinationFilename, string $destinationPath = null): array
+    {
+        if (App::environment('production')) {
+            return [false, sprintf('Retrieving a dump is not allowed on production systems.')];
+        }
+
+        $serverUrl               = $this->getConfigValueForKey('remoteEndpoint.serverUrl');
+        $htaccessLogin           = $this->getConfigValueForKey('remoteEndpoint.htaccessLogin');
+        $destinationPath         = $destinationPath ?? $this->getConfigValueForKey('dumpPath');
+        $fullDestinationFilename = $destinationPath . DIRECTORY_SEPARATOR . $destinationFilename;
+        $fullTempFilename        = sprintf('%s.temp', $fullDestinationFilename);
+
+        // Create destination dir if it does not exist.
+        if (!is_dir($destinationPath)) {
+            if (mkdir($destinationPath, 0777, true) === false) {
+                return [false, sprintf('Could not create the non-existing destination path %s.', $destinationPath)];
+            }
+        }
+
+        $dumpApiCall = curl_init($serverUrl);
+
+        if ($htaccessLogin) {
+            curl_setopt($dumpApiCall, CURLOPT_USERPWD, $htaccessLogin);
+        }
+
+        curl_setopt($dumpApiCall, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($dumpApiCall, CURLOPT_POST, 1);
+        curl_setopt($dumpApiCall, CURLOPT_BINARYTRANSFER, 1);
+        curl_setopt($dumpApiCall, CURLOPT_FAILONERROR, true);
+
+        // Try to open file for writing in mode 'c' instead of 'w', because mode 'w' may truncate the file before a flock() is acquired.
+        if ($fileHandle = fopen($fullTempFilename, 'c')) {
+            if (flock($fileHandle, LOCK_EX)) {
+                // We need to truncate the file manually: opening a file for writing in mode c does not do this for us.
+                ftruncate($fileHandle, 0);
+            } else {
+                fclose($fileHandle);
+                return [false, 'Could not acquire exclusive lock to destination file.'];
+            }
+        } else {
+            return [false, 'Could not open destination file for writing.'];
+        }
+
+        curl_setopt($dumpApiCall, CURLOPT_FILE, $fileHandle);
+
+        $curlResult = curl_exec($dumpApiCall);
+        $httpCode   = curl_getinfo($dumpApiCall, CURLINFO_HTTP_CODE);
+
+        // Write all data to disk, release the lock and close the file handle.
+        fflush($fileHandle);
+        flock($fileHandle, LOCK_UN);
+        fclose($fileHandle);
+
+        if ($curlResult === false) {
+            $curlError = curl_error($dumpApiCall);
+
+            return [false, sprintf('Could not fetch database from remote server: %s (HTTP %s).', $curlError, $httpCode)];
+        }
+
+        curl_close($dumpApiCall);
+
+        if (file_exists($fullTempFilename)) {
+            rename($fullTempFilename, $fullDestinationFilename);
+        }
+        return [true, sprintf('Successfully retrieved live dump from %s (HTTP %s).', $serverUrl, $httpCode)];
+    }
 
     /**
      * Returns the current git-revision.
@@ -216,12 +290,12 @@ class Protector
     /**
      * Generates an SQL dump from the current app database and returns the path to the file.
      *
-     * @param       $destinationFilePath
-     * @param array $options
+     * @param string $destinationFilePath
+     * @param array  $options
      *
      * @return bool
      */
-    protected function generateDump($destinationFilePath, array $options = []): bool
+    protected function generateDump(string $destinationFilePath, array $options = []): bool
     {
         $dumpOptions = collect();
         $dumpOptions->push(sprintf('-h%s', escapeshellarg($this->connectionConfig['host'])));
@@ -270,17 +344,18 @@ class Protector
     protected function createFilename(): string
     {
         $metadata = $this->getMetaData();
-        [$database, $connection, $year, $month, $day, $hour, $minute] = [
+        [$appUrl, $database, $connection, $year, $month, $day, $hour, $minute,] = [
+            $appUrl = parse_url(env('APP_URL'), PHP_URL_HOST),
             $metadata['database'] ?? '',
             $metadata['connection'] ?? '',
             Arr::get($metadata, 'dumpedAtDate.year', '0000'),
             Arr::get($metadata, 'dumpedAtDate.mon', '00'),
-            Arr::get($metadata, 'dumpedAtDate.day', '00'),
+            Arr::get($metadata, 'dumpedAtDate.mday', '00'),
             Arr::get($metadata, 'dumpedAtDate.hours', '00'),
-            Arr::get($metadata, 'dumpedAtDate.minutes', '00')
+            Arr::get($metadata, 'dumpedAtDate.minutes', '00'),
         ];
 
-        return sprintf(config('protector.filename'), $database, $connection, $year, $month, $day, $hour, $minute);
+        return sprintf(config('protector.fileName'), $appUrl, $database, $connection, $year, $month, $day, $hour, $minute);
     }
 
     /**
@@ -313,16 +388,16 @@ class Protector
     /**
      * Returns the last x lines from a file in correct order.
      *
-     * @param     $file
-     * @param     $lines
-     * @param int $buffer
+     * @param string $file
+     * @param int    $lines
+     * @param int    $buffer
      *
      * @return array
      */
-    protected function tail($file, $lines, $buffer = 1024): array
+    protected function tail(string $file, int $lines, int $buffer = 1024): array
     {
         // Open file-handle using spl.
-        $fileHandle = new \SplFileObject($file);
+        $fileHandle = new SplFileObject($file);
         // Jump to last character.
         $fileHandle->fseek(0, SEEK_END);
 
@@ -349,5 +424,19 @@ class Protector
 
         // Get the last x lines from file.
         return array_slice(explode("\n", $contents), -$lines);
+    }
+
+    /**
+     * Returns a config value for a specific key and checks for Callables.
+     *
+     * @param string $key
+     *
+     * @return string
+     */
+    protected function getConfigValueForKey(string $key): string
+    {
+        $value = config(sprintf('protector.%s', $key));
+
+        return is_callable($value) ? $value() : $value;
     }
 }
