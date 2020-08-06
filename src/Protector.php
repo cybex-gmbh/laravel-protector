@@ -434,13 +434,13 @@ class Protector
     /**
      * Generates a response which allows downloading the dump file.
      *
-     * @param array $configuration
+     * @param string $connectionName
      *
      * @return \Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\Response|null
      */
-    public function generateFileDownloadResponse(array $configuration = [])
+    public function generateFileDownloadResponse(string $connectionName = null)
     {
-        if ($this->configure($configuration)) {
+        if ($this->configure($connectionName)) {
             $fullPath = $this->createDump();
             $fileData = file_get_contents($fullPath, false);
             $fileSize = filesize($fullPath);
