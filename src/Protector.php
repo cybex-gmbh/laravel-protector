@@ -115,21 +115,21 @@ class Protector
     /**
      * Public function to create a dump for the given configuration.
      *
-     * @param string $fileName
-     * @param array  $options
+     * @param string|null $fileName
+     * @param array       $options
      *
      * @return string
      *
-     * @throws InvalidConnectionException
      * @throws FailedDumpGenerationException
+     * @throws InvalidConnectionException
      */
-    public function createDump(string $fileName = '', array $options = []): string
+    public function createDump(string $fileName = null, array $options = []): string
     {
         if (!$this->connectionConfig) {
             throw new InvalidConnectionException('Connection is not configured properly.');
         }
 
-        $destinationFileName = $fileName ?: $this->createFilename();
+        $destinationFileName = $fileName ?? $this->createFilename();
 
         $destinationFilePath = sprintf('%s%s%s', $this->getConfigValueForKey('dumpPath'), DIRECTORY_SEPARATOR, $destinationFileName);
 
@@ -185,12 +185,12 @@ class Protector
     }
 
     /**
-     * @param string $destinationPath
-     * @param string $destinationFilename
+     * @param string      $destinationFilename
+     * @param string|null $destinationPath
      *
      * @return array
      */
-    public function getRemoteDump(string $destinationFilename, string $destinationPath = ''): array
+    public function getRemoteDump(string $destinationFilename, string $destinationPath = null): array
     {
         if (App::environment('production')) {
             return [false, sprintf('Retrieving a dump is not allowed on production systems.')];
@@ -198,7 +198,7 @@ class Protector
 
         $serverUrl               = $this->getConfigValueForKey('remoteEndpoint.serverUrl');
         $htaccessLogin           = $this->getConfigValueForKey('remoteEndpoint.htaccessLogin');
-        $destinationPath         = $destinationPath ?: $this->getConfigValueForKey('dumpPath');
+        $destinationPath         = $destinationPath ?? $this->getConfigValueForKey('dumpPath');
         $fullDestinationFilename = $destinationPath . DIRECTORY_SEPARATOR . $destinationFilename;
         $fullTempFilename        = sprintf('%s.temp', $fullDestinationFilename);
 
