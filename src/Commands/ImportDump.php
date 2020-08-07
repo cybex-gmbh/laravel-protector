@@ -70,10 +70,10 @@ class ImportDump extends Command
         $destinationFilename     = $optionDump ?: $protector->createFilename();
         $fullDestinationFilename = $optionFile ?: $destinationPath . DIRECTORY_SEPARATOR . $destinationFilename;
 
-        $configuration = [];
+        $connectionName = null;
 
         if ($this->option('connection')) {
-            $configuration['connection'] = $this->option('connection');
+            $connectionName = $this->option('connection');
         }
 
         $options                     = [];
@@ -84,7 +84,7 @@ class ImportDump extends Command
             return;
         }
 
-        if (!$protector->configure($configuration)) {
+        if (!$protector->configure($connectionName)) {
             $this->error('Configuration is invalid');
             return;
         }
@@ -173,17 +173,17 @@ class ImportDump extends Command
             $sortedFiles = $matchingFiles->sortByDesc('dateTime')->groupBy('connection');
 
             if ($sortedFiles->count() == 1) {
-                $configuration['connection'] = Arr::first($sortedFiles->keys()->sort()->toArray());
-                $this->info(sprintf('Using connection "%s" because there are no dumps created through other connections.', $configuration['connection']));
+                $connectionName = Arr::first($sortedFiles->keys()->sort()->toArray());
+                $this->info(sprintf('Using connection "%s" because there are no dumps created through other connections.', $connectionName));
             } elseif ($this->option('ignore-connection-filter')) {
                 // In this case dont limit the files to the connection, no code required.
-            } elseif (!array_key_exists('connection', $configuration)) {
-                $configuration['connection'] = $this->choice('Import dump for which connection?', $sortedFiles->keys()->toArray());
-                $this->info(sprintf('Using connection "%s".', $configuration['connection']));
+            } elseif ($connectionName) {
+                $connectionName = $this->choice('Import dump for which connection?', $sortedFiles->keys()->toArray());
+                $this->info(sprintf('Using connection "%s".', $connectionName));
             }
 
-            if (array_key_exists('connection', $configuration)) {
-                $connectionFiles = $sortedFiles->get($configuration['connection']);
+            if ($connectionName) {
+                $connectionFiles = $sortedFiles->get($connectionName);
             } else {
                 $connectionFiles = $matchingFiles->sortByDesc('dateTime');
             }
