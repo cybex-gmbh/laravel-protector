@@ -3,6 +3,7 @@
 namespace Cybex\Protector;
 
 use Cybex\Protector\Exceptions\FailedDumpGenerationException;
+use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Illuminate\Support\Arr;
@@ -187,6 +188,8 @@ class Protector
 
     /**
      * @return array
+     *
+     * @throws InvalidConfigurationException
      */
     public function getRemoteDump(): array
     {
@@ -197,6 +200,10 @@ class Protector
         $serverUrl               = $this->getConfigValueForKey('remoteEndpoint.serverUrl');
         $htaccessLogin           = $this->getConfigValueForKey('remoteEndpoint.htaccessLogin');
         $destinationPath         = $this->getConfigValueForKey('dumpPath');
+
+        if(!$serverUrl) {
+            throw new InvalidConfigurationException('Server url is not set or invalid');
+        }
 
         // Create destination dir if it does not exist.
         if (!is_dir($destinationPath)) {
