@@ -45,15 +45,10 @@ class ExportDump extends Command
      */
     public function handle()
     {
-        $configuration = [
-            // Set command as source, so the helper can use it to output information.
-            'command' => $this,
-        ];
-
-        $fileName = $this->option('file') ?: '';
+        $fileName = $this->option('file') ?: null;
 
         if ($this->option('connection')) {
-            $configuration['connection'] = $this->option('connection');
+            $connectionName = $this->option('connection');
         }
 
         $options            = [];
@@ -61,7 +56,7 @@ class ExportDump extends Command
 
         $protector = new Protector();
 
-        if ($protector->configure($configuration)) {
+        if ($protector->configure($connectionName ?? null)) {
             // Create the desired dump.
             $filePath = $protector->createDump($fileName, $options);
             $this->info(sprintf('Dump was created at %s', $filePath));
