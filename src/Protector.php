@@ -249,7 +249,7 @@ class Protector
         if ($curlResult === false) {
             $curlError = curl_error($dumpApiCall);
 
-            return [false, sprintf('Could not fetch database from remote server: %s (HTTP %s).', $curlError, $httpCode)];
+            return [false, sprintf('Could not fetch database from remote server: %s (HTTP %s).', $curlError, $httpCode), null];
         }
 
         curl_close($dumpApiCall);
