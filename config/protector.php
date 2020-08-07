@@ -62,7 +62,7 @@ return [
     | Here you may customize the download route endpoint.
     |
     */
-    'routeEndpoint' => '',
+    'routeEndpoint' => '/protector/exportDump',
 
     /*
     |--------------------------------------------------------------------------
