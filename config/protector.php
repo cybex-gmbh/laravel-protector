@@ -70,10 +70,10 @@ return [
     |--------------------------------------------------------------------------
     |
     | Here you may customize middleware that will be applied.
-    | By default, web and auth middleware are active.
+    | By default the checkToken middleware is set.
     |
     */
     'routeMiddleware' => [
-
+        'checkToken',
     ],
 ];

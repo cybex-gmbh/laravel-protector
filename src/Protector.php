@@ -197,6 +197,7 @@ class Protector
             return [false, sprintf('Retrieving a dump is not allowed on production systems.')];
         }
 
+        $token                   = env('PROTECTOR_DB_TOKEN');
         $serverUrl               = $this->getConfigValueForKey('remoteEndpoint.serverUrl');
         $htaccessLogin           = $this->getConfigValueForKey('remoteEndpoint.htaccessLogin');
         $destinationPath         = $this->getConfigValueForKey('dumpPath');
@@ -220,6 +221,7 @@ class Protector
 
         curl_setopt($dumpApiCall, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($dumpApiCall, CURLOPT_POST, 1);
+        curl_setopt($dumpApiCall, CURLOPT_POSTFIELDS, ['token' => $token]);
         curl_setopt($dumpApiCall, CURLOPT_BINARYTRANSFER, 1);
         curl_setopt($dumpApiCall, CURLOPT_FAILONERROR, true);
         curl_setopt($dumpApiCall,CURLOPT_HEADER, 1);
