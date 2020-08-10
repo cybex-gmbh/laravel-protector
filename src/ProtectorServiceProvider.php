@@ -2,6 +2,7 @@
 
 namespace Cybex\Protector;
 
+use Cybex\Protector\Commands\CreateToken;
 use Cybex\Protector\Commands\ExportDump;
 use Cybex\Protector\Commands\ImportDump;
 use Cybex\Protector\Middleware\CheckToken;
@@ -21,6 +22,7 @@ class ProtectorServiceProvider extends ServiceProvider
         $this->commands([
             ExportDump::class,
             ImportDump::class,
+            CreateToken::class,
         ]);
         $this->loadMigrationsFrom(__DIR__.'/../src/Migrations');
         $this->app['router']->aliasMiddleware('checkToken', CheckToken::class);
