@@ -44,7 +44,6 @@ class CreateToken extends Command
     public function handle()
     {
         $user = config('auth.providers.users.model')::findOrFail($this->argument('user-id'));
-
         $token = Str::uuid();
 
         $user->token = $token;
