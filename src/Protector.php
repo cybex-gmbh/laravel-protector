@@ -222,14 +222,14 @@ class Protector
         curl_setopt($dumpApiCall, CURLOPT_POST, 1);
         curl_setopt($dumpApiCall, CURLOPT_BINARYTRANSFER, 1);
         curl_setopt($dumpApiCall, CURLOPT_FAILONERROR, true);
-        curl_setopt($dumpApiCall,CURLOPT_HEADER, 1);
+        curl_setopt($dumpApiCall, CURLOPT_HEADER, 1);
 
         $curlResult = curl_exec($dumpApiCall);
         $httpCode   = curl_getinfo($dumpApiCall, CURLINFO_HTTP_CODE);
 
         $header_size = curl_getinfo($dumpApiCall, CURLINFO_HEADER_SIZE);
-        $header = substr($curlResult, 0, $header_size);
-        $body = substr($curlResult, $header_size);
+        $header      = substr($curlResult, 0, $header_size);
+        $body        = substr($curlResult, $header_size);
 
         // Get remote filename from header.
         $headers = explode("\r\n", $header);
