@@ -113,7 +113,7 @@ class ImportDump extends Command
             ] = $protector->getRemoteDump();
 
             if ($success === false) {
-                $this->error(sprintf('Error retrieving dump from live server: %s', $message));
+                $this->error(sprintf('Error retrieving dump from remote server: %s', $message));
                 return;
             }
 
