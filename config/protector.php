@@ -50,7 +50,7 @@ return [
    |
    */
     'remoteEndpoint' => [
-        'serverUrl' => '',
+        'serverUrl'     => '',
         'htaccessLogin' => '',
     ],
 

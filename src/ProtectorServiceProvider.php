@@ -2,6 +2,8 @@
 
 namespace Cybex\Protector;
 
+use Cybex\Protector\Commands\ExportDump;
+use Cybex\Protector\Commands\ImportDump;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -15,6 +17,10 @@ class ProtectorServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->registerRoutes();
+        $this->commands([
+            ExportDump::class,
+            ImportDump::class,
+        ]);
 
         // Publish package config to app config space.
         $this->publishes([__DIR__ . '/../config/protector.php' => config_path('protector.php')]);

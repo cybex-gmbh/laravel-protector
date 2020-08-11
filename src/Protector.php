@@ -3,6 +3,7 @@
 namespace Cybex\Protector;
 
 use Cybex\Protector\Exceptions\FailedDumpGenerationException;
+use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Illuminate\Support\Arr;
@@ -83,7 +84,7 @@ class Protector
         }
 
         if (!file_exists($sourceFilePath)) {
-            throw new FileNotFoundException('File not found at given path: %s', $sourceFilePath);
+            throw new FileNotFoundException($sourceFilePath);
         }
 
         try {
@@ -121,8 +122,8 @@ class Protector
      *
      * @return string
      *
-     * @throws FailedDumpGenerationException
      * @throws InvalidConnectionException
+     * @throws FailedDumpGenerationException
      */
     public function createDump(string $fileName = null, array $options = []): string
     {
@@ -186,12 +187,11 @@ class Protector
     }
 
     /**
-     * @param string      $destinationFilename
-     * @param string|null $destinationPath
-     *
      * @return array
+     *
+     * @throws InvalidConfigurationException
      */
-    public function getRemoteDump(string $destinationFilename, string $destinationPath = null): array
+    public function getRemoteDump(): array
     {
         if (App::environment('production')) {
             return [false, sprintf('Retrieving a dump is not allowed on production systems.')];
@@ -199,9 +199,11 @@ class Protector
 
         $serverUrl               = $this->getConfigValueForKey('remoteEndpoint.serverUrl');
         $htaccessLogin           = $this->getConfigValueForKey('remoteEndpoint.htaccessLogin');
-        $destinationPath         = $destinationPath ?? $this->getConfigValueForKey('dumpPath');
-        $fullDestinationFilename = $destinationPath . DIRECTORY_SEPARATOR . $destinationFilename;
-        $fullTempFilename        = sprintf('%s.temp', $fullDestinationFilename);
+        $destinationPath         = $this->getConfigValueForKey('dumpPath');
+
+        if(!$serverUrl) {
+            throw new InvalidConfigurationException('Server url is not set or invalid');
+        }
 
         // Create destination dir if it does not exist.
         if (!is_dir($destinationPath)) {
@@ -220,29 +222,27 @@ class Protector
         curl_setopt($dumpApiCall, CURLOPT_POST, 1);
         curl_setopt($dumpApiCall, CURLOPT_BINARYTRANSFER, 1);
         curl_setopt($dumpApiCall, CURLOPT_FAILONERROR, true);
-
-        // Try to open file for writing in mode 'c' instead of 'w', because mode 'w' may truncate the file before a flock() is acquired.
-        if ($fileHandle = fopen($fullTempFilename, 'c')) {
-            if (flock($fileHandle, LOCK_EX)) {
-                // We need to truncate the file manually: opening a file for writing in mode c does not do this for us.
-                ftruncate($fileHandle, 0);
-            } else {
-                fclose($fileHandle);
-                return [false, 'Could not acquire exclusive lock to destination file.'];
-            }
-        } else {
-            return [false, 'Could not open destination file for writing.'];
-        }
-
-        curl_setopt($dumpApiCall, CURLOPT_FILE, $fileHandle);
+        curl_setopt($dumpApiCall, CURLOPT_HEADER, 1);
 
         $curlResult = curl_exec($dumpApiCall);
         $httpCode   = curl_getinfo($dumpApiCall, CURLINFO_HTTP_CODE);
 
-        // Write all data to disk, release the lock and close the file handle.
-        fflush($fileHandle);
-        flock($fileHandle, LOCK_UN);
-        fclose($fileHandle);
+        $header_size = curl_getinfo($dumpApiCall, CURLINFO_HEADER_SIZE);
+        $header      = substr($curlResult, 0, $header_size);
+        $body        = substr($curlResult, $header_size);
+
+        // Get remote filename from header.
+        $headers = explode("\r\n", $header);
+        foreach($headers as $entry) {
+            if (preg_match('/filename="(?P<filename>.+)"/i', $entry, $matches)) {
+                $destinationFilename = $matches['filename'];
+            }
+        }
+
+        $fullDestinationFilename = $destinationPath . DIRECTORY_SEPARATOR . ($destinationFilename ?? 'remote_dump.sql');
+
+        // By doing it this way you don't need to make a separate Head-Request, but the data gets loaded into the RAM.
+        file_put_contents($fullDestinationFilename, $body);
 
         if ($curlResult === false) {
             $curlError = curl_error($dumpApiCall);
@@ -252,10 +252,7 @@ class Protector
 
         curl_close($dumpApiCall);
 
-        if (file_exists($fullTempFilename)) {
-            rename($fullTempFilename, $fullDestinationFilename);
-        }
-        return [true, sprintf('Successfully retrieved live dump from %s (HTTP %s).', $serverUrl, $httpCode)];
+        return [true, sprintf('Successfully retrieved remote dump from %s (HTTP %s).', $serverUrl, $httpCode), $fullDestinationFilename];
     }
 
     /**
@@ -342,7 +339,7 @@ class Protector
      *
      * @return string
      */
-    protected function createFilename(): string
+    public function createFilename(): string
     {
         $metadata = $this->getMetaData();
         [$appUrl, $database, $connection, $year, $month, $day, $hour, $minute,] = [
@@ -444,13 +441,13 @@ class Protector
     /**
      * Generates a response which allows downloading the dump file.
      *
-     * @param array $configuration
+     * @param string $connectionName
      *
      * @return \Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\Response|null
      */
-    public function generateFileDownloadResponse(array $configuration = [])
+    public function generateFileDownloadResponse(string $connectionName = null)
     {
-        if ($this->configure($configuration)) {
+        if ($this->configure($connectionName)) {
             $fullPath = $this->createDump();
             $fileData = file_get_contents($fullPath, false);
             $fileSize = filesize($fullPath);
