@@ -44,11 +44,9 @@ class CreateToken extends Command
     public function handle()
     {
         $user = config('auth.providers.users.model')::findOrFail($this->argument('user-id'));
-        $token = Str::uuid();
+        $token = $user->createToken('protector', ['protector:import']);
 
-        $user->token = $token;
-        $user->save();
 
-        $this->info(sprintf('Token generated for user %s: %s', $user->username, $token));
+        $this->info(sprintf('Token generated for user %s: %s', $user->username, $token->plainTextToken));
     }
 }

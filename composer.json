@@ -17,12 +17,13 @@
     ],
     "require": {
         "php": "^7.2",
-        "illuminate/support": "^7.0",
         "ext-curl": "*",
-        "ext-json": "*"
+        "ext-json": "*",
+        "illuminate/support": "^7.0",
+        "laravel/sanctum": "^2.4"
     },
     "require-dev": {
-        "orchestra/testbench": "^4.0",
+        "orchestra/testbench": "^5.0",
         "phpunit/phpunit": "^8.0"
     },
     "autoload": {

@@ -56,13 +56,13 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Route Endpoint
+    | Remote Dump Endpoint
     |--------------------------------------------------------------------------
     |
-    | Here you may customize the download route endpoint.
+    | Here you may customize the remote dump endpoint.
     |
     */
-    'routeEndpoint' => '/protector/exportDump',
+    'remoteDumpEndpoint' => '/protector/exportDump',
 
     /*
     |--------------------------------------------------------------------------
@@ -70,10 +70,20 @@ return [
     |--------------------------------------------------------------------------
     |
     | Here you may customize middleware that will be applied.
-    | By default the checkToken middleware is set.
+    | By default the auth:sanctum middleware is active.
     |
     */
     'routeMiddleware' => [
-        'checkToken',
+        'auth:sanctum',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Protector DB Token
+    |--------------------------------------------------------------------------
+    |
+    | Here you may customize the .env key for the Protector DB token.
+    |
+    */
+    'protector_db_token' => env('PROTECTOR_DB_TOKEN')
 ];
