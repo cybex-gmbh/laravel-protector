@@ -5,7 +5,6 @@ namespace Cybex\Protector;
 use Cybex\Protector\Commands\CreateToken;
 use Cybex\Protector\Commands\ExportDump;
 use Cybex\Protector\Commands\ImportDump;
-use Cybex\Protector\Middleware\CheckToken;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -24,8 +23,6 @@ class ProtectorServiceProvider extends ServiceProvider
             ImportDump::class,
             CreateToken::class,
         ]);
-        $this->loadMigrationsFrom(__DIR__.'/../src/Migrations');
-        $this->app['router']->aliasMiddleware('checkToken', CheckToken::class);
 
         // Publish package config to app config space.
         $this->publishes([__DIR__ . '/../config/protector.php' => config_path('protector.php')]);
@@ -50,8 +47,8 @@ class ProtectorServiceProvider extends ServiceProvider
     protected function registerRoutes()
     {
         Route::post(config('protector.remoteDumpEndpoint'), [
-            'as' => 'remoteDumpEndpoint',
-            'uses' => Protector::class.'@generateFileDownloadResponse',
+            'as'   => 'remoteDumpEndpoint',
+            'uses' => Protector::class . '@generateFileDownloadResponse',
         ])->middleware(config('protector.routeMiddleware'));
     }
 }
