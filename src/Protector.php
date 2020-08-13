@@ -238,8 +238,8 @@ class Protector
         }
 
         $header_size = curl_getinfo($dumpApiCall, CURLINFO_HEADER_SIZE);
-        $header = substr($curlResult, 0, $header_size);
-        $body = substr($curlResult, $header_size);
+        $header      = substr($curlResult, 0, $header_size);
+        $body        = substr($curlResult, $header_size);
 
         // Get remote filename from header.
         $headers = explode("\r\n", $header);
