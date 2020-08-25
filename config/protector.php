@@ -70,7 +70,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | Here you may customize middleware that will be applied.
-    | By default the auth:sanctum middleware is active.
+    | By default the auth:sanctum middleware is active and prevents the dump API from being public!
     |
     */
     'routeMiddleware' => [
