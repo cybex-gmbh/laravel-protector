@@ -56,13 +56,13 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Route Dump Endpoint Name
+    | Dump Endpoint Route
     |--------------------------------------------------------------------------
     |
-    | Here you may customize route name for the dump endpoint.
+    | Here you may customize the route for the dump endpoint.
     |
     */
-    'remoteDumpEndpoint' => '/protector/exportDump',
+    'dumpEndpointRoute' => '/protector/exportDump',
 
     /*
     |--------------------------------------------------------------------------
