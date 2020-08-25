@@ -3,7 +3,6 @@
 namespace Cybex\Protector\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Str;
 
 /**
  * Class CreateToken
@@ -17,7 +16,7 @@ class CreateToken extends Command
      * @var string
      */
     protected $signature = 'protector:token
-                {user-id : The user id the token is created for.}';
+                {userId : The user id the token is created for.}';
 
     /**
      * The console command description.
@@ -43,7 +42,7 @@ class CreateToken extends Command
      */
     public function handle()
     {
-        $user = config('auth.providers.users.model')::findOrFail($this->argument('user-id'));
+        $user  = config('auth.providers.users.model')::findOrFail($this->argument('userId'));
         $token = $user->createToken('protector', ['protector:import']);
 
 
