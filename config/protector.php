@@ -48,7 +48,7 @@ return [
     |
     | Here you may configure the remote endpoint for downloading the dump.
     |
-   */
+    */
     'remoteEndpoint' => [
         'serverUrl'     => '',
         'htaccessLogin' => '',
