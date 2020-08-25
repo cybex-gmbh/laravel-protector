@@ -50,7 +50,7 @@ class ImportDump extends Command
     /**
      * Execute the console command.
      *
-     * @return mixed
+     * @return void
      */
     public function handle()
     {
@@ -113,7 +113,7 @@ class ImportDump extends Command
             ] = $protector->getRemoteDump();
 
             if ($success === false) {
-                $this->error(sprintf('Error retrieving dump from live server: %s', $message));
+                $this->error(sprintf('Error retrieving dump from remote server: %s', $message));
                 return;
             }
 

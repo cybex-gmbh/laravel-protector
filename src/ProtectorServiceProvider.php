@@ -2,6 +2,7 @@
 
 namespace Cybex\Protector;
 
+use Cybex\Protector\Commands\CreateToken;
 use Cybex\Protector\Commands\ExportDump;
 use Cybex\Protector\Commands\ImportDump;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,7 @@ class ProtectorServiceProvider extends ServiceProvider
         $this->commands([
             ExportDump::class,
             ImportDump::class,
+            CreateToken::class,
         ]);
 
         // Publish package config to app config space.
@@ -44,9 +46,9 @@ class ProtectorServiceProvider extends ServiceProvider
 
     protected function registerRoutes()
     {
-        Route::get(config('protector.routeEndpoint') ?: '/protector/exportDump', [
-            Protector::class,
-            'generateFileDownloadResponse',
+        Route::post(config('protector.dumpEndpointRoute'), [
+            'as'   => 'dumpEndpointRoute',
+            'uses' => Protector::class . '@generateFileDownloadResponse',
         ])->middleware(config('protector.routeMiddleware'));
     }
 }

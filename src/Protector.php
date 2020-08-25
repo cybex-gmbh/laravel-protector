@@ -6,6 +6,7 @@ use Cybex\Protector\Exceptions\FailedDumpGenerationException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
@@ -218,14 +219,23 @@ class Protector
             curl_setopt($dumpApiCall, CURLOPT_USERPWD, $htaccessLogin);
         }
 
+        curl_setopt($dumpApiCall, CURLOPT_FOLLOWLOCATION, false);
         curl_setopt($dumpApiCall, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($dumpApiCall, CURLOPT_POST, 1);
-        curl_setopt($dumpApiCall, CURLOPT_BINARYTRANSFER, 1);
+        curl_setopt($dumpApiCall, CURLOPT_POST, true);
+        if (in_array('auth:sanctum', config('protector.routeMiddleware'))) {
+            // Header for Laravel Sanctum authentication.
+            curl_setopt($dumpApiCall, CURLOPT_HTTPHEADER, ['Authorization: Bearer '.$this->getConfigValueForKey('protector_db_token')]);
+        }
+        curl_setopt($dumpApiCall, CURLOPT_BINARYTRANSFER, true);
         curl_setopt($dumpApiCall, CURLOPT_FAILONERROR, true);
-        curl_setopt($dumpApiCall, CURLOPT_HEADER, 1);
+        curl_setopt($dumpApiCall, CURLOPT_HEADER, true);
 
         $curlResult = curl_exec($dumpApiCall);
         $httpCode   = curl_getinfo($dumpApiCall, CURLINFO_HTTP_CODE);
+
+        if ($httpCode != 200) {
+            return [false, 'Unauthorized access', null];
+        }
 
         $header_size = curl_getinfo($dumpApiCall, CURLINFO_HEADER_SIZE);
         $header      = substr($curlResult, 0, $header_size);
@@ -247,7 +257,7 @@ class Protector
         if ($curlResult === false) {
             $curlError = curl_error($dumpApiCall);
 
-            return [false, sprintf('Could not fetch database from remote server: %s (HTTP %s).', $curlError, $httpCode)];
+            return [false, sprintf('Could not fetch database from remote server: %s (HTTP %s).', $curlError, $httpCode), null];
         }
 
         curl_close($dumpApiCall);
@@ -441,27 +451,31 @@ class Protector
     /**
      * Generates a response which allows downloading the dump file.
      *
-     * @param string $connectionName
+     * @param Request $request
+     * @param string  $connectionName
      *
      * @return \Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\Response|null
      */
-    public function generateFileDownloadResponse(string $connectionName = null)
+    public function generateFileDownloadResponse(Request $request, string $connectionName = null)
     {
-        if ($this->configure($connectionName)) {
-            $fullPath = $this->createDump();
-            $fileData = file_get_contents($fullPath, false);
-            $fileSize = filesize($fullPath);
-            $fileName = basename($fullPath);
-            File::delete($fullPath);
-            return response($fileData)
-                ->withHeaders([
-                    'Content-Type'        => 'text/plain',
-                    'Pragma'              => 'no-cache',
-                    'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-                    'Content-Length'      => $fileSize,
-                    'Expires'             => gmdate('D, d M Y H:i:s', time()-3600) . ' GMT',
-                ]);
+        if (!in_array('auth:sanctum', config('protector.routeMiddleware')) || $request->user()->tokenCan('protector:import')) {
+            if ($this->configure($connectionName)) {
+                $fullPath = $this->createDump();
+                $fileData = file_get_contents($fullPath, false);
+                $fileSize = filesize($fullPath);
+                $fileName = basename($fullPath);
+                File::delete($fullPath);
+                return response($fileData)
+                    ->withHeaders([
+                        'Content-Type'        => 'text/plain',
+                        'Pragma'              => 'no-cache',
+                        'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+                        'Content-Length'      => $fileSize,
+                        'Expires'             => gmdate('D, d M Y H:i:s', time()-3600) . ' GMT',
+                    ]);
+            }
         }
-        return null;
+
+        return response()->json('Unauthorized', 401);
     }
 }

@@ -19,7 +19,7 @@ return [
     | 8: minute
     |
     */
-    'fileName' => '%s %s %s %4d-%02d-%02d %02d-%02d.sql',
+    'fileName' => '%1$s %4$4d-%5$02d-%6$02d %7$02d-%8$02d.sql',
 
     /*
     |--------------------------------------------------------------------------
@@ -42,13 +42,13 @@ return [
     'dumpPath' => database_path('dumps'),
 
     /*
-   |--------------------------------------------------------------------------
-   | Remote Endpoint Configuration
-   |--------------------------------------------------------------------------
-   |
-   | Here you may configure the remote endpoint.
-   |
-   */
+    |--------------------------------------------------------------------------
+    | Remote Download Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Here you may configure the remote endpoint for downloading the dump.
+    |
+    */
     'remoteEndpoint' => [
         'serverUrl'     => '',
         'htaccessLogin' => '',
@@ -56,13 +56,13 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Route Endpoint
+    | Dump Endpoint Route
     |--------------------------------------------------------------------------
     |
-    | Here you may customize the download route endpoint.
+    | Here you may customize the route for the dump endpoint.
     |
     */
-    'routeEndpoint' => '',
+    'dumpEndpointRoute' => '/protector/exportDump',
 
     /*
     |--------------------------------------------------------------------------
@@ -70,10 +70,20 @@ return [
     |--------------------------------------------------------------------------
     |
     | Here you may customize middleware that will be applied.
-    | By default, web and auth middleware are active.
+    | By default the auth:sanctum middleware is active and prevents the dump API from being public!
     |
     */
     'routeMiddleware' => [
-
+        'auth:sanctum',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Protector DB Token
+    |--------------------------------------------------------------------------
+    |
+    | Here you may customize the .env key for the Protector DB token.
+    |
+    */
+    'protector_db_token' => env('PROTECTOR_DB_TOKEN')
 ];
