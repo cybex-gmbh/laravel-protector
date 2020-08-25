@@ -42,12 +42,12 @@ return [
     'dumpPath' => database_path('dumps'),
 
     /*
-   |--------------------------------------------------------------------------
-   | Remote Download Configuration
-   |--------------------------------------------------------------------------
-   |
-   | Here you may configure the remote endpoint for downloading the dump.
-   |
+    |--------------------------------------------------------------------------
+    | Remote Download Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Here you may configure the remote endpoint for downloading the dump.
+    |
    */
     'remoteEndpoint' => [
         'serverUrl'     => '',
