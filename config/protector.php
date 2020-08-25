@@ -43,10 +43,10 @@ return [
 
     /*
    |--------------------------------------------------------------------------
-   | Remote Endpoint Configuration
+   | Remote Download Configuration
    |--------------------------------------------------------------------------
    |
-   | Here you may configure the remote endpoint.
+   | Here you may configure the remote endpoint for downloading the dump.
    |
    */
     'remoteEndpoint' => [
@@ -56,10 +56,10 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Remote Dump Endpoint
+    | Route Dump Endpoint Name
     |--------------------------------------------------------------------------
     |
-    | Here you may customize the remote dump endpoint.
+    | Here you may customize route name for the dump endpoint.
     |
     */
     'remoteDumpEndpoint' => '/protector/exportDump',
