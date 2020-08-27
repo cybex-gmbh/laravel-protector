@@ -16,7 +16,8 @@ class CreateToken extends Command
      * @var string
      */
     protected $signature = 'protector:token
-                {userId : The user id the token is created for.}';
+                {userId : The user id the token is created for.}
+                {--c|cryptoKey= : The crypto key for the user.}';
 
     /**
      * The console command description.
@@ -42,9 +43,22 @@ class CreateToken extends Command
      */
     public function handle()
     {
+        $cryptoKey = $this->option('cryptoKey');
         $user  = config('auth.providers.users.model')::findOrFail($this->argument('userId'));
-        $token = $user->createToken('protector', ['protector:import']);
 
+        if (!$user->crypto_key && !$cryptoKey) {
+            $this->error('The user doesn\'t have a crypto key and none was specified. Please provide a crypto key for the user.');
+            return null;
+        }
+
+        if($cryptoKey) {
+            $user->crypto_key = $cryptoKey;
+            $user->save();
+
+            $this->info(sprintf('Crypto key %s was saved in the database for user %s.', $cryptoKey, $user->username));
+        }
+
+        $token = $user->createToken('protector', ['protector:import']);
 
         $this->info(sprintf('Token generated for user %s: %s', $user->username, $token->plainTextToken));
     }

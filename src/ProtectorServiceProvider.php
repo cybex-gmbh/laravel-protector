@@ -2,6 +2,7 @@
 
 namespace Cybex\Protector;
 
+use Cybex\Protector\Commands\CreateKeys;
 use Cybex\Protector\Commands\CreateToken;
 use Cybex\Protector\Commands\ExportDump;
 use Cybex\Protector\Commands\ImportDump;
@@ -19,10 +20,12 @@ class ProtectorServiceProvider extends ServiceProvider
     {
         $this->registerRoutes();
         $this->commands([
+            CreateKeys::class,
+            CreateToken::class,
             ExportDump::class,
             ImportDump::class,
-            CreateToken::class,
         ]);
+        $this->loadMigrationsFrom(__DIR__ . '/../src/Migrations');
 
         // Publish package config to app config space.
         $this->publishes([__DIR__ . '/../config/protector.php' => config_path('protector.php')]);

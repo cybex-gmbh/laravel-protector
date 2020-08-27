@@ -224,7 +224,7 @@ class Protector
         curl_setopt($dumpApiCall, CURLOPT_POST, true);
         if (in_array('auth:sanctum', config('protector.routeMiddleware'))) {
             // Header for Laravel Sanctum authentication.
-            curl_setopt($dumpApiCall, CURLOPT_HTTPHEADER, ['Authorization: Bearer '.$this->getConfigValueForKey('protector_db_token')]);
+            curl_setopt($dumpApiCall, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $this->getConfigValueForKey('protectorDbToken')]);
         }
         curl_setopt($dumpApiCall, CURLOPT_BINARYTRANSFER, true);
         curl_setopt($dumpApiCall, CURLOPT_FAILONERROR, true);
@@ -240,6 +240,13 @@ class Protector
         $header_size = curl_getinfo($dumpApiCall, CURLINFO_HEADER_SIZE);
         $header      = substr($curlResult, 0, $header_size);
         $body        = substr($curlResult, $header_size);
+
+        dd(substr($body, 0, 100));
+
+        // Decrypt the data if Laravel Sanctum is active.
+        if(in_array('auth:sanctum', config('protector.routeMiddleware'))) {
+            $body = sodium_crypto_box_seal_open($body, sodium_hex2bin(env('PROTECTOR_CRYPTO_KEY')));
+        }
 
         // Get remote filename from header.
         $headers = explode("\r\n", $header);
@@ -458,6 +465,7 @@ class Protector
      */
     public function generateFileDownloadResponse(Request $request, string $connectionName = null)
     {
+        // Only proceed when either Laravel Sanctum is turned off or the user's token is valid.
         if (!in_array('auth:sanctum', config('protector.routeMiddleware')) || $request->user()->tokenCan('protector:import')) {
             if ($this->configure($connectionName)) {
                 $fullPath = $this->createDump();
@@ -465,6 +473,12 @@ class Protector
                 $fileSize = filesize($fullPath);
                 $fileName = basename($fullPath);
                 File::delete($fullPath);
+
+                // Encrypt the data when Laravel Sanctum is active.
+                if (in_array('auth:sanctum', config('protector.routeMiddleware'))) {
+                    $fileData = sodium_crypto_box_seal($fileData, sodium_hex2bin($request->user()->crypto_key));
+                }
+
                 return response($fileData)
                     ->withHeaders([
                         'Content-Type'        => 'text/plain',
