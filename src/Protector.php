@@ -441,7 +441,7 @@ class Protector
      *
      * @return string
      */
-    protected function getConfigValueForKey(string $key): string
+    protected function getConfigValueForKey(string $key): ?string
     {
         $value = config(sprintf('protector.%s', $key));
 

@@ -85,5 +85,5 @@ return [
     | Here you may customize the .env key for the Protector DB token.
     |
     */
-    'protector_db_token' => env('PROTECTOR_DB_TOKEN')
+    'protector_db_token' => env('PROTECTOR_DB_TOKEN', '')
 ];
