@@ -6,11 +6,13 @@ use Cybex\Protector\Exceptions\FailedDumpGenerationException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use League\Flysystem\FileNotFoundException;
 use SplFileObject;
 
@@ -71,7 +73,7 @@ class Protector
      * @throws InvalidEnvironmentException
      * @throws InvalidConnectionException
      * @throws FileNotFoundException
-     * @throws \Exception
+     * @throws Exception
      */
     public function importDump(string $sourceFilePath, array $options): bool
     {
@@ -110,7 +112,7 @@ class Protector
             }
 
             return true;
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return false;
         }
     }
@@ -191,6 +193,7 @@ class Protector
      * @return array
      *
      * @throws InvalidConfigurationException
+     * @throws Exception
      */
     public function getRemoteDump(): array
     {
@@ -213,54 +216,37 @@ class Protector
             }
         }
 
-        $dumpApiCall = curl_init($serverUrl);
-
-        if ($htaccessLogin) {
-            curl_setopt($dumpApiCall, CURLOPT_USERPWD, $htaccessLogin);
-        }
-
-        curl_setopt($dumpApiCall, CURLOPT_FOLLOWLOCATION, false);
-        curl_setopt($dumpApiCall, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($dumpApiCall, CURLOPT_POST, true);
         if (in_array('auth:sanctum', config('protector.routeMiddleware'))) {
-            // Header for Laravel Sanctum authentication.
-            curl_setopt($dumpApiCall, CURLOPT_HTTPHEADER, ['Authorization: Bearer '.$this->getConfigValueForKey('protector_db_token')]);
+            $request = Http::withToken($this->getConfigValueForKey('protector_db_token'));
+        } else if ($htaccessLogin) {
+            $credentials = explode(':', $htaccessLogin);
+            $request = Http::withBasicAuth($credentials[0], $credentials[1]);
+        } else {
+            throw new InvalidConfigurationException('Either Laravel Sanctum has to be active or a htaccess login has to be defined.');
         }
-        curl_setopt($dumpApiCall, CURLOPT_BINARYTRANSFER, true);
-        curl_setopt($dumpApiCall, CURLOPT_FAILONERROR, true);
-        curl_setopt($dumpApiCall, CURLOPT_HEADER, true);
 
-        $curlResult = curl_exec($dumpApiCall);
-        $httpCode   = curl_getinfo($dumpApiCall, CURLINFO_HTTP_CODE);
+        try {
+            $response = $request->withoutRedirecting()->post($serverUrl);
+        } catch (Exception $exception) {
+            return [false, sprintf('Could not fetch database from remote server: %s', $exception->getMessage()), null];
+        }
+
+        $httpCode = $response->status();
 
         if ($httpCode != 200) {
             return [false, 'Unauthorized access', null];
         }
 
-        $header_size = curl_getinfo($dumpApiCall, CURLINFO_HEADER_SIZE);
-        $header      = substr($curlResult, 0, $header_size);
-        $body        = substr($curlResult, $header_size);
-
         // Get remote filename from header.
-        $headers = explode("\r\n", $header);
-        foreach($headers as $entry) {
-            if (preg_match('/filename="(?P<filename>.+)"/i', $entry, $matches)) {
-                $destinationFilename = $matches['filename'];
-            }
+        $contentDispositionHeader = $response->header('Content-Disposition');
+
+        if (preg_match('/filename="(?P<filename>.+)"/i', $contentDispositionHeader, $matches)) {
+            $destinationFilename = $matches['filename'];
         }
 
         $fullDestinationFilename = $destinationPath . DIRECTORY_SEPARATOR . ($destinationFilename ?? 'remote_dump.sql');
 
-        // By doing it this way you don't need to make a separate Head-Request, but the data gets loaded into the RAM.
-        file_put_contents($fullDestinationFilename, $body);
-
-        if ($curlResult === false) {
-            $curlError = curl_error($dumpApiCall);
-
-            return [false, sprintf('Could not fetch database from remote server: %s (HTTP %s).', $curlError, $httpCode), null];
-        }
-
-        curl_close($dumpApiCall);
+        file_put_contents($fullDestinationFilename, $response->body());
 
         return [true, sprintf('Successfully retrieved remote dump from %s (HTTP %s).', $serverUrl, $httpCode), $fullDestinationFilename];
     }
@@ -329,7 +315,7 @@ class Protector
             file_put_contents($destinationFilePath, $metaData, FILE_APPEND);
 
             return true;
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return false;
         }
     }
