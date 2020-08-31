@@ -119,17 +119,4 @@ class RemoteDumpTest extends TestCase
         $this->expectException(InvalidConfigurationException::class);
         Protector::getRemoteDump();
     }
-
-    /**
-     * @test
-     */
-    public function succeedWhenEverythingIsFine()
-    {
-        Config::set('protector.routeMiddleware', ['auth:sanctum']);
-        Config::set('protector.protector_db_token', '1234');
-
-        Http::fake();
-
-        $this->assertEquals(true, Protector::getRemoteDump()[0], 'Retrieving dump did not succeed');
-    }
 }
