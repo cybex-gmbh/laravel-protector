@@ -19,11 +19,11 @@
         "php": "^7.2",
         "ext-curl": "*",
         "ext-json": "*",
-        "guzzlehttp/guzzle": "^7.0",
         "illuminate/support": "^7.0",
         "laravel/sanctum": "^2.4"
     },
     "require-dev": {
+        "guzzlehttp/guzzle": "^7.0",
         "orchestra/testbench": "^5.0",
         "phpunit/phpunit": "^8.0"
     },
