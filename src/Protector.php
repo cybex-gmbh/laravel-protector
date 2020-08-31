@@ -220,7 +220,7 @@ class Protector
             $request = Http::withToken($this->getConfigValueForKey('protector_db_token'));
         } else if ($htaccessLogin) {
             $credentials = explode(':', $htaccessLogin);
-            $request = Http::withBasicAuth($credentials[0], $credentials[1]);
+            $request     = Http::withBasicAuth($credentials[0], $credentials[1]);
         } else {
             throw new InvalidConfigurationException('Either Laravel Sanctum has to be active or a htaccess login has to be defined.');
         }
@@ -457,7 +457,7 @@ class Protector
                         'Pragma'              => 'no-cache',
                         'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
                         'Content-Length'      => $fileSize,
-                        'Expires'             => gmdate('D, d M Y H:i:s', time()-3600) . ' GMT',
+                        'Expires'             => gmdate('D, d M Y H:i:s', time() - 3600) . ' GMT',
                     ]);
             }
         }
