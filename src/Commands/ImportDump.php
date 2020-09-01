@@ -7,6 +7,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\File;
+use LogicException;
 
 /**
  * Class ImportDump
@@ -192,10 +193,16 @@ class ImportDump extends Command
                 $importFilePath = $connectionFiles->first()['path'];
                 $this->info(sprintf('Using file "%s" because there are no other dumps.', $importFilePath));
             } else {
-                $importFile     = $this->choice('Which file do you want to import?',
-                    $connectionFiles->map(function ($item) {
-                        return $item['file'];
-                    })->toArray());
+                try {
+                    $importFile = $this->choice('Which file do you want to import?',
+                        $connectionFiles->map(function ($item) {
+                            return $item['file'];
+                        })->toArray());
+                } catch (LogicException $logicException) {
+                    $this->error('There are no dumps in the dump folder.');
+                    return;
+                }
+
                 $importFilePath = $connectionFiles->firstWhere('file', $importFile)['path'];
             }
         }
