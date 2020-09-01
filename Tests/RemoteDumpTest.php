@@ -3,12 +3,14 @@
 namespace Cybex\Protector\Tests;
 
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
-use Cybex\Protector\ProtectorFacade as Protector;
+use Cybex\Protector\Exceptions\UnauthorizedException;
 use Cybex\Protector\ProtectorServiceProvider;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Orchestra\Testbench\TestCase;
+use ReflectionClass;
+use ReflectionMethod;
 
 class RemoteDumpTest extends TestCase
 {
@@ -32,12 +34,13 @@ class RemoteDumpTest extends TestCase
     public function createsDumpPathDestinationIfNotExists()
     {
         $fakeStorage = Storage::fake('test');
-        $path = $fakeStorage->path('dumps');
+        $path        = $fakeStorage->path('dumps');
         $this->assertDirectoryNotExists($path);
 
         Config::set('protector.dumpPath', $path);
 
-        Protector::getRemoteDump();
+        $method = $this->getAccessibleReflectionMethod('createDirectory');
+        $method->invokeArgs(app('protector'), [$path]);
 
         $this->assertDirectoryExists($path);
     }
@@ -50,7 +53,7 @@ class RemoteDumpTest extends TestCase
         Config::set('protector.remoteEndpoint.serverUrl', '');
 
         $this->expectException(InvalidConfigurationException::class);
-        Protector::getRemoteDump();
+        app('protector')->getRemoteDump();
     }
 
     /**
@@ -63,8 +66,8 @@ class RemoteDumpTest extends TestCase
 
         Http::fake();
 
-        Protector::getRemoteDump();
-        Http::assertSent(function($request) {
+        app('protector')->getRemoteDump();
+        Http::assertSent(function ($request) {
             return $request->hasHeader('Authorization', 'Basic ' . base64_encode('1234:1234'));
         });
     }
@@ -79,7 +82,8 @@ class RemoteDumpTest extends TestCase
     {
         Http::fake(['cybex.test/*' => Http::response('', $code, [])]);
 
-        $this->assertEquals([false, 'Unauthorized access', null], Protector::getRemoteDump(), 'Unexpected return.');
+        $this->expectException(UnauthorizedException::class);
+        app('protector')->getRemoteDump();
     }
 
     public function responseCodes()
@@ -100,7 +104,7 @@ class RemoteDumpTest extends TestCase
 
         Http::fake();
 
-        Protector::getRemoteDump();
+        app('protector')->getRemoteDump();
         Http::assertSent(function ($request) {
             return $request->hasHeader('Authorization', 'Bearer 1234');
         });
@@ -117,6 +121,21 @@ class RemoteDumpTest extends TestCase
         Http::fake();
 
         $this->expectException(InvalidConfigurationException::class);
-        Protector::getRemoteDump();
+        app('protector')->getRemoteDump();
+    }
+
+    /**
+     * @param $method
+     *
+     * @return ReflectionMethod
+     */
+    protected function getAccessibleReflectionMethod($method): ReflectionMethod
+    {
+        $reflectionProtector = new ReflectionClass(app('protector'));
+        $method              = $reflectionProtector->getMethod($method);
+
+        $method->setAccessible(true);
+
+        return $method;
     }
 }

@@ -2,10 +2,13 @@
 
 namespace Cybex\Protector;
 
+use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
 use Cybex\Protector\Exceptions\FailedDumpGenerationException;
+use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
+use Cybex\Protector\Exceptions\UnauthorizedException;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -190,15 +193,17 @@ class Protector
     }
 
     /**
-     * @return array
+     * @return string
      *
+     * @throws FailedRemoteDatabaseFetchingException
      * @throws InvalidConfigurationException
-     * @throws Exception
+     * @throws InvalidEnvironmentException
+     * @throws UnauthorizedException
      */
-    public function getRemoteDump(): array
+    public function getRemoteDump(): string
     {
         if (App::environment('production')) {
-            return [false, sprintf('Retrieving a dump is not allowed on production systems.')];
+            throw new InvalidEnvironmentException(sprintf('Retrieving a dump is not allowed on production systems.'));
         }
 
         $serverUrl               = $this->getConfigValueForKey('remoteEndpoint.serverUrl');
@@ -210,11 +215,7 @@ class Protector
         }
 
         // Create destination dir if it does not exist.
-        if (!is_dir($destinationPath)) {
-            if (mkdir($destinationPath, 0777, true) === false) {
-                return [false, sprintf('Could not create the non-existing destination path %s.', $destinationPath)];
-            }
-        }
+        $this->createDirectory($destinationPath);
 
         if (in_array('auth:sanctum', config('protector.routeMiddleware'))) {
             $request = Http::withToken($this->getConfigValueForKey('protector_db_token'));
@@ -228,13 +229,13 @@ class Protector
         try {
             $response = $request->withoutRedirecting()->post($serverUrl);
         } catch (Exception $exception) {
-            return [false, sprintf('Could not fetch database from remote server: %s', $exception->getMessage()), null];
+            throw new FailedRemoteDatabaseFetchingException(sprintf('Could not fetch database from remote server: %s', $exception->getMessage()));
         }
 
         $httpCode = $response->status();
 
         if ($httpCode != 200) {
-            return [false, 'Unauthorized access', null];
+            throw new UnauthorizedException('Unauthorized access');
         }
 
         // Get remote filename from header.
@@ -248,7 +249,7 @@ class Protector
 
         file_put_contents($fullDestinationFilename, $response->body());
 
-        return [true, sprintf('Successfully retrieved remote dump from %s (HTTP %s).', $serverUrl, $httpCode), $fullDestinationFilename];
+        return $fullDestinationFilename;
     }
 
     /**
@@ -463,5 +464,19 @@ class Protector
         }
 
         return response()->json('Unauthorized', 401);
+    }
+
+    /**
+     * @param string|null $destinationPath
+     *
+     * @throws FailedCreatingDestinationPathException
+     */
+    protected function createDirectory(?string $destinationPath): void
+    {
+        if (!is_dir($destinationPath)) {
+            if (mkdir($destinationPath, 0777, true) === false) {
+                throw new FailedCreatingDestinationPathException(sprintf('Could not create the non-existing destination path %s.', $destinationPath));
+            }
+        }
     }
 }
