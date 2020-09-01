@@ -51,6 +51,7 @@ return [
     */
     'remoteEndpoint' => [
         'serverUrl'     => '',
+        // Htaccess may only be used without Laravel Sanctum or basic auth has to be added to the server URL.
         'htaccessLogin' => '',
     ],
 
@@ -85,5 +86,5 @@ return [
     | Here you may customize the .env key for the Protector DB token.
     |
     */
-    'protector_db_token' => env('PROTECTOR_DB_TOKEN')
+    'protector_db_token' => env('PROTECTOR_DB_TOKEN', '')
 ];
