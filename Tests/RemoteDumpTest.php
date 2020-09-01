@@ -119,9 +119,10 @@ class RemoteDumpTest extends TestCase
         Config::set('protector.remoteEndpoint.htaccessLogin', '');
 
         Http::fake();
+        $method = $this->getAccessibleReflectionMethod('getConfiguredHttpRequest');
 
         $this->expectException(InvalidConfigurationException::class);
-        app('protector')->getRemoteDump();
+        $method->invokeArgs(app('protector'), []);
     }
 
     /**

@@ -10,6 +10,7 @@ use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Cybex\Protector\Exceptions\UnauthorizedException;
 use Exception;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
@@ -207,7 +208,6 @@ class Protector
         }
 
         $serverUrl               = $this->getConfigValueForKey('remoteEndpoint.serverUrl');
-        $htaccessLogin           = $this->getConfigValueForKey('remoteEndpoint.htaccessLogin');
         $destinationPath         = $this->getConfigValueForKey('dumpPath');
 
         if(!$serverUrl) {
@@ -217,14 +217,8 @@ class Protector
         // Create destination dir if it does not exist.
         $this->createDirectory($destinationPath);
 
-        if (in_array('auth:sanctum', config('protector.routeMiddleware'))) {
-            $request = Http::withToken($this->getConfigValueForKey('protector_db_token'));
-        } else if ($htaccessLogin) {
-            $credentials = explode(':', $htaccessLogin);
-            $request     = Http::withBasicAuth($credentials[0], $credentials[1]);
-        } else {
-            throw new InvalidConfigurationException('Either Laravel Sanctum has to be active or a htaccess login has to be defined.');
-        }
+        // Get and configure the HTTP Request with either the Laravel Sanctum Token or Htaccess.
+        $request = $this->getConfiguredHttpRequest();
 
         try {
             $response = $request->withoutRedirecting()->post($serverUrl);
@@ -478,5 +472,25 @@ class Protector
                 throw new FailedCreatingDestinationPathException(sprintf('Could not create the non-existing destination path %s.', $destinationPath));
             }
         }
+    }
+
+    /**
+     * @return PendingRequest
+     * @throws InvalidConfigurationException
+     */
+    protected function getConfiguredHttpRequest(): PendingRequest
+    {
+        $htaccessLogin = $this->getConfigValueForKey('remoteEndpoint.htaccessLogin');
+
+        if (in_array('auth:sanctum', config('protector.routeMiddleware'))) {
+            $request = Http::withToken($this->getConfigValueForKey('protector_db_token'));
+        } else if ($htaccessLogin) {
+            $credentials = explode(':', $htaccessLogin);
+            $request     = Http::withBasicAuth($credentials[0], $credentials[1]);
+        } else {
+            throw new InvalidConfigurationException('Either Laravel Sanctum has to be active or a htaccess login has to be defined.');
+        }
+
+        return $request;
     }
 }
