@@ -126,6 +126,22 @@ class RemoteDumpTest extends TestCase
     }
 
     /**
+     * @test
+     */
+    public function failIfLaravelSanctumIsActiveAndHtaccessIsDefined()
+    {
+        Config::set('protector.routeMiddleware', ['auth:sanctum']);
+        Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
+
+        Http::fake();
+
+        $method = $this->getAccessibleReflectionMethod('getConfiguredHttpRequest');
+
+        $this->expectException(InvalidConfigurationException::class);
+        $method->invokeArgs(app('protector'), []);
+    }
+
+    /**
      * @param $method
      *
      * @return ReflectionMethod

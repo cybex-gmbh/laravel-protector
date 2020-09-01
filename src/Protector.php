@@ -483,8 +483,12 @@ class Protector
         $htaccessLogin = $this->getConfigValueForKey('remoteEndpoint.htaccessLogin');
 
         if (in_array('auth:sanctum', config('protector.routeMiddleware'))) {
+            if ($htaccessLogin) {
+                throw new InvalidConfigurationException('Laravel Sanctum and Htaccess can not be used simultaneously');
+            }
+
             $request = Http::withToken($this->getConfigValueForKey('protector_db_token'));
-        } else if ($htaccessLogin) {
+        } elseif ($htaccessLogin) {
             $credentials = explode(':', $htaccessLogin);
             $request     = Http::withBasicAuth($credentials[0], $credentials[1]);
         } else {
