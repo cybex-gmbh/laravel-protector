@@ -122,7 +122,7 @@ class RemoteDumpTest extends TestCase
         $method = $this->getAccessibleReflectionMethod('getConfiguredHttpRequest');
 
         $this->expectException(InvalidConfigurationException::class);
-        $method->invokeArgs(app('protector'), []);
+        $method->invoke(app('protector'));
     }
 
     /**
@@ -138,7 +138,7 @@ class RemoteDumpTest extends TestCase
         $method = $this->getAccessibleReflectionMethod('getConfiguredHttpRequest');
 
         $this->expectException(InvalidConfigurationException::class);
-        $method->invokeArgs(app('protector'), []);
+        $method->invoke(app('protector'));
     }
 
     /**
