@@ -3,10 +3,12 @@
 namespace Cybex\Protector\Commands;
 
 use Cybex\Protector\Protector;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\File;
+use LogicException;
 
 /**
  * Class ImportDump
@@ -106,18 +108,15 @@ class ImportDump extends Command
             }
 
             $this->line(sprintf('<<< Downloading dump from remote server to directory: <comment>%s</comment>', $destinationPath));
-            [
-                $success,
-                $message,
-                $fullRemoteDumpFileName
-            ] = $protector->getRemoteDump();
 
-            if ($success === false) {
-                $this->error(sprintf('Error retrieving dump from remote server: %s', $message));
+            try {
+                $fullRemoteDumpFileName = $protector->getRemoteDump();
+            } catch (Exception $exception) {
+                $this->error(sprintf('Error retrieving dump from remote server: %s', $exception->getMessage()));
                 return;
             }
 
-            $this->line(sprintf('>>> %s', $message));
+            $this->line(sprintf('>>> Successfully retrieved remote dump from %s', config('protector.remoteEndpoint.serverUrl')));
 
             $importFilePath = $fullRemoteDumpFileName;
         } elseif ($optionFile || $optionDump) {
@@ -192,10 +191,16 @@ class ImportDump extends Command
                 $importFilePath = $connectionFiles->first()['path'];
                 $this->info(sprintf('Using file "%s" because there are no other dumps.', $importFilePath));
             } else {
-                $importFile     = $this->choice('Which file do you want to import?',
-                    $connectionFiles->map(function ($item) {
-                        return $item['file'];
-                    })->toArray());
+                try {
+                    $importFile = $this->choice('Which file do you want to import?',
+                        $connectionFiles->map(function ($item) {
+                            return $item['file'];
+                        })->toArray());
+                } catch (LogicException $logicException) {
+                    $this->error('There are no dumps in the dump folder.');
+                    return;
+                }
+
                 $importFilePath = $connectionFiles->firstWhere('file', $importFile)['path'];
             }
         }

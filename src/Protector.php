@@ -2,15 +2,21 @@
 
 namespace Cybex\Protector;
 
+use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
 use Cybex\Protector\Exceptions\FailedDumpGenerationException;
+use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
+use Cybex\Protector\Exceptions\UnauthorizedException;
+use Exception;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use League\Flysystem\FileNotFoundException;
 use SplFileObject;
 
@@ -71,7 +77,7 @@ class Protector
      * @throws InvalidEnvironmentException
      * @throws InvalidConnectionException
      * @throws FileNotFoundException
-     * @throws \Exception
+     * @throws Exception
      */
     public function importDump(string $sourceFilePath, array $options): bool
     {
@@ -110,7 +116,7 @@ class Protector
             }
 
             return true;
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return false;
         }
     }
@@ -188,18 +194,20 @@ class Protector
     }
 
     /**
-     * @return array
+     * @return string
      *
+     * @throws FailedRemoteDatabaseFetchingException
      * @throws InvalidConfigurationException
+     * @throws InvalidEnvironmentException
+     * @throws UnauthorizedException
      */
-    public function getRemoteDump(): array
+    public function getRemoteDump(): string
     {
         if (App::environment('production')) {
-            return [false, sprintf('Retrieving a dump is not allowed on production systems.')];
+            throw new InvalidEnvironmentException(sprintf('Retrieving a dump is not allowed on production systems.'));
         }
 
         $serverUrl               = $this->getConfigValueForKey('remoteEndpoint.serverUrl');
-        $htaccessLogin           = $this->getConfigValueForKey('remoteEndpoint.htaccessLogin');
         $destinationPath         = $this->getConfigValueForKey('dumpPath');
 
         if(!$serverUrl) {
@@ -207,39 +215,24 @@ class Protector
         }
 
         // Create destination dir if it does not exist.
-        if (!is_dir($destinationPath)) {
-            if (mkdir($destinationPath, 0777, true) === false) {
-                return [false, sprintf('Could not create the non-existing destination path %s.', $destinationPath)];
-            }
+        $this->createDirectory($destinationPath);
+
+        // Get and configure the HTTP Request with either the Laravel Sanctum Token or Htaccess.
+        $request = $this->getConfiguredHttpRequest();
+
+        try {
+            $response = $request->withoutRedirecting()->post($serverUrl);
+        } catch (Exception $exception) {
+            throw new FailedRemoteDatabaseFetchingException(sprintf('Could not fetch database from remote server: %s', $exception->getMessage()));
         }
 
-        $dumpApiCall = curl_init($serverUrl);
-
-        if ($htaccessLogin) {
-            curl_setopt($dumpApiCall, CURLOPT_USERPWD, $htaccessLogin);
-        }
-
-        curl_setopt($dumpApiCall, CURLOPT_FOLLOWLOCATION, false);
-        curl_setopt($dumpApiCall, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($dumpApiCall, CURLOPT_POST, true);
-        if (in_array('auth:sanctum', config('protector.routeMiddleware'))) {
-            // Header for Laravel Sanctum authentication.
-            curl_setopt($dumpApiCall, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $this->getConfigValueForKey('protectorDbToken')]);
-        }
-        curl_setopt($dumpApiCall, CURLOPT_BINARYTRANSFER, true);
-        curl_setopt($dumpApiCall, CURLOPT_FAILONERROR, true);
-        curl_setopt($dumpApiCall, CURLOPT_HEADER, true);
-
-        $curlResult = curl_exec($dumpApiCall);
-        $httpCode   = curl_getinfo($dumpApiCall, CURLINFO_HTTP_CODE);
+        $httpCode = $response->status();
 
         if ($httpCode != 200) {
-            return [false, 'Unauthorized access', null];
+            throw new UnauthorizedException('Unauthorized access');
         }
 
-        $header_size = curl_getinfo($dumpApiCall, CURLINFO_HEADER_SIZE);
-        $header      = substr($curlResult, 0, $header_size);
-        $body        = substr($curlResult, $header_size);
+        $body = $response->body();
 
         // Decrypt the data if Laravel Sanctum is active.
         if(in_array('auth:sanctum', config('protector.routeMiddleware'))) {
@@ -247,27 +240,17 @@ class Protector
         }
 
         // Get remote filename from header.
-        $headers = explode("\r\n", $header);
-        foreach($headers as $entry) {
-            if (preg_match('/filename="(?P<filename>.+)"/i', $entry, $matches)) {
-                $destinationFilename = $matches['filename'];
-            }
+        $contentDispositionHeader = $response->header('Content-Disposition');
+
+        if (preg_match('/filename="(?P<filename>.+)"/i', $contentDispositionHeader, $matches)) {
+            $destinationFilename = $matches['filename'];
         }
 
         $fullDestinationFilename = $destinationPath . DIRECTORY_SEPARATOR . ($destinationFilename ?? 'remote_dump.sql');
 
-        // By doing it this way you don't need to make a separate Head-Request, but the data gets loaded into the RAM.
         file_put_contents($fullDestinationFilename, $body);
 
-        if ($curlResult === false) {
-            $curlError = curl_error($dumpApiCall);
-
-            return [false, sprintf('Could not fetch database from remote server: %s (HTTP %s).', $curlError, $httpCode), null];
-        }
-
-        curl_close($dumpApiCall);
-
-        return [true, sprintf('Successfully retrieved remote dump from %s (HTTP %s).', $serverUrl, $httpCode), $fullDestinationFilename];
+        return $fullDestinationFilename;
     }
 
     /**
@@ -334,7 +317,7 @@ class Protector
             file_put_contents($destinationFilePath, $metaData, FILE_APPEND);
 
             return true;
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return false;
         }
     }
@@ -446,7 +429,7 @@ class Protector
      *
      * @return string
      */
-    protected function getConfigValueForKey(string $key): string
+    protected function getConfigValueForKey(string $key): ?string
     {
         $value = config(sprintf('protector.%s', $key));
 
@@ -485,11 +468,49 @@ class Protector
                         'Pragma'              => 'no-cache',
                         'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
                         'Content-Length'      => $fileSize,
-                        'Expires'             => gmdate('D, d M Y H:i:s', time()-3600) . ' GMT',
+                        'Expires'             => gmdate('D, d M Y H:i:s', time() - 3600) . ' GMT',
                     ]);
             }
         }
 
         return response()->json('Unauthorized', 401);
+    }
+
+    /**
+     * @param string|null $destinationPath
+     *
+     * @throws FailedCreatingDestinationPathException
+     */
+    protected function createDirectory(?string $destinationPath): void
+    {
+        if (!is_dir($destinationPath)) {
+            if (mkdir($destinationPath, 0777, true) === false) {
+                throw new FailedCreatingDestinationPathException(sprintf('Could not create the non-existing destination path %s.', $destinationPath));
+            }
+        }
+    }
+
+    /**
+     * @return PendingRequest
+     * @throws InvalidConfigurationException
+     */
+    protected function getConfiguredHttpRequest(): PendingRequest
+    {
+        $htaccessLogin = $this->getConfigValueForKey('remoteEndpoint.htaccessLogin');
+
+        if (in_array('auth:sanctum', config('protector.routeMiddleware'))) {
+            if ($htaccessLogin) {
+                throw new InvalidConfigurationException('Laravel Sanctum and Htaccess can not be used simultaneously');
+            }
+
+            $request = Http::withToken($this->getConfigValueForKey('protector_db_token'));
+        } elseif ($htaccessLogin) {
+            $credentials = explode(':', $htaccessLogin);
+            $request     = Http::withBasicAuth($credentials[0], $credentials[1]);
+        } else {
+            throw new InvalidConfigurationException('Either Laravel Sanctum has to be active or a htaccess login has to be defined.');
+        }
+
+        return $request;
     }
 }
