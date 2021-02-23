@@ -241,11 +241,9 @@ class Protector
         $header      = substr($curlResult, 0, $header_size);
         $body        = substr($curlResult, $header_size);
 
-        dd(substr($body, 0, 100));
-
         // Decrypt the data if Laravel Sanctum is active.
         if(in_array('auth:sanctum', config('protector.routeMiddleware'))) {
-            $body = sodium_crypto_box_seal_open($body, sodium_hex2bin(env('PROTECTOR_CRYPTO_KEY')));
+            $body = sodium_crypto_box_seal_open($body, sodium_hex2bin($this->getConfigValueForKey('protectorCryptoKey')));
         }
 
         // Get remote filename from header.
@@ -476,7 +474,9 @@ class Protector
 
                 // Encrypt the data when Laravel Sanctum is active.
                 if (in_array('auth:sanctum', config('protector.routeMiddleware'))) {
-                    $fileData = sodium_crypto_box_seal($fileData, sodium_hex2bin($request->user()->crypto_key));
+                    $crypto_key = $request->user()->crypto_key;
+                    $fileData   = sodium_crypto_box_seal($fileData, sodium_hex2bin($crypto_key));
+                    $fileSize   = mb_strlen($fileData, '8bit');
                 }
 
                 return response($fileData)
