@@ -44,16 +44,15 @@ class CreateToken extends Command
     public function handle()
     {
         $cryptoKey = $this->option('cryptoKey');
-        $user  = config('auth.providers.users.model')::findOrFail($this->argument('userId'));
+        $user      = config('auth.providers.users.model')::findOrFail($this->argument('userId'));
         $user->tokens()->whereAbilities('["protector:import"]')->delete();
-
 
         if (!$user->crypto_key && !$cryptoKey) {
             $this->error('The user doesn\'t have a crypto key and none was specified. Please provide a crypto key for the user.');
             return null;
         }
 
-        if($cryptoKey) {
+        if ($cryptoKey) {
             $user->crypto_key = $cryptoKey;
             $user->save();
 

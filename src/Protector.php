@@ -210,7 +210,7 @@ class Protector
         $serverUrl       = $this->getConfigValueForKey('remoteEndpoint.serverUrl');
         $destinationPath = $this->getConfigValueForKey('dumpPath');
 
-        if(!$serverUrl) {
+        if (!$serverUrl) {
             throw new InvalidConfigurationException('Server url is not set or invalid');
         }
 
@@ -235,7 +235,7 @@ class Protector
         $body = $response->body();
 
         // Decrypt the data if Laravel Sanctum is active.
-        if(in_array('auth:sanctum', config('protector.routeMiddleware'))) {
+        if (in_array('auth:sanctum', config('protector.routeMiddleware'))) {
             $body = sodium_crypto_box_seal_open($body, sodium_hex2bin($this->getConfigValueForKey('protectorCryptoKey')));
         }
 

@@ -41,7 +41,7 @@ class CreateKeys extends Command
      */
     public function handle()
     {
-        $keyPair = sodium_crypto_box_keypair();
+        $keyPair   = sodium_crypto_box_keypair();
         $publicKey = sodium_crypto_box_publickey($keyPair);
 
         $this->info('Successfully generated Sodium key pair.');
