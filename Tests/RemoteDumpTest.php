@@ -100,7 +100,7 @@ class RemoteDumpTest extends TestCase
     public function authenticationTokenIsInHeaderWhenLaravelSanctumIsActive()
     {
         Config::set('protector.routeMiddleware', ['auth:sanctum']);
-        Config::set('protector.protector_db_token', '1234');
+        Config::set('protector.protectorDbToken', '1234');
 
         Http::fake();
 

@@ -207,8 +207,8 @@ class Protector
             throw new InvalidEnvironmentException(sprintf('Retrieving a dump is not allowed on production systems.'));
         }
 
-        $serverUrl               = $this->getConfigValueForKey('remoteEndpoint.serverUrl');
-        $destinationPath         = $this->getConfigValueForKey('dumpPath');
+        $serverUrl       = $this->getConfigValueForKey('remoteEndpoint.serverUrl');
+        $destinationPath = $this->getConfigValueForKey('dumpPath');
 
         if(!$serverUrl) {
             throw new InvalidConfigurationException('Server url is not set or invalid');
@@ -503,7 +503,7 @@ class Protector
                 throw new InvalidConfigurationException('Laravel Sanctum and Htaccess can not be used simultaneously');
             }
 
-            $request = Http::withToken($this->getConfigValueForKey('protector_db_token'));
+            $request = Http::withToken($this->getConfigValueForKey('protectorDbToken'));
         } elseif ($htaccessLogin) {
             $credentials = explode(':', $htaccessLogin);
             $request     = Http::withBasicAuth($credentials[0], $credentials[1]);
