@@ -209,6 +209,11 @@ class Protector
 
         $serverUrl       = $this->getConfigValueForKey('remoteEndpoint.serverUrl');
         $destinationPath = $this->getConfigValueForKey('dumpPath');
+        $sanctumIsActive = in_array('auth:sanctum', config('protector.routeMiddleware'));
+
+        if ($sanctumIsActive && !$this->getConfigValueForKey('protectorCryptoKey')) {
+            throw new InvalidConfigurationException('For using Laravel Sanctum a crypto keypair is required. There was none found in your .env file.');
+        }
 
         if (!$serverUrl) {
             throw new InvalidConfigurationException('Server url is not set or invalid');
@@ -235,8 +240,12 @@ class Protector
         $body = $response->body();
 
         // Decrypt the data if Laravel Sanctum is active.
-        if (in_array('auth:sanctum', config('protector.routeMiddleware'))) {
-            $body = sodium_crypto_box_seal_open($body, sodium_hex2bin($this->getConfigValueForKey('protectorCryptoKey')));
+        if ($sanctumIsActive) {
+                $body = sodium_crypto_box_seal_open($body, sodium_hex2bin($this->getConfigValueForKey('protectorCryptoKey')));
+
+                if ($body === false) {
+                    throw  new InvalidConfigurationException("There was an error decrypting the database dump. This might be due to mismatching crypto keys.");
+                }
         }
 
         // Get remote filename from header.
@@ -446,8 +455,10 @@ class Protector
      */
     public function generateFileDownloadResponse(Request $request, string $connectionName = null)
     {
+        $sanctumIsActive = in_array('auth:sanctum', config('protector.routeMiddleware'));
+
         // Only proceed when either Laravel Sanctum is turned off or the user's token is valid.
-        if (!in_array('auth:sanctum', config('protector.routeMiddleware')) || $request->user()->tokenCan('protector:import')) {
+        if (!$sanctumIsActive || $request->user()->tokenCan('protector:import')) {
             if ($this->configure($connectionName)) {
                 $fullPath = $this->createDump();
                 $fileData = file_get_contents($fullPath, false);
@@ -456,7 +467,7 @@ class Protector
                 File::delete($fullPath);
 
                 // Encrypt the data when Laravel Sanctum is active.
-                if (in_array('auth:sanctum', config('protector.routeMiddleware'))) {
+                if ($sanctumIsActive) {
                     $crypto_key = $request->user()->crypto_key;
                     $fileData   = sodium_crypto_box_seal($fileData, sodium_hex2bin($crypto_key));
                     $fileSize   = mb_strlen($fileData, '8bit');
