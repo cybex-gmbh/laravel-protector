@@ -241,11 +241,11 @@ class Protector
 
         // Decrypt the data if Laravel Sanctum is active.
         if ($sanctumIsActive) {
-                $body = sodium_crypto_box_seal_open($body, sodium_hex2bin($this->getConfigValueForKey('protectorCryptoKey')));
+            $body = sodium_crypto_box_seal_open($body, sodium_hex2bin($this->getConfigValueForKey('protectorCryptoKey')));
 
-                if ($body === false) {
-                    throw  new InvalidConfigurationException("There was an error decrypting the database dump. This might be due to mismatching crypto keys.");
-                }
+            if ($body === false) {
+                throw  new InvalidConfigurationException("There was an error decrypting the database dump. This might be due to mismatching crypto keys.");
+            }
         }
 
         // Get remote filename from header.
