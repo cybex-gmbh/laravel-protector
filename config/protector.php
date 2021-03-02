@@ -6,10 +6,10 @@ return [
     | .env Keys
     |--------------------------------------------------------------------------
     |
-    | Use these keys when adding the token or the crypto key to your .env file.
+    | Use these keys when adding the token or the private key to your .env file.
     |
     | .env key for 
-    |   - Protector DB Token: PROTECTOR_AUTH_TOKEN
+    |   - Protector Auth Token: PROTECTOR_AUTH_TOKEN
     |   - Protector Private Key: PROTECTOR_PRIVATE_KEY
     |
     */
@@ -63,7 +63,7 @@ return [
     |
     */
     'remoteEndpoint' => [
-        'serverUrl'     => '',
+        'serverUrl'     => 'cybex2.test/protector/exportDump',
         // Htaccess may only be used without Laravel Sanctum or basic auth has to be added to the server URL.
         'htaccessLogin' => '',
     ],
