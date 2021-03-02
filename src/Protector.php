@@ -475,17 +475,19 @@ class Protector
         if (!$sanctumIsActive || $request->user()->tokenCan('protector:import')) {
             if ($this->configure($connectionName)) {
                 $fullPath = $this->createDump();
-                $fileData = file_get_contents($fullPath, false);
-                $fileSize = filesize($fullPath);
                 $fileName = basename($fullPath);
-                File::delete($fullPath);
 
                 // Encrypt the data when Laravel Sanctum is active.
                 if ($sanctumIsActive) {
                     $crypto_key = $request->user()->protector_public_key;
                     $fileData   = sodium_crypto_box_seal(file_get_contents($fullPath, false), sodium_hex2bin($crypto_key));
                     $fileSize   = mb_strlen($fileData, '8bit');
+                } else {
+                    $fileData = file_get_contents($fullPath, false);
+                    $fileSize = filesize($fullPath);
                 }
+
+                File::delete($fullPath);
 
                 return response($fileData)
                     ->withHeaders([
