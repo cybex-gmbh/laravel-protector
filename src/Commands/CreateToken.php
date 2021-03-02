@@ -17,14 +17,14 @@ class CreateToken extends Command
      */
     protected $signature = 'protector:token
                 {userId : The user id the token is created for.}
-                {--c|cryptoKey= : The sodium public key for the user.}';
+                {--p|publicKey= : The sodium public key for the user.}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Creates a token for a specified user id.';
+    protected $description = 'Creates a token for a specified user id and optionally sets the public key.';
 
     /**
      * Create a new command instance.
@@ -43,20 +43,20 @@ class CreateToken extends Command
      */
     public function handle()
     {
-        $cryptoKey = $this->option('cryptoKey');
+        $publicKey = $this->option('publicKey');
         $user      = config('auth.providers.users.model')::findOrFail($this->argument('userId'));
         $user->tokens()->whereAbilities('["protector:import"]')->delete();
 
-        if (!$user->protector_public_key && !$cryptoKey) {
+        if (!$user->protector_public_key && !$publicKey) {
             $this->error('The user doesn\'t have a protector public key and none was specified. Please provide a public key for the user.');
             return null;
         }
 
-        if ($cryptoKey) {
-            $user->protector_public_key = $cryptoKey;
+        if ($publicKey) {
+            $user->protector_public_key = $publicKey;
             $user->save();
 
-            $this->info(sprintf('Protector public key %s was saved in the database for user %s.', $cryptoKey, $user->username));
+            $this->info(sprintf('Protector public key %s was saved in the database for user %s.', $publicKey, $user->username));
         }
 
         $token = $user->createToken('protector', ['protector:import']);
