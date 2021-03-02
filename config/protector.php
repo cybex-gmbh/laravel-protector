@@ -63,7 +63,7 @@ return [
     |
     */
     'remoteEndpoint' => [
-        'serverUrl'     => 'cybex2.test/protector/exportDump',
+        'serverUrl'     => '',
         // Htaccess may only be used without Laravel Sanctum or basic auth has to be added to the server URL.
         'htaccessLogin' => '',
     ],
