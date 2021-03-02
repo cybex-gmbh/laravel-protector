@@ -552,6 +552,16 @@ class Protector
     }
 
     /**
+     * Gets the name of the .env key for the Protector DB Token.
+     *
+     * @return string
+     */
+    public function getTokenKeyName(): string
+    {
+        return $this->tokenKeyName;
+    }
+
+    /**
      * Sets the name of the .env key for the Protector Crypto Key.
      *
      * @param string $cryptoKeyName
@@ -559,5 +569,15 @@ class Protector
     public function setCryptoKeyName($cryptoKeyName): void
     {
         $this->cryptoKeyName = $cryptoKeyName;
+    }
+
+    /**
+     * Sets the name of the .env key for the Protector Crypto Key.
+     *
+     * @return string
+     */
+    public function getCryptoKeyName(): string
+    {
+        return $this->cryptoKeyName;
     }
 }
