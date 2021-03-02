@@ -47,13 +47,13 @@ class CreateToken extends Command
         $user      = config('auth.providers.users.model')::findOrFail($this->argument('userId'));
         $user->tokens()->whereAbilities('["protector:import"]')->delete();
 
-        if (!$user->crypto_key && !$cryptoKey) {
+        if (!$user->protector_public_key && !$cryptoKey) {
             $this->error('The user doesn\'t have a crypto key and none was specified. Please provide a crypto key for the user.');
             return null;
         }
 
         if ($cryptoKey) {
-            $user->crypto_key = $cryptoKey;
+            $user->protector_public_key = $cryptoKey;
             $user->save();
 
             $this->info(sprintf('Crypto key %s was saved in the database for user %s.', $cryptoKey, $user->username));

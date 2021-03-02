@@ -482,8 +482,8 @@ class Protector
 
                 // Encrypt the data when Laravel Sanctum is active.
                 if ($sanctumIsActive) {
-                    $crypto_key = $request->user()->crypto_key;
-                    $fileData   = sodium_crypto_box_seal($fileData, sodium_hex2bin($crypto_key));
+                    $crypto_key = $request->user()->protector_public_key;
+                    $fileData   = sodium_crypto_box_seal(file_get_contents($fullPath, false), sodium_hex2bin($crypto_key));
                     $fileSize   = mb_strlen($fileData, '8bit');
                 }
 
