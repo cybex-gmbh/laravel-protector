@@ -43,6 +43,20 @@ class Protector
      */
     protected $cacheMetaData;
 
+    /**
+     * The name of the .env key for the Protector DB Token.
+     *
+     * @var
+     */
+    protected $tokenKeyName = 'PROTECTOR_DB_TOKEN';
+
+    /**
+     * The name of the .env key for the Protector Crypto Key.
+     *
+     * @var
+     */
+    protected $cryptoKeyName = 'PROTECTOR_CRYPTO_KEY';
+
     public function __construct()
     {
         $this->configure();
@@ -211,7 +225,7 @@ class Protector
         $destinationPath = $this->getConfigValueForKey('dumpPath');
         $sanctumIsActive = in_array('auth:sanctum', config('protector.routeMiddleware'));
 
-        if ($sanctumIsActive && !$this->getConfigValueForKey('protectorCryptoKey')) {
+        if ($sanctumIsActive && !env($this->cryptoKeyName, '')) {
             throw new InvalidConfigurationException('For using Laravel Sanctum a crypto keypair is required. There was none found in your .env file.');
         }
 
@@ -241,7 +255,7 @@ class Protector
 
         // Decrypt the data if Laravel Sanctum is active.
         if ($sanctumIsActive) {
-            $body = sodium_crypto_box_seal_open($body, sodium_hex2bin($this->getConfigValueForKey('protectorCryptoKey')));
+            $body = sodium_crypto_box_seal_open($body, sodium_hex2bin(env($this->cryptoKeyName, '')));
 
             if ($body === false) {
                 throw  new InvalidConfigurationException("There was an error decrypting the database dump. This might be due to mismatching crypto keys.");
@@ -514,7 +528,7 @@ class Protector
                 throw new InvalidConfigurationException('Laravel Sanctum and Htaccess can not be used simultaneously');
             }
 
-            $request = Http::withToken($this->getConfigValueForKey('protectorDbToken'));
+            $request = Http::withToken(env($this->tokenKeyName, ''));
         } elseif ($htaccessLogin) {
             $credentials = explode(':', $htaccessLogin);
             $request     = Http::withBasicAuth($credentials[0], $credentials[1]);
@@ -523,5 +537,25 @@ class Protector
         }
 
         return $request;
+    }
+
+    /**
+     * Sets the name of the .env key for the Protector DB Token.
+     *
+     * @param string $tokenKeyName
+     */
+    public function setTokenKeyName($tokenKeyName): void
+    {
+        $this->tokenKeyName = $tokenKeyName;
+    }
+
+    /**
+     * Sets the name of the .env key for the Protector Crypto Key.
+     *
+     * @param string $cryptoKeyName
+     */
+    public function setCryptoKeyName($cryptoKeyName): void
+    {
+        $this->cryptoKeyName = $cryptoKeyName;
     }
 }

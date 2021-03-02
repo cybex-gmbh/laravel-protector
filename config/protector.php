@@ -3,6 +3,19 @@
 return [
     /*
     |--------------------------------------------------------------------------
+    | .env Keys
+    |--------------------------------------------------------------------------
+    |
+    | Use these keys when adding the token or the crypto key to your .env file.
+    |
+    | .env key for 
+        - Protector DB Token: PROTECTOR_DB_TOKEN
+|       - Protector Crypto Key: PROTECTOR_CRYPTO_KEY
+    |
+    */
+
+    /*
+    |--------------------------------------------------------------------------
     | File Name
     |--------------------------------------------------------------------------
     |
@@ -77,24 +90,4 @@ return [
     'routeMiddleware' => [
         'auth:sanctum',
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Protector DB Token
-    |--------------------------------------------------------------------------
-    |
-    | Here you may customize the .env key for the Protector DB token.
-    |
-    */
-    'protectorDbToken' => env('PROTECTOR_DB_TOKEN', ''),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Protector Crypto Key
-    |--------------------------------------------------------------------------
-    |
-    | Here you may customize the .env key for the Protector Crypto Key.
-    |
-    */
-    'protectorCryptoKey' => env('PROTECTOR_CRYPTO_KEY', ''),
 ];
