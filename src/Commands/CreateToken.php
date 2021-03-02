@@ -17,7 +17,7 @@ class CreateToken extends Command
      */
     protected $signature = 'protector:token
                 {userId : The user id the token is created for.}
-                {--c|cryptoKey= : The crypto key for the user.}';
+                {--c|cryptoKey= : The sodium public key for the user.}';
 
     /**
      * The console command description.
@@ -48,7 +48,7 @@ class CreateToken extends Command
         $user->tokens()->whereAbilities('["protector:import"]')->delete();
 
         if (!$user->protector_public_key && !$cryptoKey) {
-            $this->error('The user doesn\'t have a crypto key and none was specified. Please provide a crypto key for the user.');
+            $this->error('The user doesn\'t have a protector public key and none was specified. Please provide a public key for the user.');
             return null;
         }
 
@@ -56,7 +56,7 @@ class CreateToken extends Command
             $user->protector_public_key = $cryptoKey;
             $user->save();
 
-            $this->info(sprintf('Crypto key %s was saved in the database for user %s.', $cryptoKey, $user->username));
+            $this->info(sprintf('Protector public key %s was saved in the database for user %s.', $cryptoKey, $user->username));
         }
 
         $token = $user->createToken('protector', ['protector:import']);
