@@ -16,12 +16,12 @@
         }
     ],
     "require": {
-        "php": "^7.2",
         "ext-curl": "*",
         "ext-json": "*",
+        "ext-sodium": "*",
         "illuminate/support": "^7.0",
         "laravel/sanctum": "^2.4",
-        "ext-sodium": "*"
+        "php": "^7.2"
     },
     "require-dev": {
         "guzzlehttp/guzzle": "^7.0",
