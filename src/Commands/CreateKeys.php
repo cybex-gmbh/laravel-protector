@@ -52,6 +52,6 @@ class CreateKeys extends Command
         $this->output->newLine();
 
         $this->info('Please write the key pair in your .env file!');
-        $this->warn(sprintf('%s: %s', app('protector')->getCryptoKeyName(), sodium_bin2hex($keyPair)));
+        $this->warn(sprintf('%s=%s', app('protector')->getPrivateKeyName(), sodium_bin2hex($keyPair)));
     }
 }

@@ -48,14 +48,14 @@ class Protector
      *
      * @var
      */
-    protected $tokenKeyName = 'PROTECTOR_DB_TOKEN';
+    protected $authTokenKeyName = 'PROTECTOR_AUTH_TOKEN';
 
     /**
-     * The name of the .env key for the Protector Crypto Key.
+     * The name of the .env key for the Protector Private Key.
      *
      * @var
      */
-    protected $cryptoKeyName = 'PROTECTOR_CRYPTO_KEY';
+    protected $privateKeyName = 'PROTECTOR_PRIVATE_KEY';
 
     public function __construct()
     {
@@ -225,7 +225,7 @@ class Protector
         $destinationPath = $this->getConfigValueForKey('dumpPath');
         $sanctumIsActive = in_array('auth:sanctum', config('protector.routeMiddleware'));
 
-        if ($sanctumIsActive && !env($this->cryptoKeyName, '')) {
+        if ($sanctumIsActive && !$this->getPrivateKey()) {
             throw new InvalidConfigurationException('For using Laravel Sanctum a crypto keypair is required. There was none found in your .env file.');
         }
 
@@ -255,7 +255,7 @@ class Protector
 
         // Decrypt the data if Laravel Sanctum is active.
         if ($sanctumIsActive) {
-            $body = sodium_crypto_box_seal_open($body, sodium_hex2bin(env($this->cryptoKeyName, '')));
+            $body = sodium_crypto_box_seal_open($body, sodium_hex2bin($this->getPrivateKey()));
 
             if ($body === false) {
                 throw  new InvalidConfigurationException("There was an error decrypting the database dump. This might be due to mismatching crypto keys.");
@@ -479,8 +479,8 @@ class Protector
 
                 // Encrypt the data when Laravel Sanctum is active.
                 if ($sanctumIsActive) {
-                    $crypto_key = $request->user()->protector_public_key;
-                    $fileData   = sodium_crypto_box_seal(file_get_contents($fullPath, false), sodium_hex2bin($crypto_key));
+                    $publicKey = $request->user()->protector_public_key;
+                    $fileData   = sodium_crypto_box_seal(file_get_contents($fullPath, false), sodium_hex2bin($publicKey));
                     $fileSize   = mb_strlen($fileData, '8bit');
                 } else {
                     $fileData = file_get_contents($fullPath, false);
@@ -530,7 +530,7 @@ class Protector
                 throw new InvalidConfigurationException('Laravel Sanctum and Htaccess can not be used simultaneously');
             }
 
-            $request = Http::withToken(env($this->tokenKeyName, ''));
+            $request = Http::withToken($this->getAuthToken());
         } elseif ($htaccessLogin) {
             $credentials = explode(':', $htaccessLogin);
             $request     = Http::withBasicAuth($credentials[0], $credentials[1]);
@@ -544,11 +544,11 @@ class Protector
     /**
      * Sets the name of the .env key for the Protector DB Token.
      *
-     * @param string $tokenKeyName
+     * @param $authTokenKeyName
      */
-    public function setTokenKeyName($tokenKeyName): void
+    public function setAuthTokenKeyName($authTokenKeyName): void
     {
-        $this->tokenKeyName = $tokenKeyName;
+        $this->authTokenKeyName = $authTokenKeyName;
     }
 
     /**
@@ -556,19 +556,19 @@ class Protector
      *
      * @return string
      */
-    public function getTokenKeyName(): string
+    public function getAuthTokenKeyName(): string
     {
-        return $this->tokenKeyName;
+        return $this->authTokenKeyName;
     }
 
     /**
      * Sets the name of the .env key for the Protector Crypto Key.
      *
-     * @param string $cryptoKeyName
+     * @param string $privateKeyName
      */
-    public function setCryptoKeyName($cryptoKeyName): void
+    public function setPrivateKeyName($privateKeyName): void
     {
-        $this->cryptoKeyName = $cryptoKeyName;
+        $this->privateKeyName = $privateKeyName;
     }
 
     /**
@@ -576,8 +576,24 @@ class Protector
      *
      * @return string
      */
-    public function getCryptoKeyName(): string
+    public function getPrivateKeyName(): string
     {
-        return $this->cryptoKeyName;
+        return $this->privateKeyName;
+    }
+
+    /**
+     * @return string
+     */
+    protected function getPrivateKey(): string
+    {
+        return env($this->privateKeyName, '');
+    }
+
+    /**
+     * @return string
+     */
+    protected function getAuthToken(): string
+    {
+        return env($this->authTokenKeyName, '');
     }
 }

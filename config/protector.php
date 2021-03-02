@@ -9,8 +9,8 @@ return [
     | Use these keys when adding the token or the crypto key to your .env file.
     |
     | .env key for 
-        - Protector DB Token: PROTECTOR_DB_TOKEN
-|       - Protector Crypto Key: PROTECTOR_CRYPTO_KEY
+    |   - Protector DB Token: PROTECTOR_AUTH_TOKEN
+    |   - Protector Private Key: PROTECTOR_PRIVATE_KEY
     |
     */
 
