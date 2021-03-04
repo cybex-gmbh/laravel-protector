@@ -16,14 +16,15 @@ class CreateToken extends Command
      * @var string
      */
     protected $signature = 'protector:token
-                {userId : The user id the token is created for.}';
+                {userId : The user id the token is created for.}
+                {--p|publicKey= : The sodium public key for the user.}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Creates a token for a specified user id.';
+    protected $description = 'Creates a token for a specified user id and optionally sets the public key.';
 
     /**
      * Create a new command instance.
@@ -42,11 +43,27 @@ class CreateToken extends Command
      */
     public function handle()
     {
-        $user  = config('auth.providers.users.model')::findOrFail($this->argument('userId'));
+        $publicKey = $this->option('publicKey');
+        $user      = config('auth.providers.users.model')::findOrFail($this->argument('userId'));
         $user->tokens()->whereAbilities('["protector:import"]')->delete();
+
+        if (!$user->protector_public_key && !$publicKey) {
+            $this->error('The user doesn\'t have a protector public key and none was specified. Please provide a public key for the user.');
+            return null;
+        }
+
+        if ($publicKey) {
+            $user->protector_public_key = $publicKey;
+            $user->save();
+
+            $this->info(sprintf('Protector public key was set for user %s.', $user->username));
+            $this->output->newLine();
+        }
 
         $token = $user->createToken('protector', ['protector:import']);
 
-        $this->info(sprintf('Token generated for user %s: %s', $user->username, $token->plainTextToken));
+        $this->warn(sprintf('Information for the user %s:', $user->username));
+        $this->info(sprintf('Auth Token: %s', $token->plainTextToken));
+        $this->info(sprintf('Server URL: %s', route('protectorDumpEndpointRoute')));
     }
 }

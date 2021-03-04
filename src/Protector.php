@@ -43,6 +43,20 @@ class Protector
      */
     protected $cacheMetaData;
 
+    /**
+     * The name of the .env key for the Protector DB Token.
+     *
+     * @var
+     */
+    protected $authTokenKeyName = 'PROTECTOR_AUTH_TOKEN';
+
+    /**
+     * The name of the .env key for the Protector Private Key.
+     *
+     * @var
+     */
+    protected $privateKeyName = 'PROTECTOR_PRIVATE_KEY';
+
     public function __construct()
     {
         $this->configure();
@@ -207,10 +221,15 @@ class Protector
             throw new InvalidEnvironmentException(sprintf('Retrieving a dump is not allowed on production systems.'));
         }
 
-        $serverUrl               = $this->getConfigValueForKey('remoteEndpoint.serverUrl');
-        $destinationPath         = $this->getConfigValueForKey('dumpPath');
+        $serverUrl       = $this->getConfigValueForKey('remoteEndpoint.serverUrl');
+        $destinationPath = $this->getConfigValueForKey('dumpPath');
+        $sanctumIsActive = in_array('auth:sanctum', config('protector.routeMiddleware'));
 
-        if(!$serverUrl) {
+        if ($sanctumIsActive && !$this->getPrivateKey()) {
+            throw new InvalidConfigurationException('For using Laravel Sanctum a crypto keypair is required. There was none found in your .env file.');
+        }
+
+        if (!$serverUrl) {
             throw new InvalidConfigurationException('Server url is not set or invalid');
         }
 
@@ -232,6 +251,17 @@ class Protector
             throw new UnauthorizedException('Unauthorized access');
         }
 
+        $body = $response->body();
+
+        // Decrypt the data if Laravel Sanctum is active.
+        if ($sanctumIsActive) {
+            $body = sodium_crypto_box_seal_open($body, sodium_hex2bin($this->getPrivateKey()));
+
+            if ($body === false) {
+                throw  new InvalidConfigurationException("There was an error decrypting the database dump. This might be due to mismatching crypto keys.");
+            }
+        }
+
         // Get remote filename from header.
         $contentDispositionHeader = $response->header('Content-Disposition');
 
@@ -241,7 +271,7 @@ class Protector
 
         $fullDestinationFilename = $destinationPath . DIRECTORY_SEPARATOR . ($destinationFilename ?? 'remote_dump.sql');
 
-        file_put_contents($fullDestinationFilename, $response->body());
+        file_put_contents($fullDestinationFilename, $body);
 
         return $fullDestinationFilename;
     }
@@ -439,13 +469,26 @@ class Protector
      */
     public function generateFileDownloadResponse(Request $request, string $connectionName = null)
     {
-        if (!in_array('auth:sanctum', config('protector.routeMiddleware')) || $request->user()->tokenCan('protector:import')) {
+        $sanctumIsActive = in_array('auth:sanctum', config('protector.routeMiddleware'));
+
+        // Only proceed when either Laravel Sanctum is turned off or the user's token is valid.
+        if (!$sanctumIsActive || $request->user()->tokenCan('protector:import')) {
             if ($this->configure($connectionName)) {
                 $fullPath = $this->createDump();
-                $fileData = file_get_contents($fullPath, false);
-                $fileSize = filesize($fullPath);
                 $fileName = basename($fullPath);
+
+                // Encrypt the data when Laravel Sanctum is active.
+                if ($sanctumIsActive) {
+                    $publicKey = $request->user()->protector_public_key;
+                    $fileData   = sodium_crypto_box_seal(file_get_contents($fullPath, false), sodium_hex2bin($publicKey));
+                    $fileSize   = mb_strlen($fileData, '8bit');
+                } else {
+                    $fileData = file_get_contents($fullPath, false);
+                    $fileSize = filesize($fullPath);
+                }
+
                 File::delete($fullPath);
+
                 return response($fileData)
                     ->withHeaders([
                         'Content-Type'        => 'text/plain',
@@ -487,7 +530,7 @@ class Protector
                 throw new InvalidConfigurationException('Laravel Sanctum and Htaccess can not be used simultaneously');
             }
 
-            $request = Http::withToken($this->getConfigValueForKey('protector_db_token'));
+            $request = Http::withToken($this->getAuthToken());
         } elseif ($htaccessLogin) {
             $credentials = explode(':', $htaccessLogin);
             $request     = Http::withBasicAuth($credentials[0], $credentials[1]);
@@ -496,5 +539,61 @@ class Protector
         }
 
         return $request;
+    }
+
+    /**
+     * Sets the name of the .env key for the Protector DB Token.
+     *
+     * @param $authTokenKeyName
+     */
+    public function setAuthTokenKeyName($authTokenKeyName): void
+    {
+        $this->authTokenKeyName = $authTokenKeyName;
+    }
+
+    /**
+     * Gets the name of the .env key for the Protector DB Token.
+     *
+     * @return string
+     */
+    public function getAuthTokenKeyName(): string
+    {
+        return $this->authTokenKeyName;
+    }
+
+    /**
+     * Sets the name of the .env key for the Protector Crypto Key.
+     *
+     * @param string $privateKeyName
+     */
+    public function setPrivateKeyName($privateKeyName): void
+    {
+        $this->privateKeyName = $privateKeyName;
+    }
+
+    /**
+     * Sets the name of the .env key for the Protector Crypto Key.
+     *
+     * @return string
+     */
+    public function getPrivateKeyName(): string
+    {
+        return $this->privateKeyName;
+    }
+
+    /**
+     * @return string
+     */
+    protected function getPrivateKey(): string
+    {
+        return env($this->privateKeyName, '');
+    }
+
+    /**
+     * @return string
+     */
+    protected function getAuthToken(): string
+    {
+        return env($this->authTokenKeyName, '');
     }
 }

@@ -3,6 +3,20 @@
 return [
     /*
     |--------------------------------------------------------------------------
+    | .env Keys
+    |--------------------------------------------------------------------------
+    |
+    | Use these keys when adding the token, private key and the server url to your .env file.
+    |
+    | .env key for
+    |   - Protector Auth Token: PROTECTOR_AUTH_TOKEN
+    |   - Protector Private Key: PROTECTOR_PRIVATE_KEY
+    |   - Dump Server URL: PROTECTOR_SERVER_URL
+    |
+    */
+
+    /*
+    |--------------------------------------------------------------------------
     | File Name
     |--------------------------------------------------------------------------
     |
@@ -50,7 +64,7 @@ return [
     |
     */
     'remoteEndpoint' => [
-        'serverUrl'     => '',
+        'serverUrl'     => env('PROTECTOR_SERVER_URL'),
         // Htaccess may only be used without Laravel Sanctum or basic auth has to be added to the server URL.
         'htaccessLogin' => '',
     ],
@@ -77,14 +91,4 @@ return [
     'routeMiddleware' => [
         'auth:sanctum',
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Protector DB Token
-    |--------------------------------------------------------------------------
-    |
-    | Here you may customize the .env key for the Protector DB token.
-    |
-    */
-    'protector_db_token' => env('PROTECTOR_DB_TOKEN', '')
 ];
