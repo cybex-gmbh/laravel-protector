@@ -56,11 +56,14 @@ class CreateToken extends Command
             $user->protector_public_key = $publicKey;
             $user->save();
 
-            $this->info(sprintf('Protector public key %s was saved in the database for user %s.', $publicKey, $user->username));
+            $this->info(sprintf('Protector public key was set for user %s.', $user->username));
+            $this->output->newLine();
         }
 
         $token = $user->createToken('protector', ['protector:import']);
 
-        $this->info(sprintf('Token generated for user %s: %s', $user->username, $token->plainTextToken));
+        $this->warn(sprintf('Information for the user %s:', $user->username));
+        $this->info(sprintf('Auth Token: %s', $token->plainTextToken));
+        $this->info(sprintf('Server URL: %s', route('protectorDumpEndpointRoute')));
     }
 }
