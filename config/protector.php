@@ -6,11 +6,12 @@ return [
     | .env Keys
     |--------------------------------------------------------------------------
     |
-    | Use these keys when adding the token or the private key to your .env file.
+    | Use these keys when adding the token, private key and the server url to your .env file.
     |
     | .env key for
     |   - Protector Auth Token: PROTECTOR_AUTH_TOKEN
     |   - Protector Private Key: PROTECTOR_PRIVATE_KEY
+    |   - Dump Server URL: PROTECTOR_SERVER_URL
     |
     */
 
