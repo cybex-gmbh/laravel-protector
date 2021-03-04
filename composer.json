@@ -19,7 +19,7 @@
         "ext-curl": "*",
         "ext-json": "*",
         "ext-sodium": "*",
-        "illuminate/support": "^7.0",
+        "illuminate/support": "^7.0|^8.0",
         "laravel/sanctum": "^2.4",
         "php": "^7.2"
     },
