@@ -57,6 +57,20 @@ class Protector
      */
     protected $privateKeyName = 'PROTECTOR_PRIVATE_KEY';
 
+    /**
+     * The server url for the dump endpoint.
+     *
+     * @var
+     */
+    protected $serverUrl = '';
+
+    /**
+     * The Protector Auth Token.
+     *
+     * @var
+     */
+    protected $authToken = '';
+
     public function __construct()
     {
         $this->configure();
@@ -221,7 +235,7 @@ class Protector
             throw new InvalidEnvironmentException(sprintf('Retrieving a dump is not allowed on production systems.'));
         }
 
-        $serverUrl       = $this->getConfigValueForKey('remoteEndpoint.serverUrl');
+        $serverUrl       = $this->serverUrl ?: $this->getConfigValueForKey('remoteEndpoint.serverUrl');
         $destinationPath = $this->getConfigValueForKey('dumpPath');
         $sanctumIsActive = in_array('auth:sanctum', config('protector.routeMiddleware'));
 
@@ -258,7 +272,7 @@ class Protector
             $body = sodium_crypto_box_seal_open($body, sodium_hex2bin($this->getPrivateKey()));
 
             if ($body === false) {
-                throw  new InvalidConfigurationException("There was an error decrypting the database dump. This might be due to mismatching crypto keys.");
+                throw new InvalidConfigurationException("There was an error decrypting the database dump. This might be due to mismatching crypto keys.");
             }
         }
 
@@ -582,6 +596,8 @@ class Protector
     }
 
     /**
+     * Retrieves the private key for Sodium encryption.
+     *
      * @return string
      */
     protected function getPrivateKey(): string
@@ -590,10 +606,42 @@ class Protector
     }
 
     /**
+     * Retrieves the auth token for Laravel Sanctum authentication.
+     *
      * @return string
      */
     protected function getAuthToken(): string
     {
-        return env($this->authTokenKeyName, '');
+        return $this->authToken ?: env($this->authTokenKeyName, '');
+    }
+
+    /**
+     * Sets the auth token for Laravel Sanctum authentication.
+     *
+     * @param string $authToken
+     */
+    public function setAuthToken(string $authToken): void
+    {
+        $this->authToken = $authToken;
+    }
+
+    /**
+     * Retrieves the server url of the dump endpoint.
+     *
+     * @return string
+     */
+    public function getServerUrl(): string
+    {
+        return $this->serverUrl;
+    }
+
+    /**
+     * Sets the server url of the dump endpoint.
+     *
+     * @param string $serverUrl
+     */
+    public function setServerUrl(string $serverUrl): void
+    {
+        $this->serverUrl = $serverUrl;
     }
 }
