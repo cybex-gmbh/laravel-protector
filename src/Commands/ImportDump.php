@@ -116,7 +116,7 @@ class ImportDump extends Command
                 return;
             }
 
-            $this->line(sprintf('>>> Successfully retrieved remote dump from %s', app('protector')->getServerUrl() ?: config('protector.remoteEndpoint.serverUrl')));
+            $this->line(sprintf('>>> Successfully retrieved remote dump from %s', app('protector')->getServerUrl()));
 
             $importFilePath = $fullRemoteDumpFileName;
         } elseif ($optionFile || $optionDump) {

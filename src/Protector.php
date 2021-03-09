@@ -235,7 +235,7 @@ class Protector
             throw new InvalidEnvironmentException(sprintf('Retrieving a dump is not allowed on production systems.'));
         }
 
-        $serverUrl       = $this->serverUrl ?: $this->getConfigValueForKey('remoteEndpoint.serverUrl');
+        $serverUrl       = $this->getServerUrl();
         $destinationPath = $this->getConfigValueForKey('dumpPath');
         $sanctumIsActive = in_array('auth:sanctum', config('protector.routeMiddleware'));
 
@@ -632,7 +632,7 @@ class Protector
      */
     public function getServerUrl(): string
     {
-        return $this->serverUrl;
+        return $this->serverUrl ?: $this->getConfigValueForKey('remoteEndpoint.serverUrl');
     }
 
     /**
