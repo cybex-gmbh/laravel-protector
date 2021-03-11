@@ -66,11 +66,12 @@ class ImportDump extends Command
             return;
         }
 
-        $protector = new Protector();
+        $protector = app('protector');
 
-        $destinationPath         = config('protector.dumpPath');
+        $disk                    = $protector->getDisk();
+        $basePath                = config('protector.baseDirectory');
         $destinationFilename     = $optionDump ?: $protector->createFilename();
-        $fullDestinationFilename = $optionFile ?: $destinationPath . DIRECTORY_SEPARATOR . $destinationFilename;
+        $relativePath            = $optionFile ?: $basePath . DIRECTORY_SEPARATOR . $destinationFilename;
 
         $connectionName = null;
 
@@ -104,10 +105,11 @@ class ImportDump extends Command
 
         if ($optionRemote) {
             if ($this->option('flush')) {
-                File::delete(File::files($destinationPath));
+                $disk->delete($disk->files($basePath));
+                $this->warn(sprintf('Deleted all files in %s'), $disk->path($basePath));
             }
 
-            $this->line(sprintf('<<< Downloading dump from remote server to directory: <comment>%s</comment>', $destinationPath));
+            $this->line(sprintf('<<< Downloading dump from remote server to directory: <comment>%s</comment>', $disk->path($basePath)));
 
             try {
                 $fullRemoteDumpFileName = $protector->getRemoteDump();
@@ -120,9 +122,9 @@ class ImportDump extends Command
 
             $importFilePath = $fullRemoteDumpFileName;
         } elseif ($optionFile || $optionDump) {
-            $importFilePath = $fullDestinationFilename;
+            $importFilePath = $relativePath;
         } else {
-            $directoryFiles = File::files($destinationPath);
+            $directoryFiles = $disk->files($basePath);
             $matchingFiles  = collect();
 
             foreach ($directoryFiles as $directoryFile) {
@@ -131,8 +133,8 @@ class ImportDump extends Command
                 if (is_array($metaData) && !empty($metaData) && array_key_exists($metaData['meta']['connection'], config('database.connections'))) {
 
                     $fileInformation = [
-                        'path'        => $directoryFile->getRealPath(),
-                        'file'        => $directoryFile->getBasename(),
+                        'path'        => $basePath . DIRECTORY_SEPARATOR . $directoryFile,
+                        'file'        => $directoryFile,
                         'database'    => Arr::get($metaData, 'meta.database', null),
                         'connection'  => Arr::get($metaData, 'meta.connection', null),
                         'date'        => Arr::get($metaData,
@@ -156,8 +158,8 @@ class ImportDump extends Command
                     $matchingFiles->push($fileInformation);
                 } elseif ($this->option('ignore-connection-filter') || (!is_array($metaData) || empty($metaData))) {
                     $matchingFiles->push([
-                        'path'        => $directoryFile->getRealPath(),
-                        'file'        => $directoryFile->getBasename(),
+                        'path'        => $basePath . DIRECTORY_SEPARATOR . $directoryFile,
+                        'file'        => $directoryFile,
                         'database'    => '',
                         'connection'  => 'external_dump',
                         'date'        => '',
@@ -205,7 +207,7 @@ class ImportDump extends Command
             }
         }
 
-        if ($importFilePath && ($optionForce || $this->confirm(sprintf('Are you sure that you want to import the dump at %s?', $importFilePath)))) {
+        if ($importFilePath && ($optionForce || $this->confirm(sprintf('Are you sure that you want to import the dump at %s?', $disk->path($importFilePath))))) {
             // Import the desired dump.
             $protector->importDump($importFilePath, $options);
 
