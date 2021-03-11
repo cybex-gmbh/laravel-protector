@@ -122,6 +122,7 @@ class Protector
             throw new FileNotFoundException($sourceFilePath);
         }
 
+        // Getting a local copy because disk files might not be possible to import.
         Storage::disk('local')->put($sourceFilePath, $this->getDisk()->get($sourceFilePath));
         $filePath = Storage::disk('local')->path($sourceFilePath);
 
@@ -225,6 +226,8 @@ class Protector
     }
 
     /**
+     * Reads the remote dump file and stores it on the client disk.
+     *
      * @return string
      *
      * @throws FailedRemoteDatabaseFetchingException
