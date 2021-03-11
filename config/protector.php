@@ -54,7 +54,7 @@ return [
     | By default the default filesystem disk stated in your filesystems-config will be used.
     |
     */
-    'baseDirectory' => '',
+    'baseDirectory' => 'protector',
     // 'diskName' => 'protector',
 
     /*
