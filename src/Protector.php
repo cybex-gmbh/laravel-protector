@@ -499,18 +499,19 @@ class Protector
             if ($this->configure($connectionName)) {
                 $relativePath = $this->createDump();
                 $fileName = basename($relativePath);
+                $localDisk = Storage::disk('local');
 
                 // Encrypt the data when Laravel Sanctum is active.
                 if ($sanctumIsActive) {
                     $publicKey = $request->user()->protector_public_key;
-                    $fileData   = sodium_crypto_box_seal($this->getDisk()->get($relativePath), sodium_hex2bin($publicKey));
+                    $fileData   = sodium_crypto_box_seal($localDisk->get($relativePath), sodium_hex2bin($publicKey));
                     $fileSize   = mb_strlen($fileData, '8bit');
                 } else {
-                    $fileData = $this->getDisk()->get($relativePath);
-                    $fileSize = filesize($relativePath);
+                    $fileData = $localDisk->get($relativePath);
+                    $fileSize = $localDisk->size($relativePath);
                 }
 
-                $this->getDisk()->delete($relativePath);
+                $localDisk->delete($relativePath);
 
                 return response($fileData)
                     ->withHeaders([
