@@ -47,13 +47,15 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Dump Path
+    | Disk Configuration
     |--------------------------------------------------------------------------
     |
-    | Here you may customize the path for the database dumps.
+    | Here you may customize the base directory and the disk.
+    | By default the default filesystem disk stated in your filesystems-config will be used.
     |
     */
-    'dumpPath' => database_path('dumps'),
+    'baseDirectory' => 'protector',
+    // 'diskName' => 'protector',
 
     /*
     |--------------------------------------------------------------------------

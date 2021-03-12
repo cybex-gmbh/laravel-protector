@@ -54,12 +54,12 @@ class ExportDump extends Command
         $options            = [];
         $options['no-data'] = $this->option('no-data') ?: false;
 
-        $protector = new Protector();
+        $protector = app('protector');
 
         if ($protector->configure($connectionName ?? null)) {
             // Create the desired dump.
             $filePath = $protector->createDump($fileName, $options);
-            $this->info(sprintf('Dump was created at %s', $filePath));
+            $this->info(sprintf('Dump was created at %s', $protector->getDisk()->path($filePath)));
         } else {
             $this->error('Configuration is invalid.');
         }

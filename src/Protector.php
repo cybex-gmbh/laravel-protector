@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use League\Flysystem\FileNotFoundException;
-use SplFileObject;
+use Storage;
 
 class Protector
 {
@@ -56,6 +56,20 @@ class Protector
      * @var
      */
     protected $privateKeyName = 'PROTECTOR_PRIVATE_KEY';
+
+    /**
+     * The server url for the dump endpoint.
+     *
+     * @var
+     */
+    protected $serverUrl = '';
+
+    /**
+     * The Protector Auth Token.
+     *
+     * @var
+     */
+    protected $authToken = '';
 
     public function __construct()
     {
@@ -104,9 +118,13 @@ class Protector
             throw new InvalidConnectionException('Connection is not configured properly');
         }
 
-        if (!file_exists($sourceFilePath)) {
+        if (!$this->getDisk()->exists($sourceFilePath)) {
             throw new FileNotFoundException($sourceFilePath);
         }
+
+        // Getting a local copy because disk files might not be possible to import.
+        Storage::disk('local')->put($sourceFilePath, $this->getDisk()->get($sourceFilePath));
+        $filePath = Storage::disk('local')->path($sourceFilePath);
 
         try {
             $shellCommandDropCreateDatabase = sprintf('mysql -h%s -u%s -p%s -e %s 2> /dev/null',
@@ -120,7 +138,7 @@ class Protector
                 escapeshellarg($this->connectionConfig['username']),
                 escapeshellarg($this->connectionConfig['password']),
                 escapeshellarg($this->connectionConfig['database']),
-                escapeshellarg($sourceFilePath));
+                escapeshellarg($filePath));
 
             exec($shellCommandDropCreateDatabase);
             exec($shellCommandImport);
@@ -154,7 +172,7 @@ class Protector
 
         $destinationFileName = $fileName ?? $this->createFilename();
 
-        $destinationFilePath = sprintf('%s%s%s', $this->getConfigValueForKey('dumpPath'), DIRECTORY_SEPARATOR, $destinationFileName);
+        $destinationFilePath = sprintf('%s%s%s', $this->getConfigValueForKey('baseDirectory'), DIRECTORY_SEPARATOR, $destinationFileName);
 
         if (!$this->generateDump($destinationFilePath, $options)) {
             throw new FailedDumpGenerationException('Error while creating the dump.');
@@ -208,6 +226,8 @@ class Protector
     }
 
     /**
+     * Reads the remote dump file and stores it on the client disk.
+     *
      * @return string
      *
      * @throws FailedRemoteDatabaseFetchingException
@@ -221,8 +241,7 @@ class Protector
             throw new InvalidEnvironmentException(sprintf('Retrieving a dump is not allowed on production systems.'));
         }
 
-        $serverUrl       = $this->getConfigValueForKey('remoteEndpoint.serverUrl');
-        $destinationPath = $this->getConfigValueForKey('dumpPath');
+        $serverUrl       = $this->getServerUrl();
         $sanctumIsActive = in_array('auth:sanctum', config('protector.routeMiddleware'));
 
         if ($sanctumIsActive && !$this->getPrivateKey()) {
@@ -232,9 +251,6 @@ class Protector
         if (!$serverUrl) {
             throw new InvalidConfigurationException('Server url is not set or invalid');
         }
-
-        // Create destination dir if it does not exist.
-        $this->createDirectory($destinationPath);
 
         // Get and configure the HTTP Request with either the Laravel Sanctum Token or Htaccess.
         $request = $this->getConfiguredHttpRequest();
@@ -258,7 +274,7 @@ class Protector
             $body = sodium_crypto_box_seal_open($body, sodium_hex2bin($this->getPrivateKey()));
 
             if ($body === false) {
-                throw  new InvalidConfigurationException("There was an error decrypting the database dump. This might be due to mismatching crypto keys.");
+                throw new InvalidConfigurationException("There was an error decrypting the database dump. This might be due to mismatching crypto keys.");
             }
         }
 
@@ -269,11 +285,17 @@ class Protector
             $destinationFilename = $matches['filename'];
         }
 
-        $fullDestinationFilename = $destinationPath . DIRECTORY_SEPARATOR . ($destinationFilename ?? 'remote_dump.sql');
+        $disk                = $this->getDisk();
+        $destinationFilepath = sprintf(
+            '%s%s%s',
+            $this->getConfigValueForKey('baseDirectory'),
+            DIRECTORY_SEPARATOR,
+            ($destinationFilename ?? 'remote_dump.sql')
+        );
 
-        file_put_contents($fullDestinationFilename, $body);
+        $disk->put($destinationFilepath, $body);
 
-        return $fullDestinationFilename;
+        return $destinationFilepath;
     }
 
     /**
@@ -329,15 +351,18 @@ class Protector
 
         $dumpOptions->push(sprintf('%s', escapeshellarg($this->connectionConfig['database'])));
 
+        $this->createDirectory(Storage::disk('local')->path($this->getConfigValueForKey('baseDirectory')));
+
         try {
             // Write dump using specific options.
             exec(sprintf('mysqldump %s > %s 2> /dev/null',
                 $dumpOptions->implode(' '),
-                escapeshellarg($destinationFilePath)));
+                escapeshellarg(Storage::disk('local')->path($destinationFilePath))));
 
+            $this->getDisk()->put($destinationFilePath, Storage::disk('local')->get($destinationFilePath));
             // Append some import/export-meta-data to the end.
             $metaData = sprintf("-- options:%s\n-- meta:%s", json_encode($options, JSON_UNESCAPED_UNICODE), json_encode($this->getMetaData(), JSON_UNESCAPED_UNICODE));
-            file_put_contents($destinationFilePath, $metaData, FILE_APPEND);
+            $this->getDisk()->append($destinationFilePath, $metaData);
 
             return true;
         } catch (Exception $exception) {
@@ -415,27 +440,27 @@ class Protector
      */
     protected function tail(string $file, int $lines, int $buffer = 1024): array
     {
-        // Open file-handle using spl.
-        $fileHandle = new SplFileObject($file);
+        // Open file-handle.
+        $fileHandle = $this->getDisk()->readStream($file);
         // Jump to last character.
-        $fileHandle->fseek(0, SEEK_END);
+        fseek($fileHandle, 0, SEEK_END);
 
         $linesToRead = $lines;
         $contents    = '';
 
         // Only read file as long as file-pointer is not at start of the file and there are still lines to read open.
-        while ($fileHandle->ftell() && $linesToRead >= 0) {
+        while (ftell($fileHandle) && $linesToRead >= 0) {
             // Get the max length for reading, in case the buffer is longer than the remaining file-length.
-            $seekLength = min($fileHandle->ftell(), $buffer);
+            $seekLength = min(ftell($fileHandle), $buffer);
 
             // Set the pointer to a position in front of the current pointer.
-            $fileHandle->fseek(-$seekLength, SEEK_CUR);
+            fseek($fileHandle, -$seekLength, SEEK_CUR);
 
             // Get the next content-chunk by using the according length.
-            $contents = ($chunk = $fileHandle->fread($seekLength)) . $contents;
+            $contents = ($chunk = fread($fileHandle, $seekLength)) . $contents;
 
             // Reset pointer to the position before reading the current chunk.
-            $fileHandle->fseek(-mb_strlen($chunk, 'UTF-8'), SEEK_CUR);
+            fseek($fileHandle, -mb_strlen($chunk, 'UTF-8'), SEEK_CUR);
 
             // Decrease count of lines to read by the amount of new-lines given in the current chunk.
             $linesToRead -= substr_count($chunk, "\n");
@@ -449,12 +474,13 @@ class Protector
      * Returns a config value for a specific key and checks for Callables.
      *
      * @param string $key
+     * @param null   $default
      *
      * @return string
      */
-    protected function getConfigValueForKey(string $key): ?string
+    protected function getConfigValueForKey(string $key, $default = null): ?string
     {
-        $value = config(sprintf('protector.%s', $key));
+        $value = config(sprintf('protector.%s', $key), $default);
 
         return is_callable($value) ? $value() : $value;
     }
@@ -474,20 +500,21 @@ class Protector
         // Only proceed when either Laravel Sanctum is turned off or the user's token is valid.
         if (!$sanctumIsActive || $request->user()->tokenCan('protector:import')) {
             if ($this->configure($connectionName)) {
-                $fullPath = $this->createDump();
-                $fileName = basename($fullPath);
+                $relativePath = $this->createDump();
+                $fileName = basename($relativePath);
+                $localDisk = Storage::disk('local');
 
                 // Encrypt the data when Laravel Sanctum is active.
                 if ($sanctumIsActive) {
                     $publicKey = $request->user()->protector_public_key;
-                    $fileData   = sodium_crypto_box_seal(file_get_contents($fullPath, false), sodium_hex2bin($publicKey));
+                    $fileData   = sodium_crypto_box_seal($localDisk->get($relativePath), sodium_hex2bin($publicKey));
                     $fileSize   = mb_strlen($fileData, '8bit');
                 } else {
-                    $fileData = file_get_contents($fullPath, false);
-                    $fileSize = filesize($fullPath);
+                    $fileData = $localDisk->get($relativePath);
+                    $fileSize = $localDisk->size($relativePath);
                 }
 
-                File::delete($fullPath);
+                $localDisk->delete($relativePath);
 
                 return response($fileData)
                     ->withHeaders([
@@ -501,6 +528,16 @@ class Protector
         }
 
         return response()->json('Unauthorized', 401);
+    }
+
+    /**
+     * Returns the disk which is stated in the config. If no disk is stated the default filesystem disk will be returned.
+     *
+     * @return Illuminate\Filesystem\FilesystemAdapter
+     */
+    public function getDisk()
+    {
+        return Storage::disk($this->getConfigValueForKey('diskName', config('filesystems.default')));
     }
 
     /**
@@ -582,6 +619,8 @@ class Protector
     }
 
     /**
+     * Retrieves the private key for Sodium encryption.
+     *
      * @return string
      */
     protected function getPrivateKey(): string
@@ -590,10 +629,42 @@ class Protector
     }
 
     /**
+     * Retrieves the auth token for Laravel Sanctum authentication.
+     *
      * @return string
      */
     protected function getAuthToken(): string
     {
-        return env($this->authTokenKeyName, '');
+        return $this->authToken ?: env($this->authTokenKeyName, '');
+    }
+
+    /**
+     * Sets the auth token for Laravel Sanctum authentication.
+     *
+     * @param string $authToken
+     */
+    public function setAuthToken(string $authToken): void
+    {
+        $this->authToken = $authToken;
+    }
+
+    /**
+     * Retrieves the server url of the dump endpoint.
+     *
+     * @return string
+     */
+    public function getServerUrl(): string
+    {
+        return $this->serverUrl ?: $this->getConfigValueForKey('remoteEndpoint.serverUrl');
+    }
+
+    /**
+     * Sets the server url of the dump endpoint.
+     *
+     * @param string $serverUrl
+     */
+    public function setServerUrl(string $serverUrl): void
+    {
+        $this->serverUrl = $serverUrl;
     }
 }
