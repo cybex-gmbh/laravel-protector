@@ -106,7 +106,7 @@ class ImportDump extends Command
         if ($optionRemote) {
             if ($this->option('flush')) {
                 $disk->delete($disk->files($basePath));
-                $this->warn(sprintf('Deleted all files in %s'), $disk->path($basePath));
+                $this->warn(sprintf('Deleted all files in %s', $disk->path($basePath)));
             }
 
             $this->line(sprintf('<<< Downloading dump from remote server to directory: <comment>%s</comment>', $disk->path($basePath)));
