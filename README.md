@@ -62,7 +62,7 @@ See the Usage chapter on how to download and import the current server database.
 
 ### On the Server
 
-Please make sure that the server is 
+Please make sure that the server is accessible to the client machine via HTTPS.
 
 When one of your developers gives you their public key from the previous step, you can authorize them with: 
 
