@@ -1,8 +1,8 @@
 # Laravel Protector
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/cybex/protector.svg?style=flat-square)](https://packagist.org/packages/cybex/protector)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/cybex/laravel-protector.svg?style=flat-square)](https://packagist.org/packages/cybex/laravel-protector)
 
-Protect Databases by generating Backups and Import those on non-productive Environments.
+Protect Databases by generating Backups and Import these on non-productive Environments.
 Authenticate users with the usage of Laravel Sanctum Tokens.
 Encrypt your database dumps with Sodium Encryption.
 
@@ -26,14 +26,8 @@ To generate a Laravel Sanctum authentication token for a user use
 You can import a database dump by using
     protector:import
     
-You can export a database dump by using 
+You can export a database dump by using
     protector:export
-```
-
-### Testing
-
-``` bash
-composer test
 ```
 
 ## Contributing
@@ -46,7 +40,8 @@ If you discover any security related issues, please email webdevelopment@cybex-o
 
 ## Credits
 
-- [Marco Szulik](https://github.com/cybex-gmbh)
+- [Web Development team at Cybex GmbH - cybex-online.com](https://github.com/cybex-gmbh)
+- [Marco Szulik](https://github.com/mszulik)
 - [All Contributors](../../contributors)
 
 ## License
