@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) Marco Szulik
+Copyright (c) Cybex GmbH - cybex-online.com (https://github.com/cybex-gmbh)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

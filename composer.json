@@ -1,17 +1,22 @@
 {
-    "name": "cybex/protector",
+    "name": "cybex/laravel-protector",
     "description": "Protect Databases by generating Backups and Import those on non-productive Environments.",
     "keywords": [
         "cybex",
+        "laravel",
+        "database",
+        "backup",
+        "sync",
+        "encryption",
         "protector"
     ],
-    "homepage": "https://bitbucket.org/cybexgmbh/protector",
+    "homepage": "https://github.com/cybex-gmbh/laravel-protector",
     "license": "MIT",
     "type": "library",
     "authors": [
         {
             "name": "Marco Szulik",
-            "email": "marco.szulik@goodbabyint.com",
+            "email": "webdevelopment@cybex-online.com",
             "role": "Developer"
         }
     ],
