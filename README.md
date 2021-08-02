@@ -11,6 +11,7 @@ Common usage scenarios
 Feature set:
  
 - Download and Import databases from a server.
+- Export the local database to a file.
 - User authentication through Laravel Sanctum Tokens.
 - Transport encryption using Sodium.
 
