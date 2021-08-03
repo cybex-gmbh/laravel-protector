@@ -26,9 +26,14 @@ artisan migrate
 
 In your User model class, add the following trait, then commit and publish the change.
 ```php
+use Laravel\Sanctum\HasApiTokens;
+
 class User extends Authenticatable
 {
     use HasApiTokens;
+
+    ...
+}
 ```
 
 ## Setup
