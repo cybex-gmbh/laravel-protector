@@ -10,9 +10,9 @@ Common usage scenarios
 
 Feature set:
  
-- Download and Import databases from a server.
+- Download and import databases from a server.
 - Export the local database to a file.
-- User authentication through Laravel Sanctum Tokens.
+- User authentication through Laravel Sanctum tokens.
 - Transport encryption using Sodium.
 
 ## Installation
@@ -24,7 +24,7 @@ composer require cybex/laravel-protector
 artisan migrate
 ```
 
-In your User model class, add the following Trait, then commit and publish the change.
+In your User model class, add the following trait, then commit and publish the change.
 ```php
 class User extends Authenticatable
 {
