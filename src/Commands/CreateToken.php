@@ -46,6 +46,7 @@ class CreateToken extends Command
         $publicKey = $this->option('publicKey');
         $user      = config('auth.providers.users.model')::findOrFail($this->argument('userId'));
         $user->tokens()->whereAbilities('["protector:import"]')->delete();
+        $userInformation = sprintf('%s: %s (%s)', $user->id, $user->name, $user->email);
 
         if (!$user->protector_public_key && !$publicKey) {
             $this->error('The user doesn\'t have a protector public key and none was specified. Please provide a public key for the user.');
@@ -56,13 +57,13 @@ class CreateToken extends Command
             $user->protector_public_key = $publicKey;
             $user->save();
 
-            $this->info(sprintf('Protector public key was set for user %s.', $user->name ?? $user->username ?? $user->id));
+            $this->info(sprintf('Protector public key was set for user %s.', $userInformation));
             $this->output->newLine();
         }
 
         $token = $user->createToken('protector', ['protector:import']);
 
-        $this->warn(sprintf('Information for the user %s:', $user->name ?? $user->username ?? $user->id));
+        $this->warn(sprintf('Information for the user %s', $userInformation);
         $this->info(sprintf('Auth Token: "%s"', $token->plainTextToken));
         $this->warn('The quotation marks at the start and end of the token are necessary!');
         $this->info(sprintf('Server URL: %s', route('protectorDumpEndpointRoute')));
