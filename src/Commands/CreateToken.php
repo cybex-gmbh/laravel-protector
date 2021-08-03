@@ -63,7 +63,7 @@ class CreateToken extends Command
 
         $token = $user->createToken('protector', ['protector:import']);
 
-        $this->warn(sprintf('Information for the user %s', $userInformation);
+        $this->warn(sprintf('Information for the user %s', $userInformation));
         $this->info(sprintf('Auth Token: "%s"', $token->plainTextToken));
         $this->warn('The quotation marks at the start and end of the token are necessary!');
         $this->info(sprintf('Server URL: %s', route('protectorDumpEndpointRoute')));
