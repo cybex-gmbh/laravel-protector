@@ -145,7 +145,7 @@ Run the migration on the client and server repository.
 php artisan migrate
 ```
 
-#### Setup on the Client
+#### On the Client
 
 Run the following command to receive
 - the public key to give to your server admin
@@ -163,31 +163,11 @@ PROTECTOR_SERVER_URL=
 
 >Do not give your private key to anyone and keep it protected at all time
 
-#### Usage on the client
-
-Run the following command for an interactive shell
-```bash
-php artisan protector:import
-```
-
-To download and import the server database in one go, run
-```bash
-php artisan protector:import --remote
-```
-
-To import a database you downloaded earlier, run
-```bash
-php artisan protector:import --file=<your backup file>
-```
-
-To learn more about import options run
-```bash
-php artisan protector:import --help
-```
+See [Usage](#Usage) on how to import the remote database.
 
 >Downloaded database dump files are stored unencrypted
 
-#### Setup on the Server
+#### On the Server
 
 Make sure that the server is accessible to the client machine via HTTPS.
 
