@@ -25,7 +25,6 @@ class ProtectorServiceProvider extends ServiceProvider
             ExportDump::class,
             ImportDump::class,
         ]);
-        $this->loadMigrationsFrom(__DIR__ . '/../src/Migrations');
 
         // Publish package config to app config space.
         $this->publishes([
