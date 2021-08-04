@@ -53,10 +53,10 @@ class ProtectorServiceProvider extends ServiceProvider
 
     protected function registerRoutes()
     {
-        Route::post(config('protector.dumpEndpointRoute'), [
-            'as'   => 'protectorDumpEndpointRoute',
-            'uses' => [Protector::class, 'generateFileDownloadResponse'],
-        ])->middleware(config('protector.routeMiddleware'));
+        Route::post(config('protector.dumpEndpointRoute'))
+            ->middleware(config('protector.routeMiddleware'))
+            ->name('protectorDumpEndpointRoute')
+            ->uses([Protector::class, 'generateFileDownloadResponse']);
     }
 
     /**
