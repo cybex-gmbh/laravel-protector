@@ -22,11 +22,11 @@ Allows downloading, importing and exporting database backups.
 
 ## Table of contents
 
-- [Usage](#Usage)
-- [Setup Instructions](#Setup Instructions)
-    - [Storing the local database](#Setup for storing the local database)
-    - [Importing the database of a remote server](#Setup for importing the database of a remote server)
-    - [Collecting backups from multiple servers](#Setup for collecting backups from multiple servers)
+- [Usage](#usage)
+- [Setup Instructions](#setup-instructions)
+    - [Storing the local database](#setup-for-storing-the-local-database)
+    - [Importing the database of a remote server](#setup-for-importing-the-database-of-a-remote-server)
+    - [Collecting backups from multiple servers](#setup-for-collecting-backups-from-multiple-servers)
 
 
 ## Usage
@@ -163,7 +163,7 @@ PROTECTOR_SERVER_URL=
 
 >Do not give your private key to anyone and keep it protected at all time
 
-See [Usage](#Usage) on how to import the remote database.
+See [Usage](#usage) on how to import the remote database.
 
 >Downloaded database dump files are stored unencrypted
 
