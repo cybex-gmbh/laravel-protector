@@ -71,9 +71,10 @@ class ProtectorServiceProvider extends ServiceProvider
         }
 
         $timestamp = date('Y_m_d_His', time());
+        $migrationName = 'add_public_key_to_users_table.php';
 
-        $stub   = sprintf('%s/Migrations/2020_08_26_073644_add_public_key_to_users_table.php', __DIR__);
-        $target = sprintf('%s/migrations/%s_add_public_key_to_users_table.php', $this->app->databasePath(), $timestamp);
+        $stub   = sprintf('%s/Migrations/%s', __DIR__, $migrationName);
+        $target = $this->app->databasePath(sprintf('migrations/%s_%s', $timestamp, $migrationName));
 
         $this->publishes([$stub => $target], 'protector.migrations');
     }
