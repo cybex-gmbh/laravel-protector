@@ -62,7 +62,7 @@ To save a copy of your local database to your local disk, run
 php artisan protector:export
 ```
 
-## Setup Instructions
+## Setup instructions
 
 Find below three common scenarios of usage. These are not mutually exclusive.
 
