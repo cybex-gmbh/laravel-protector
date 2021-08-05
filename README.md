@@ -13,11 +13,11 @@ Allows downloading, importing and exporting database backups.
 
 ## Feature set
 
-- Download and optionally import databases from a server.
-- Import existing database files.
-- Export the local database to a file.
-- User authentication through Laravel Sanctum tokens.
-- Transport encryption using Sodium.
+- Download and optionally import databases from a server
+- Import existing database files
+- Export the local database to a file
+- User authentication through Laravel Sanctum tokens
+- Transport encryption using Sodium
 
 
 ## Table of contents
@@ -79,9 +79,9 @@ composer require cybex/laravel-protector
 ```
 
 You can optionally publish the protector config to set the following options
-- fileName: the file name of the database dump
-- baseDirectory: where files are being stored
-- diskName: a dedicated Laravel disk defined in config/filesystems.php. These can point to a specific folder, disk or a  cloud file bucket like AWS S3.
+- `fileName`: the file name of the database dump
+- `baseDirectory`: where files are being stored
+- `diskName`: a dedicated Laravel disk defined in config/filesystems.php. These can point to a specific folder, disk or a  cloud file bucket like AWS S3
 
 ```bash
 artisan vendor:publish --tag=protector.config
@@ -130,11 +130,6 @@ class User extends Authenticatable
 }
 ```
 
-You can optionally publish the protector config to set options regarding the storage, access and transmission of the files. 
-```bash
-artisan vendor:publish --tag=protector.config
-```
-
 Publish the protector database migration, and optionally modify it to work with your project.
 ```bash
 php artisan vendor:publish --tag=protector.migrations
@@ -143,6 +138,11 @@ php artisan vendor:publish --tag=protector.migrations
 Run the migration on the client and server repository.
 ```bash
 php artisan migrate
+```
+
+You can optionally publish the protector config to set options regarding the storage, access and transmission of the files.
+```bash
+php artisan vendor:publish --tag=protector.config
 ```
 
 #### On the Client
