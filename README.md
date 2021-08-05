@@ -2,7 +2,7 @@
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/cybex/laravel-protector.svg?style=flat-square)](https://packagist.org/packages/cybex/laravel-protector)
 
-Allows downloading, importing and exporting database backups.
+This package allows you to download, export and import your application's database backups.
 
 
 ## Common usage scenarios
@@ -62,7 +62,7 @@ To save a copy of your local database to your local disk, run
 php artisan protector:export
 ```
 
-## Setup Instructions
+## Setup instructions
 
 Find below three common scenarios of usage. These are not mutually exclusive.
 
@@ -81,7 +81,7 @@ composer require cybex/laravel-protector
 You can optionally publish the protector config to set the following options
 - `fileName`: the file name of the database dump
 - `baseDirectory`: where files are being stored
-- `diskName`: a dedicated Laravel disk defined in config/filesystems.php. These can point to a specific folder, disk or a  cloud file bucket like AWS S3
+- `diskName`: a dedicated Laravel disk defined in config/filesystems.php. These can point to a specific local folder or a cloud file bucket like AWS S3
 
 ```bash
 artisan vendor:publish --tag=protector.config
@@ -145,7 +145,7 @@ You can optionally publish the protector config to set options regarding the sto
 php artisan vendor:publish --tag=protector.config
 ```
 
-#### On the Client
+#### On the client machine
 
 Run the following command to receive
 - the public key to give to your server admin
@@ -167,7 +167,7 @@ See [Usage](#usage) on how to import the remote database.
 
 >Downloaded database dump files are stored unencrypted
 
-#### On the Server
+#### On the server
 
 Make sure that the server is accessible to the client machine via HTTPS.
 
@@ -186,8 +186,8 @@ The developer can then download and import the server database on their own.
 You can develop a custom client that can access and store remote server backups. The servers can be different Laravel projects that have the protector package installed.
 
 See the previous chapter on how to give your backup client access to all servers. The backup client will need an according user on each target server.
-* All the backup users on the target servers will have the same public key from the client
-* For each target server, the client will store the according url and token 
+- All the backup users on the target servers will have the same public key from the client
+- For each target server, the client will store the according url and token 
 
 See [cybex-gmbh/collector](https://github.com/cybex-gmbh/collector) for an example implementation.
 
