@@ -2,7 +2,7 @@
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/cybex/laravel-protector.svg?style=flat-square)](https://packagist.org/packages/cybex/laravel-protector)
 
-Allows downloading, importing and exporting database backups.
+This package allows you to download, export and import your application's database backups.
 
 
 ## Common usage scenarios
