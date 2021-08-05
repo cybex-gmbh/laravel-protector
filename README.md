@@ -167,7 +167,7 @@ See [Usage](#usage) on how to import the remote database.
 
 >Downloaded database dump files are stored unencrypted
 
-#### On the Server
+#### On the server
 
 Make sure that the server is accessible to the client machine via HTTPS.
 
