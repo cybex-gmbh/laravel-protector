@@ -186,7 +186,7 @@ The developer can then download and import the server database on their own.
 You can develop a custom client that can access and store remote server backups. The servers can be different Laravel projects that have the protector package installed.
 
 See the previous chapter on how to give your backup client access to all servers. The backup client will need an according user on each target server.
-* All the backup users on the target servers will have the same public key from the client
+- All the backup users on the target servers will have the same public key from the client
 * For each target server, the client will store the according url and token 
 
 See [cybex-gmbh/collector](https://github.com/cybex-gmbh/collector) for an example implementation.
