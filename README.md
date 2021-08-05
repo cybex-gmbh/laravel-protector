@@ -145,7 +145,7 @@ Run the migration on the client and server repository.
 php artisan migrate
 ```
 
-#### On the Client
+#### On the client machine
 
 Run the following command to receive
 - the public key to give to your server admin
