@@ -81,7 +81,7 @@ composer require cybex/laravel-protector
 You can optionally publish the protector config to set the following options
 - fileName: the file name of the database dump
 - baseDirectory: where files are being stored
-- diskName: a dedicated Laravel disk defined in config/filesystems.php. These can point to a specific folder, disk or a  cloud file bucket like AWS S3.
+- diskName: a dedicated Laravel disk defined in config/filesystems.php. These can point to a specific local folder or a cloud file bucket like AWS S3.
 
 ```bash
 artisan vendor:publish --tag=protector.config
