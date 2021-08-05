@@ -133,7 +133,7 @@ class ImportDump extends Command
                 if (is_array($metaData) && !empty($metaData) && array_key_exists($metaData['meta']['connection'], config('database.connections'))) {
 
                     $fileInformation = [
-                        'path'        => $basePath . DIRECTORY_SEPARATOR . $directoryFile,
+                        'path'        => $directoryFile,
                         'file'        => $directoryFile,
                         'database'    => Arr::get($metaData, 'meta.database', null),
                         'connection'  => Arr::get($metaData, 'meta.connection', null),
@@ -158,7 +158,7 @@ class ImportDump extends Command
                     $matchingFiles->push($fileInformation);
                 } elseif ($this->option('ignore-connection-filter') || (!is_array($metaData) || empty($metaData))) {
                     $matchingFiles->push([
-                        'path'        => $basePath . DIRECTORY_SEPARATOR . $directoryFile,
+                        'path'        => $directoryFile,
                         'file'        => $directoryFile,
                         'database'    => '',
                         'connection'  => 'external_dump',
