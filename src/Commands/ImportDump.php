@@ -29,7 +29,7 @@ class ImportDump extends Command
                 {--allow-production : Enable importing SQL dumps on a production system. }
                 {--force : Forces the import of the given file or remote download. Requires the dump, file or remote option. }
                 {--i|ignore-connection-filter : Ignores filter of dumps to defined connections. }
-                {--r|remote : Pull a fresh dump from the remote server as configured in the .env file. }
+                {--r|remote : Pull a fresh dump from the remote server as configured in the .env file. Will be used as fallback when combined with other options. }
                 {--flush : Delete all existing dumps in the dump folder when using a remote dump. }
                 {--l|latest : Import the most recent dump available in the configured dumps directory. }';
 
@@ -39,6 +39,9 @@ class ImportDump extends Command
      * @var string
      */
     protected $description = 'Imports a dump.';
+
+    protected const DOWNLOAD_REMOTE_DUMP       = 'Download remote dump';
+    protected const IMPORT_EXISTING_LOCAL_DUMP = 'Import existing local dump';
 
     /**
      * Create a new command instance.
@@ -74,6 +77,7 @@ class ImportDump extends Command
         $basePath                = config('protector.baseDirectory');
         $destinationFilename     = $optionDump ?: $protector->createFilename();
         $relativePath            = $optionFile ?: $basePath . DIRECTORY_SEPARATOR . $destinationFilename;
+        $importFilePath          = null;
 
         $connectionName = null;
 
@@ -97,15 +101,37 @@ class ImportDump extends Command
         if (!($optionRemote || $optionFile || $optionDump || $optionLatest)) {
             if ($this->choice('Do you want to download and import a fresh dump from the server or an existing local dump?',
                     [
-                        '1' => 'Download remote dump',
-                        '2' => 'Import existing local dump',
+                        1 => static::DOWNLOAD_REMOTE_DUMP,
+                        2 => static::IMPORT_EXISTING_LOCAL_DUMP,
                     ],
-                    'Download remote dump') == 'Download remote dump') {
+                    1) == static::DOWNLOAD_REMOTE_DUMP) {
                 $optionRemote = true;
-            };
+            }
         }
 
-        if ($optionRemote) {
+        if ($optionLatest) {
+            try {
+                $importFilePath = $protector->getLatestDumpName();
+            } catch (FileNotFoundException $fileNotFoundException) {
+                if (!$optionRemote) {
+                    $this->error($fileNotFoundException->getMessage());
+                    return;
+                } else {
+                    $this->warn(sprintf('There are no files in %s', $disk->path($basePath)));
+                }
+            }
+        } elseif ($optionFile || $optionDump) {
+            if ($disk->exists($relativePath)) {
+                $importFilePath = $relativePath;
+            } elseif (!$optionRemote) {
+                $this->error((new FileNotFoundException($relativePath))->getMessage());
+                return;
+            } else {
+                $this->warn(sprintf('File not found: %s', $relativePath));
+            }
+        }
+
+        if (!$importFilePath && $optionRemote) {
             if ($this->option('flush')) {
                 $disk->delete($disk->files($basePath));
                 $this->warn(sprintf('Deleted all files in %s', $disk->path($basePath)));
@@ -123,16 +149,9 @@ class ImportDump extends Command
             $this->line(sprintf('>>> Successfully retrieved remote dump from %s', app('protector')->getServerUrl()));
 
             $importFilePath = $fullRemoteDumpFileName;
-        } elseif ($optionFile || $optionDump) {
-            $importFilePath = $relativePath;
-        } elseif ($optionLatest) {
-            try {
-                $importFilePath = $protector->getLatestDumpName();
-            } catch (FileNotFoundException $fileNotFoundException) {
-                $this->error($fileNotFoundException->getMessage());
-                return;
-            }
-        } else {
+        }
+
+        if (!$importFilePath) {
             $directoryFiles = $disk->files($basePath);
             $matchingFiles  = collect();
 
