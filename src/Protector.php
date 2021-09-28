@@ -675,14 +675,16 @@ class Protector
      */
     public function getLatestDumpName(): string
     {
-        $files = $this->getDisk()->files($this->getConfigValueForKey('baseDirectory'));
+        $disk          = $this->getDisk();
+        $baseDirectory = $this->getConfigValueForKey('baseDirectory');
+        $files         = $disk->files($baseDirectory);
 
         if (empty($files)) {
-            throw new FileNotFoundException('There are no files in the configured directory.');
+            throw new FileNotFoundException($disk->path($baseDirectory));
         }
 
-        usort($files, function ($a, $b) {
-            return $this->getDisk()->lastModified($b) - $this->getDisk()->lastModified($a);
+        usort($files, function ($a, $b) use ($disk) {
+            return $disk->lastModified($b) - $disk->lastModified($a);
         });
 
         return $files[0];
