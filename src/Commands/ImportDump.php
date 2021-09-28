@@ -40,6 +40,9 @@ class ImportDump extends Command
      */
     protected $description = 'Imports a dump.';
 
+    protected const DOWNLOAD_REMOTE_DUMP       = 'Download remote dump';
+    protected const IMPORT_EXISTING_LOCAL_DUMP = 'Import existing local dump';
+
     /**
      * Create a new command instance.
      *
@@ -96,15 +99,14 @@ class ImportDump extends Command
         }
 
         if (!($optionRemote || $optionFile || $optionDump || $optionLatest)) {
-            $downloadRemoteDump = 'Download remote dump';
             if ($this->choice('Do you want to download and import a fresh dump from the server or an existing local dump?',
                     [
-                        '1' => $downloadRemoteDump,
-                        '2' => 'Import existing local dump',
+                        1 => static::DOWNLOAD_REMOTE_DUMP,
+                        2 => static::IMPORT_EXISTING_LOCAL_DUMP,
                     ],
-                    $downloadRemoteDump) == $downloadRemoteDump) {
+                    1) == static::DOWNLOAD_REMOTE_DUMP) {
                 $optionRemote = true;
-            };
+            }
         }
 
         if ($optionLatest) {
