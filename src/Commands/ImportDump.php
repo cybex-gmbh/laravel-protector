@@ -2,12 +2,12 @@
 
 namespace Cybex\Protector\Commands;
 
-use Cybex\Protector\Protector;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\File;
+use League\Flysystem\FileNotFoundException;
 use LogicException;
 
 /**
@@ -30,7 +30,8 @@ class ImportDump extends Command
                 {--force : Forces the import of the given file or remote download. Requires the dump, file or remote option. }
                 {--i|ignore-connection-filter : Ignores filter of dumps to defined connections. }
                 {--r|remote : Pull a fresh dump from the remote server as configured in the .env file. }
-                {--flush : Delete all existing dumps in the dump folder when using a remote dump}';
+                {--flush : Delete all existing dumps in the dump folder when using a remote dump. }
+                {--l|latest : Import the most recent dump available in the configured dumps directory. }';
 
     /**
      * The console command description.
@@ -60,6 +61,7 @@ class ImportDump extends Command
         $optionFile   = $this->option('file');
         $optionRemote = $this->option('remote');
         $optionForce  = $this->option('force');
+        $optionLatest = $this->option('latest');
 
         if ($optionForce && !($optionRemote || $optionFile || $optionDump)) {
             $this->error('The force option requires either the file, dump or remote option to be set.');
@@ -92,7 +94,7 @@ class ImportDump extends Command
             return;
         }
 
-        if (!($optionRemote || $optionFile || $optionDump)) {
+        if (!($optionRemote || $optionFile || $optionDump || $optionLatest)) {
             if ($this->choice('Do you want to download and import a fresh dump from the server or an existing local dump?',
                     [
                         '1' => 'Download remote dump',
@@ -123,6 +125,13 @@ class ImportDump extends Command
             $importFilePath = $fullRemoteDumpFileName;
         } elseif ($optionFile || $optionDump) {
             $importFilePath = $relativePath;
+        } elseif ($optionLatest) {
+            try {
+                $importFilePath = $protector->getLatestDumpName();
+            } catch (FileNotFoundException $fileNotFoundException) {
+                $this->error($fileNotFoundException->getMessage());
+                return;
+            }
         } else {
             $directoryFiles = $disk->files($basePath);
             $matchingFiles  = collect();
