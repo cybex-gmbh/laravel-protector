@@ -677,6 +677,10 @@ class Protector
     {
         $files = $this->getDisk()->files($this->getConfigValueForKey('baseDirectory'));
 
+        if (empty($files)) {
+            throw new FileNotFoundException('There are no files in the configured directory.');
+        }
+
         usort($files, function ($a, $b) {
             return $this->getDisk()->lastModified($b) - $this->getDisk()->lastModified($a);
         });
