@@ -89,6 +89,7 @@ class ImportDump extends Command
 
         $options                     = [];
         $options['allow-production'] = $this->option('allow-production') ?: false;
+        $options['run-migrations']   = $optionMigrate ?: false;
 
         if (App::environment('production') && !$this->option('allow-production')) {
             $this->error('Import is not allowed on production systems! Use --allow-production');
@@ -239,11 +240,8 @@ class ImportDump extends Command
 
         if ($importFilePath && ($optionForce || $this->confirm(sprintf('Are you sure that you want to import the dump at %s?', $disk->path($importFilePath))))) {
             // Import the desired dump.
+            $this->info(sprintf('Importing %s. Running migrations: %s', $importFilePath, $optionMigrate ? 'yes' : 'no'));
             $protector->importDump($importFilePath, $options);
-
-            if ($optionMigrate) {
-                $this->call('migrate');
-            }
         } else {
             $this->info('Import aborted');
         }
