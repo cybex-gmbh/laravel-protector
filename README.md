@@ -42,10 +42,16 @@ To download and import the server database in one go, run
 ```bash
 php artisan protector:import --remote
 ```
+When used with other options, remote will serve as fallback behavior.
 
 To import a database you downloaded earlier, run
 ```bash
 php artisan protector:import --file=<your backup file>
+```
+
+To import the latest existing database file, run
+```bash
+php artisan protector:import --latest
 ```
 
 To learn more about import options run
