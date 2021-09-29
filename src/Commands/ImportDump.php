@@ -31,7 +31,8 @@ class ImportDump extends Command
                 {--i|ignore-connection-filter : Ignores filter of dumps to defined connections. }
                 {--r|remote : Pull a fresh dump from the remote server as configured in the .env file. Will be used as fallback when combined with other options. }
                 {--flush : Delete all existing dumps in the dump folder when using a remote dump. }
-                {--l|latest : Import the most recent dump available in the configured dumps directory. }';
+                {--l|latest : Import the most recent dump available in the configured dumps directory. }
+                {--m|migrate : Run newer database migrations after import. }';
 
     /**
      * The console command description.
@@ -60,11 +61,12 @@ class ImportDump extends Command
      */
     public function handle()
     {
-        $optionDump   = $this->option('dump');
-        $optionFile   = $this->option('file');
-        $optionRemote = $this->option('remote');
-        $optionForce  = $this->option('force');
-        $optionLatest = $this->option('latest');
+        $optionDump    = $this->option('dump');
+        $optionFile    = $this->option('file');
+        $optionRemote  = $this->option('remote');
+        $optionForce   = $this->option('force');
+        $optionLatest  = $this->option('latest');
+        $optionMigrate = $this->option('migrate');
 
         if ($optionForce && !($optionRemote || $optionFile || $optionDump)) {
             $this->error('The force option requires either the file, dump or remote option to be set.');
@@ -239,6 +241,9 @@ class ImportDump extends Command
             // Import the desired dump.
             $protector->importDump($importFilePath, $options);
 
+            if ($optionMigrate) {
+                $this->call('migrate');
+            }
         } else {
             $this->info('Import aborted');
         }
