@@ -38,7 +38,7 @@ class ImportDump extends Command
      *
      * @var string
      */
-    protected $description = 'Imports a dump.';
+    protected $description = 'Imports a local or remote database dump.';
 
     protected const DOWNLOAD_REMOTE_DUMP       = 'Download remote dump';
     protected const IMPORT_EXISTING_LOCAL_DUMP = 'Import existing local dump';
@@ -104,7 +104,7 @@ class ImportDump extends Command
                         1 => static::DOWNLOAD_REMOTE_DUMP,
                         2 => static::IMPORT_EXISTING_LOCAL_DUMP,
                     ],
-                    1) == static::DOWNLOAD_REMOTE_DUMP) {
+                    1) === static::DOWNLOAD_REMOTE_DUMP) {
                 $optionRemote = true;
             }
         }
