@@ -486,6 +486,17 @@ class Protector
     }
 
     /**
+     * Prepares the file download response for the dump by extracting the user.
+     *
+     * @param Request $request
+     *
+     * @return \Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\Response|null
+     */
+    public function prepareFileDownloadResponse(Request $request) {
+        return $this->generateFileDownloadResponse($request->user());
+    }
+
+    /**
      * Generates a response which allows downloading the dump file.
      *
      * @param Request $request
@@ -493,12 +504,16 @@ class Protector
      *
      * @return \Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\Response|null
      */
-    public function generateFileDownloadResponse(Request $request, string $connectionName = null)
+    public function generateFileDownloadResponse($user, string $connectionName = null, bool $disableTokenCheck = false)
     {
+        if (!is_a($user, config('auth.providers.users.model'))) {
+            return response()->json('Unknown user class', 401);
+        }
+
         $sanctumIsActive = in_array('auth:sanctum', config('protector.routeMiddleware'));
 
         // Only proceed when either Laravel Sanctum is turned off or the user's token is valid.
-        if (!$sanctumIsActive || $request->user()->tokenCan('protector:import')) {
+        if (!$sanctumIsActive || $disableTokenCheck || $user->tokenCan('protector:import')) {
             if ($this->configure($connectionName)) {
                 $relativePath = $this->createDump();
                 $fileName     = basename($relativePath);
@@ -506,7 +521,7 @@ class Protector
 
                 // Encrypt the data when Laravel Sanctum is active.
                 if ($sanctumIsActive) {
-                    $publicKey = $request->user()->protector_public_key;
+                    $publicKey = $user->protector_public_key;
                     $fileData  = sodium_crypto_box_seal($localDisk->get($relativePath), sodium_hex2bin($publicKey));
                     $fileSize  = mb_strlen($fileData, '8bit');
                 } else {
