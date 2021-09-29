@@ -104,7 +104,7 @@ class ImportDump extends Command
                         1 => static::DOWNLOAD_REMOTE_DUMP,
                         2 => static::IMPORT_EXISTING_LOCAL_DUMP,
                     ],
-                    1) == static::DOWNLOAD_REMOTE_DUMP) {
+                    1) === static::DOWNLOAD_REMOTE_DUMP) {
                 $optionRemote = true;
             }
         }
