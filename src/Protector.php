@@ -501,14 +501,14 @@ class Protector
         if (!$sanctumIsActive || $request->user()->tokenCan('protector:import')) {
             if ($this->configure($connectionName)) {
                 $relativePath = $this->createDump();
-                $fileName = basename($relativePath);
-                $localDisk = Storage::disk('local');
+                $fileName     = basename($relativePath);
+                $localDisk    = Storage::disk('local');
 
                 // Encrypt the data when Laravel Sanctum is active.
                 if ($sanctumIsActive) {
                     $publicKey = $request->user()->protector_public_key;
-                    $fileData   = sodium_crypto_box_seal($localDisk->get($relativePath), sodium_hex2bin($publicKey));
-                    $fileSize   = mb_strlen($fileData, '8bit');
+                    $fileData  = sodium_crypto_box_seal($localDisk->get($relativePath), sodium_hex2bin($publicKey));
+                    $fileSize  = mb_strlen($fileData, '8bit');
                 } else {
                     $fileData = $localDisk->get($relativePath);
                     $fileSize = $localDisk->size($relativePath);
@@ -666,5 +666,27 @@ class Protector
     public function setServerUrl(string $serverUrl): void
     {
         $this->serverUrl = $serverUrl;
+    }
+
+    /**
+     * Returns the name of the most recent dump.
+     *
+     * @return string
+     */
+    public function getLatestDumpName(): string
+    {
+        $disk          = $this->getDisk();
+        $baseDirectory = $this->getConfigValueForKey('baseDirectory');
+        $files         = $disk->files($baseDirectory);
+
+        if (empty($files)) {
+            throw new FileNotFoundException($disk->path($baseDirectory));
+        }
+
+        usort($files, function ($a, $b) use ($disk) {
+            return $disk->lastModified($b) - $disk->lastModified($a);
+        });
+
+        return $files[0];
     }
 }
