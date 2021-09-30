@@ -131,8 +131,7 @@ class Protector
         $filePath = Storage::disk('local')->path($sourceFilePath);
         $tempFile = '';
 
-        // Decrypt the data if Laravel Sanctum is active.
-        if ($this->shouldEncrypt() && File::extension($filePath) === 'protector') {
+        if (File::extension($filePath) === 'protector') {
             $tempFile = tempnam(sys_get_temp_dir(), '');
 
             file_put_contents($tempFile, $this->decryptDump(file_get_contents($filePath)));
