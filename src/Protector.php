@@ -154,7 +154,7 @@ class Protector
             exec($shellCommandDropCreateDatabase);
             exec($shellCommandImport);
 
-            if ($options['migrate'] ?? false) {
+            if ($options['migrate']) {
                 Artisan::call('migrate');
             }
 
