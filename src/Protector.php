@@ -114,7 +114,7 @@ class Protector
     public function importDump(string $sourceFilePath, array $options): bool
     {
         // Production environment is not allowed unless set in options.
-        if (App::environment('production') && !($options['allow-production'] ?? false)) {
+        if (App::environment('production') && !($options['allow-production'])) {
             throw new InvalidEnvironmentException('Production environment is not allowed and option was not set.');
         }
 
@@ -154,7 +154,7 @@ class Protector
             exec($shellCommandDropCreateDatabase);
             exec($shellCommandImport);
 
-            if ($options['run-migrations'] ?? false) {
+            if ($options['migrate'] ?? false) {
                 Artisan::call('migrate');
             }
 

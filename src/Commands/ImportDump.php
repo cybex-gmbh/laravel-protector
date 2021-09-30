@@ -237,12 +237,7 @@ class ImportDump extends Command
         if ($importFilePath && ($optionForce || $this->confirm(sprintf('Are you sure that you want to import the dump at %s?', $disk->path($importFilePath))))) {
             // Import the desired dump.
             $this->info(sprintf('Importing %s. Running migrations: %s', $importFilePath, $optionMigrate ? 'yes' : 'no'));
-            $protector->importDump(
-                $importFilePath,
-                [
-                    'allow-production' => $this->option('allow-production') ?: false,
-                    'run-migrations'   => $this->option('migrate') ?: false,
-                ]);
+            $protector->importDump($importFilePath, $this->option());
         } else {
             $this->info('Import aborted');
         }
