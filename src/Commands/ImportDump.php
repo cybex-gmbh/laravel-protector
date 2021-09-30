@@ -75,21 +75,17 @@ class ImportDump extends Command
 
         $protector = app('protector');
 
-        $disk                    = $protector->getDisk();
-        $basePath                = config('protector.baseDirectory');
-        $destinationFilename     = $optionDump ?: $protector->createFilename();
-        $relativePath            = $optionFile ?: $basePath . DIRECTORY_SEPARATOR . $destinationFilename;
-        $importFilePath          = null;
+        $disk                = $protector->getDisk();
+        $basePath            = config('protector.baseDirectory');
+        $destinationFilename = $optionDump ?: $protector->createFilename();
+        $relativePath        = $optionFile ?: $basePath . DIRECTORY_SEPARATOR . $destinationFilename;
+        $importFilePath      = null;
 
         $connectionName = null;
 
         if ($this->option('connection')) {
             $connectionName = $this->option('connection');
         }
-
-        $options                     = [];
-        $options['allow-production'] = $this->option('allow-production') ?: false;
-        $options['run-migrations']   = $optionMigrate ?: false;
 
         if (App::environment('production') && !$this->option('allow-production')) {
             $this->error('Import is not allowed on production systems! Use --allow-production');
@@ -241,7 +237,12 @@ class ImportDump extends Command
         if ($importFilePath && ($optionForce || $this->confirm(sprintf('Are you sure that you want to import the dump at %s?', $disk->path($importFilePath))))) {
             // Import the desired dump.
             $this->info(sprintf('Importing %s. Running migrations: %s', $importFilePath, $optionMigrate ? 'yes' : 'no'));
-            $protector->importDump($importFilePath, $options);
+            $protector->importDump(
+                $importFilePath,
+                [
+                    'allow-production' => $this->option('allow-production') ?: false,
+                    'run-migrations'   => $this->option('migrate') ?: false,
+                ]);
         } else {
             $this->info('Import aborted');
         }
