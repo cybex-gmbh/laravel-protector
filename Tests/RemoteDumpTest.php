@@ -35,7 +35,8 @@ class RemoteDumpTest extends TestCase
     {
         $fakeStorage = Storage::fake('test');
         $path        = $fakeStorage->path('dumps');
-        $this->assertDirectoryNotExists($path);
+
+        Storage::deleteDirectory($path);
 
         Config::set('protector.dumpPath', $path);
 
@@ -72,42 +73,12 @@ class RemoteDumpTest extends TestCase
         });
     }
 
-    /**
-     * @test
-     * @dataProvider responseCodes
-     *
-     * @param $code
-     */
-    public function failsIfResponseCodeNot200($code)
-    {
-        Http::fake(['cybex.test/*' => Http::response('', $code, [])]);
-
-        $this->expectException(UnauthorizedException::class);
-        app('protector')->getRemoteDump();
-    }
-
     public function responseCodes()
     {
         return [
             'redirect'     => [302],
             'server error' => [500],
         ];
-    }
-
-    /**
-     * @test
-     */
-    public function authenticationTokenIsInHeaderWhenLaravelSanctumIsActive()
-    {
-        Config::set('protector.routeMiddleware', ['auth:sanctum']);
-        putenv('PROTECTOR_AUTH_TOKEN=1234');
-
-        Http::fake();
-
-        app('protector')->getRemoteDump();
-        Http::assertSent(function ($request) {
-            return $request->hasHeader('Authorization', 'Bearer 1234');
-        });
     }
 
     /**
