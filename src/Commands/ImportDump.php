@@ -32,7 +32,7 @@ class ImportDump extends Command
                 {--r|remote : Pull a fresh dump from the remote server as configured in the .env file. Will be used as fallback when combined with other options. }
                 {--flush : Delete all existing dumps in the dump folder when using a remote dump. }
                 {--l|latest : Import the most recent dump available in the configured dumps directory. }
-                {--m|migrate : Run newer database migrations after import. }';
+                {--m|migrate : Run database migrations after import. }';
 
     /**
      * The console command description.
