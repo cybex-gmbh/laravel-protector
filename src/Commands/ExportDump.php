@@ -2,7 +2,6 @@
 
 namespace Cybex\Protector\Commands;
 
-use Cybex\Protector\Protector;
 use Illuminate\Console\Command;
 
 /**
@@ -45,7 +44,8 @@ class ExportDump extends Command
      */
     public function handle()
     {
-        $fileName = $this->option('file') ?: null;
+        $protector = app('protector');
+        $fileName  = $this->option('file') ?: $protector->createFilename();
 
         if ($this->option('connection')) {
             $connectionName = $this->option('connection');
@@ -53,8 +53,6 @@ class ExportDump extends Command
 
         $options            = [];
         $options['no-data'] = $this->option('no-data') ?: false;
-
-        $protector = app('protector');
 
         if ($protector->configure($connectionName ?? null)) {
             // Create the desired dump.
