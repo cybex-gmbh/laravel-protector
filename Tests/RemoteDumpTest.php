@@ -3,7 +3,6 @@
 namespace Cybex\Protector\Tests;
 
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
-use Cybex\Protector\Exceptions\UnauthorizedException;
 use Cybex\Protector\ProtectorServiceProvider;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;

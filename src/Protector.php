@@ -8,7 +8,6 @@ use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
-use Cybex\Protector\Exceptions\UnauthorizedException;
 use Exception;
 use Illuminate\Config\Repository;
 use Illuminate\Contracts\Routing\ResponseFactory;
@@ -23,6 +22,9 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use League\Flysystem\FileNotFoundException;
 use Storage;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 class Protector
 {
@@ -246,7 +248,6 @@ class Protector
      * @throws FailedRemoteDatabaseFetchingException
      * @throws InvalidConfigurationException
      * @throws InvalidEnvironmentException
-     * @throws UnauthorizedException
      */
     public function getRemoteDump(): string
     {
@@ -273,10 +274,18 @@ class Protector
             throw new FailedRemoteDatabaseFetchingException(sprintf('Could not fetch database from remote server: %s', $exception->getMessage()));
         }
 
-        $httpCode = $response->status();
+        if (!$response->ok()) {
+            $httpCode = $response->status();
 
-        if ($httpCode != 200) {
-            throw new UnauthorizedException('Unauthorized access');
+            switch ($httpCode) {
+                case 401:
+                case 403:
+                    throw new UnauthorizedHttpException($httpCode . ' Unauthorized access');
+                case 404:
+                    throw new NotFoundHttpException('404 Not found: ' . $serverUrl);
+                default:
+                    throw new HttpException($httpCode);
+            }
         }
 
         $body = $response->body();
@@ -371,6 +380,11 @@ class Protector
         } catch (Exception $exception) {
             return false;
         }
+    }
+
+    public function getDatabaseName(): string
+    {
+        return $this->connectionConfig['database'];
     }
 
     /**
