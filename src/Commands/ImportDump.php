@@ -238,7 +238,6 @@ class ImportDump extends Command
         $this->info(sprintf('Database: "%s"', $protector->getDatabaseName()));
 
         if ($importFilePath && ($optionForce || $this->confirm('Are you sure that you want to import the dump?'))) {
-            // Import the desired dump.
             $this->info(sprintf('Importing %s. Running migrations: %s', $importFilePath, $optionMigrate ? 'yes' : 'no'));
 
             try {
@@ -247,7 +246,6 @@ class ImportDump extends Command
             } catch (Exception $exception) {
                 $this->error($exception->getMessage());
             }
-
         } else {
             $this->info('Import aborted');
         }
