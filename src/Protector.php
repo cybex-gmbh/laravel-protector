@@ -18,7 +18,6 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use League\Flysystem\FileNotFoundException;
 use Storage;
@@ -131,13 +130,6 @@ class Protector
         // Getting a local copy because disk files might not be possible to import.
         Storage::disk('local')->put($sourceFilePath, $this->getDisk()->get($sourceFilePath));
         $filePath = Storage::disk('local')->path($sourceFilePath);
-        $tempFile = '';
-
-        if (File::extension($filePath) === 'protector') {
-            $tempFile = tempnam(sys_get_temp_dir(), '');
-
-            file_put_contents($tempFile, $this->decryptDump(file_get_contents($filePath)));
-        }
 
         try {
             $shellCommandDropCreateDatabase = sprintf('mysql -h%s -u%s -p%s -e %s 2> /dev/null',
@@ -151,17 +143,13 @@ class Protector
                 escapeshellarg($this->connectionConfig['username']),
                 escapeshellarg($this->connectionConfig['password']),
                 escapeshellarg($this->connectionConfig['database']),
-                escapeshellarg($tempFile ?: $filePath));
+                escapeshellarg($filePath));
 
             exec($shellCommandDropCreateDatabase);
             exec($shellCommandImport);
 
             if ($options['migrate']) {
                 Artisan::call('migrate');
-            }
-
-            if ($tempFile) {
-                File::delete($tempFile);
             }
 
             return true;
@@ -305,7 +293,7 @@ class Protector
             ($destinationFilename ?? 'remote_dump.sql')
         );
 
-        $disk->put($destinationFilepath, $body);
+        $disk->put($destinationFilepath, $this->decryptDump($body));
 
         return $destinationFilepath;
     }
@@ -404,7 +392,7 @@ class Protector
      *
      * @return string
      */
-    public function createFilename(bool $encrypted = false): string
+    public function createFilename(): string
     {
         $metadata = $this->getMetaData();
         [$appUrl, $database, $connection, $year, $month, $day, $hour, $minute,] = [
@@ -418,7 +406,7 @@ class Protector
             Arr::get($metadata, 'dumpedAtDate.minutes', '00'),
         ];
 
-        return sprintf(config('protector.fileName') . '.%9$s', $appUrl, $database, $connection, $year, $month, $day, $hour, $minute, $encrypted ? 'protector' : 'sql');
+        return sprintf(config('protector.fileName'), $appUrl, $database, $connection, $year, $month, $day, $hour, $minute);
     }
 
     /**
@@ -729,10 +717,10 @@ class Protector
     /**
      * @param $body
      *
-     * @return false|string
+     * @return string
      * @throws InvalidConfigurationException
      */
-    public function decryptDump($body)
+    public function decryptDump($body): string
     {
         $body = sodium_crypto_box_seal_open($body, sodium_hex2bin($this->getPrivateKey()));
 
