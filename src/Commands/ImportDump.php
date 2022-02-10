@@ -234,10 +234,7 @@ class ImportDump extends Command
             }
         }
 
-        $this->info(sprintf('Dump: "%s"', $disk->path($importFilePath)));
-        $this->info(sprintf('Database: "%s"', $protector->getDatabaseName()));
-
-        if ($importFilePath && ($optionForce || $this->confirm('Are you sure that you want to import the dump?'))) {
+        if ($importFilePath && ($optionForce || $this->confirm(sprintf('Are you sure that you want to import the dump into the database: %s?', $protector->getDatabaseName())))) {
             $this->info(sprintf('Importing %s. Running migrations: %s', $importFilePath, $optionMigrate ? 'yes' : 'no'));
 
             try {
