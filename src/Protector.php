@@ -149,7 +149,10 @@ class Protector
             exec($shellCommandImport);
 
             if ($options['migrate']) {
-                Artisan::call('migrate');
+                $output = new BufferedOutput;
+
+                Artisan::call('migrate', [], $output);
+                echo $output->fetch();
             }
 
             return true;
