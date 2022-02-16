@@ -21,16 +21,19 @@
         }
     ],
     "require": {
+        "php": "^7.2|^8.0",
         "ext-curl": "*",
         "ext-json": "*",
+        "ext-openssl": "*",
         "ext-sodium": "*",
-        "illuminate/support": "^7.0|^8.0",
-        "laravel/sanctum": "^2.4",
-        "php": "^7.2|^8.0"
+        "guzzlehttp/guzzle": "^7.4",
+        "illuminate/support": "^8.0|^9.0",
+        "laravel/framework": "^8.0|^9.0",
+        "laravel/sanctum": "^2.4"
     },
     "require-dev": {
-        "orchestra/testbench": "^5.0",
-        "phpunit/phpunit": "^8.0"
+        "orchestra/testbench": "^6.23",
+        "phpunit/phpunit": "^9.5"
     },
     "autoload": {
         "psr-4": {
