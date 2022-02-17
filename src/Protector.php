@@ -8,7 +8,6 @@ use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
-use Cybex\Protector\Exceptions\UnauthorizedException;
 use Exception;
 use Illuminate\Config\Repository;
 use Illuminate\Contracts\Routing\ResponseFactory;
@@ -19,10 +18,12 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use League\Flysystem\FileNotFoundException;
 use Storage;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 class Protector
 {
@@ -129,13 +130,6 @@ class Protector
         // Getting a local copy because disk files might not be possible to import.
         Storage::disk('local')->put($sourceFilePath, $this->getDisk()->get($sourceFilePath));
         $filePath = Storage::disk('local')->path($sourceFilePath);
-        $tempFile = '';
-
-        if (File::extension($filePath) === 'protector') {
-            $tempFile = tempnam(sys_get_temp_dir(), '');
-
-            file_put_contents($tempFile, $this->decryptDump(file_get_contents($filePath)));
-        }
 
         try {
             $shellCommandDropCreateDatabase = sprintf('mysql -h%s -u%s -p%s -e %s 2> /dev/null',
@@ -149,17 +143,13 @@ class Protector
                 escapeshellarg($this->connectionConfig['username']),
                 escapeshellarg($this->connectionConfig['password']),
                 escapeshellarg($this->connectionConfig['database']),
-                escapeshellarg($tempFile ?: $filePath));
+                escapeshellarg($filePath));
 
             exec($shellCommandDropCreateDatabase);
             exec($shellCommandImport);
 
             if ($options['migrate']) {
                 Artisan::call('migrate');
-            }
-
-            if ($tempFile) {
-                File::delete($tempFile);
             }
 
             return true;
@@ -246,7 +236,6 @@ class Protector
      * @throws FailedRemoteDatabaseFetchingException
      * @throws InvalidConfigurationException
      * @throws InvalidEnvironmentException
-     * @throws UnauthorizedException
      */
     public function getRemoteDump(): string
     {
@@ -273,10 +262,18 @@ class Protector
             throw new FailedRemoteDatabaseFetchingException(sprintf('Could not fetch database from remote server: %s', $exception->getMessage()));
         }
 
-        $httpCode = $response->status();
+        if (!$response->ok()) {
+            $httpCode = $response->status();
 
-        if ($httpCode != 200) {
-            throw new UnauthorizedException('Unauthorized access');
+            switch ($httpCode) {
+                case 401:
+                case 403:
+                    throw new UnauthorizedHttpException($httpCode . ' Unauthorized access');
+                case 404:
+                    throw new NotFoundHttpException('404 Not found: ' . $serverUrl);
+                default:
+                    throw new HttpException($httpCode);
+            }
         }
 
         $body = $response->body();
@@ -296,7 +293,7 @@ class Protector
             ($destinationFilename ?? 'remote_dump.sql')
         );
 
-        $disk->put($destinationFilepath, $body);
+        $disk->put($destinationFilepath, $this->decryptDump($body));
 
         return $destinationFilepath;
     }
@@ -373,6 +370,11 @@ class Protector
         }
     }
 
+    public function getDatabaseName(): string
+    {
+        return $this->connectionConfig['database'];
+    }
+
     /**
      * Returns the database config for the given connection.
      *
@@ -390,7 +392,7 @@ class Protector
      *
      * @return string
      */
-    public function createFilename(bool $encrypted = false): string
+    public function createFilename(): string
     {
         $metadata = $this->getMetaData();
         [$appUrl, $database, $connection, $year, $month, $day, $hour, $minute,] = [
@@ -404,7 +406,7 @@ class Protector
             Arr::get($metadata, 'dumpedAtDate.minutes', '00'),
         ];
 
-        return sprintf(config('protector.fileName') . '.%9$s', $appUrl, $database, $connection, $year, $month, $day, $hour, $minute, $encrypted ? 'protector' : 'sql');
+        return sprintf(config('protector.fileName'), $appUrl, $database, $connection, $year, $month, $day, $hour, $minute);
     }
 
     /**
@@ -715,10 +717,10 @@ class Protector
     /**
      * @param $body
      *
-     * @return false|string
+     * @return string
      * @throws InvalidConfigurationException
      */
-    public function decryptDump($body)
+    public function decryptDump($body): string
     {
         $body = sodium_crypto_box_seal_open($body, sodium_hex2bin($this->getPrivateKey()));
 

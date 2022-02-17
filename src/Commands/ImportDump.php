@@ -234,10 +234,15 @@ class ImportDump extends Command
             }
         }
 
-        if ($importFilePath && ($optionForce || $this->confirm(sprintf('Are you sure that you want to import the dump at %s?', $disk->path($importFilePath))))) {
-            // Import the desired dump.
+        if ($importFilePath && ($optionForce || $this->confirm(sprintf('Are you sure that you want to import the dump into the database: %s?', $protector->getDatabaseName())))) {
             $this->info(sprintf('Importing %s. Running migrations: %s', $importFilePath, $optionMigrate ? 'yes' : 'no'));
-            $protector->importDump($importFilePath, $this->option());
+
+            try {
+                $protector->importDump($importFilePath, $this->option());
+                $this->info('Import done!');
+            } catch (Exception $exception) {
+                $this->error($exception->getMessage());
+            }
         } else {
             $this->info('Import aborted');
         }
