@@ -293,7 +293,7 @@ class Protector
             ($destinationFilename ?? 'remote_dump.sql')
         );
 
-        $disk->put($destinationFilepath, $this->decryptDump($body));
+        $disk->put($destinationFilepath, $response->header('Sanctum-Enabled') ? $this->decryptDump($body) : $body);
 
         return $destinationFilepath;
     }
@@ -547,6 +547,7 @@ class Protector
                         'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
                         'Content-Length'      => $fileSize,
                         'Expires'             => gmdate('D, d M Y H:i:s', time() - 3600) . ' GMT',
+                        'Sanctum-Enabled'     => $sanctumIsActive,
                     ]);
             }
         }

@@ -66,12 +66,10 @@ class RemoteDumpTest extends TestCase
         Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
         Config::set('protector.routeMiddleware', []);
 
-        // 401 Status shouldn't be the default behaviour, because while Sanctum is deactivated, we decrypt still every time.
-        $this->expectException(UnauthorizedHttpException::class);
         $serverUrl = app('protector')->getServerUrl();
 
         Http::fake([
-            $serverUrl => Http::response([], 401)
+            $serverUrl => Http::response([]),
         ]);
 
         app('protector')->getRemoteDump();
@@ -88,14 +86,17 @@ class RemoteDumpTest extends TestCase
         Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
         Config::set('protector.routeMiddleware', []);
 
-        $serverUrl = app('protector')->getServerUrl();
-        $statusCodes = [401, 403];
+        $serverUrl   = app('protector')->getServerUrl();
+        $statusCodes = [
+            401,
+            403,
+        ];
 
         foreach ($statusCodes as $statusCode) {
             $this->expectException(UnauthorizedHttpException::class);
 
             Http::fake([
-                $serverUrl => Http::response([], $statusCode)
+                $serverUrl => Http::response([], $statusCode),
             ]);
 
             app('protector')->getRemoteDump();
@@ -115,7 +116,7 @@ class RemoteDumpTest extends TestCase
         $serverUrl = app('protector')->getServerUrl();
 
         Http::fake([
-            $serverUrl => Http::response([], 404)
+            $serverUrl => Http::response([], 404),
         ]);
 
         app('protector')->getRemoteDump();
@@ -126,18 +127,23 @@ class RemoteDumpTest extends TestCase
      */
     public function checkForSuccessfulDecryption()
     {
-        $message = env('PROTECTOR_DECRYPTED_MESSAGE');
+        Config::set('protector.routeMiddleware', ['auth:sanctum']);
+
+        $message          = env('PROTECTOR_DECRYPTED_MESSAGE');
         $encryptedMessage = sodium_hex2bin(env('PROTECTOR_ENCRYPTED_MESSAGE'));
 
         $serverUrl = app('protector')->getServerUrl();
-        $headers   = ['Content-Disposition' => 'attachment; filename="HelloWorld.txt"'];
-        $disk      = app('protector')->getDisk();
+        $headers   = [
+            'Content-Disposition' => 'attachment; filename="HelloWorld.txt"',
+            'Sanctum-Enabled'     => true,
+        ];
 
         Http::fake([
-            $serverUrl => Http::response($encryptedMessage, 200, $headers)
+            $serverUrl => Http::response($encryptedMessage, 200, $headers),
         ]);
 
         $destinationFilepath = app('protector')->getRemoteDump();
+        $disk                = app('protector')->getDisk();
 
         $this->assertFileExists($disk->path($destinationFilepath));
         $this->assertEquals($message, $disk->get($destinationFilepath));
@@ -190,7 +196,7 @@ class RemoteDumpTest extends TestCase
     protected function getAccessibleReflectionMethod($method): ReflectionMethod
     {
         $reflectionProtector = new ReflectionClass(app('protector'));
-        $method = $reflectionProtector->getMethod($method);
+        $method              = $reflectionProtector->getMethod($method);
 
         $method->setAccessible(true);
 
