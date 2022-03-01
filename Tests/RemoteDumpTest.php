@@ -10,10 +10,12 @@ use Illuminate\Support\Facades\Storage;
 use Orchestra\Testbench\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 class RemoteDumpTest extends TestCase
 {
-    protected function getPackageProviders($app)
+    protected function getPackageProviders($app): array
     {
         return [
             ProtectorServiceProvider::class,
@@ -64,12 +66,85 @@ class RemoteDumpTest extends TestCase
         Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
         Config::set('protector.routeMiddleware', []);
 
-        Http::fake();
+        $serverUrl = app('protector')->getServerUrl();
+
+        Http::fake([
+            $serverUrl => Http::response([], 200, ['Chunk-Size' => 100]),
+        ]);
 
         app('protector')->getRemoteDump();
         Http::assertSent(function ($request) {
             return $request->hasHeader('Authorization', 'Basic ' . base64_encode('1234:1234'));
         });
+    }
+
+    /**
+     * @test
+     */
+    public function throwUnauthorizedExceptionIfUnauthorized()
+    {
+        Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
+        Config::set('protector.routeMiddleware', []);
+
+        $serverUrl   = app('protector')->getServerUrl();
+        $statusCodes = [
+            401,
+            403,
+        ];
+
+        foreach ($statusCodes as $statusCode) {
+            $this->expectException(UnauthorizedHttpException::class);
+
+            Http::fake([
+                $serverUrl => Http::response([], $statusCode),
+            ]);
+
+            app('protector')->getRemoteDump();
+        }
+    }
+
+    /**
+     * @test
+     */
+    public function failOnUnknownRoute()
+    {
+        Config::set('protector.routeMiddleware', []);
+        Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
+
+        $this->expectException(NotFoundHttpException::class);
+
+        $serverUrl = app('protector')->getServerUrl();
+
+        Http::fake([
+            $serverUrl => Http::response([], 404),
+        ]);
+
+        app('protector')->getRemoteDump();
+    }
+
+    /**
+     * @test
+     */
+    public function checkForSuccessfulDecryption()
+    {
+        $message          = env('PROTECTOR_DECRYPTED_MESSAGE');
+        $encryptedMessage = sodium_hex2bin(env('PROTECTOR_ENCRYPTED_MESSAGE'));
+
+        $serverUrl = app('protector')->getServerUrl();
+        $disk      = app('protector')->getDisk();
+
+        Http::fake([
+            $serverUrl => Http::response($encryptedMessage, 200, [
+                'Sanctum-Enabled'     => true,
+                'Content-Disposition' => 'attachment; filename=HelloWorld.txt',
+                'Chunk-Size'          => strlen($message) + 48,
+            ]),
+        ]);
+
+        $destinationFilepath = app('protector')->getRemoteDump();
+
+        $this->assertFileExists($disk->path($destinationFilepath));
+        $this->assertEquals($message, $disk->get($destinationFilepath));
     }
 
     public function responseCodes()
