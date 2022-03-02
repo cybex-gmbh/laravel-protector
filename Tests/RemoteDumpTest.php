@@ -136,7 +136,7 @@ class RemoteDumpTest extends TestCase
         Http::fake([
             $serverUrl => Http::response($encryptedMessage, 200, [
                 'Sanctum-Enabled'     => true,
-                'Content-Disposition' => 'attachment; filename=HelloWorld.txt',
+                'Content-Disposition' => 'attachment; filename="HelloWorld.txt"',
                 'Chunk-Size'          => strlen($message) + 48,
             ]),
         ]);
