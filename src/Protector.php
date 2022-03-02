@@ -259,6 +259,9 @@ class Protector
             throw new InvalidConfigurationException('Server url is not set or invalid.');
         }
 
+        // Create dump directory if it doesn't exist yet.
+        $this->createDirectory($this->getDisk()->path($this->getConfigValueForKey('baseDirectory')));
+
         $request = $this->getConfiguredHttpRequest();
 
         try {

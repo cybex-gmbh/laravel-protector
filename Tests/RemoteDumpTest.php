@@ -69,7 +69,7 @@ class RemoteDumpTest extends TestCase
         $serverUrl = app('protector')->getServerUrl();
 
         Http::fake([
-            $serverUrl => Http::response([], 200, ['Chunk-Size' => 100]),
+            $serverUrl => Http::response('', 200, ['Chunk-Size' => 100]),
         ]);
 
         app('protector')->getRemoteDump();
@@ -163,7 +163,6 @@ class RemoteDumpTest extends TestCase
         Config::set('protector.routeMiddleware', []);
         Config::set('protector.remoteEndpoint.htaccessLogin', '');
 
-        Http::fake();
         $method = $this->getAccessibleReflectionMethod('getConfiguredHttpRequest');
 
         $this->expectException(InvalidConfigurationException::class);
@@ -177,8 +176,6 @@ class RemoteDumpTest extends TestCase
     {
         Config::set('protector.routeMiddleware', ['auth:sanctum']);
         Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
-
-        Http::fake();
 
         $method = $this->getAccessibleReflectionMethod('getConfiguredHttpRequest');
 
