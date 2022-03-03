@@ -93,4 +93,16 @@ return [
     'routeMiddleware' => [
         'auth:sanctum',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Chunk Size
+    |--------------------------------------------------------------------------
+    |
+    | Here you may customize the chunk size used when streaming the database dump from the server.
+    | When Laravel Sanctum is active, this chunk size will also apply to the encryption and decryption.
+    | By default the chunk size is set to 20MB.
+    |
+    */
+    'chunkSize' => 20 * 1024 * 1024
 ];

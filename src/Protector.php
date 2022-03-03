@@ -520,8 +520,7 @@ class Protector
                 $fileName     = basename($relativePath);
                 $localDisk    = Storage::disk('local');
 
-                // Default size is 20 MB.
-                $chunkSize = 20970000;
+                $chunkSize = $this->getConfigValueForKey('chunkSize');
 
                 return response()->streamDownload(
                     function () use ($user, $localDisk, $relativePath, $chunkSize, $sanctumIsActive) {
