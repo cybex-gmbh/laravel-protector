@@ -492,27 +492,23 @@ class Protector
      */
     public function prepareFileDownloadResponse(Request $request): StreamedResponse
     {
-        return $this->generateFileDownloadResponse($request->user());
+        return $this->generateFileDownloadResponse($request);
     }
 
     /**
      * Generates a response which allows downloading the dump file.
      *
-     * @param AuthUser    $user
+     * @param Request $request
      * @param string|null $connectionName
      *
      * @return StreamedResponse
      */
-    public function generateFileDownloadResponse(AuthUser $user, string $connectionName = null): StreamedResponse
+    public function generateFileDownloadResponse(Request $request, string $connectionName = null): StreamedResponse
     {
-        if (!is_a($user, config('auth.providers.users.model'))) {
-            throw new UnauthorizedHttpException('', 'Unknown user class');
-        }
-
         $sanctumIsActive = $this->isSanctumActive();
 
         // Only proceed when either Laravel Sanctum is turned off or the user's token is valid.
-        if (!$sanctumIsActive || $user->tokenCan('protector:import')) {
+        if (!$sanctumIsActive || $request->user()->tokenCan('protector:import')) {
             if ($this->configure($connectionName)) {
                 $fullFileName = $this->createFilename($this->shouldEncrypt());
                 $relativePath = $this->createDump($fullFileName);
@@ -522,7 +518,7 @@ class Protector
                 $chunkSize = $this->getConfigValueForKey('chunkSize');
 
                 return response()->streamDownload(
-                    function () use ($user, $localDisk, $relativePath, $chunkSize, $sanctumIsActive) {
+                    function () use ($request, $localDisk, $relativePath, $chunkSize, $sanctumIsActive) {
                         $inputHandle = fopen($localDisk->path($relativePath), 'rb');
 
                         while (!feof($inputHandle)) {
@@ -530,7 +526,7 @@ class Protector
 
                             // Encrypt the data when Laravel Sanctum is active.
                             if ($sanctumIsActive) {
-                                $publicKey = $user->protector_public_key;
+                                $publicKey = $request->user()->protector_public_key;
                                 $chunk     = sodium_crypto_box_seal($chunk, sodium_hex2bin($publicKey));
                             }
 
