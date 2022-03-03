@@ -134,13 +134,15 @@ class RemoteDumpTest extends TestCase
         $disk      = app('protector')->getDisk();
 
         $determineEncryptionOverhead = $this->getAccessibleReflectionMethod('determineEncryptionOverhead');
-        $chunkSize = strlen($message);
+
+        $chunkSize          = strlen($message);
+        $encryptionOverhead = $determineEncryptionOverhead->invoke(app('protector'), $chunkSize, env('PROTECTOR_PUBLIC_KEY'));
 
         Http::fake([
             $serverUrl => Http::response($encryptedMessage, 200, [
                 'Sanctum-Enabled'     => true,
                 'Content-Disposition' => 'attachment; filename="HelloWorld.txt"',
-                'Chunk-Size'          => strlen($message) + $determineEncryptionOverhead->invoke(app('protector'), $chunkSize, env('PROTECTOR_PUBLIC_KEY'))
+                'Chunk-Size'          => strlen($message) + $encryptionOverhead,
             ]),
         ]);
 
