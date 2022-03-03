@@ -539,8 +539,7 @@ class Protector
                     'Content-Type'    => 'text/plain',
                     'Pragma'          => 'no-cache',
                     'Expires'         => gmdate('D, d M Y H:i:s', time() - 3600) . ' GMT',
-                    // On encryption 48 bytes will be added.
-                    'Chunk-Size'      => $sanctumIsActive ? $chunkSize + 48 : $chunkSize,
+                    'Chunk-Size'      => $sanctumIsActive ? $chunkSize + $this->determineEncryptionOverhead($chunkSize, $request->user()->protector_public_key) : $chunkSize,
                     'Sanctum-Enabled' => $sanctumIsActive,
                 ]);
             }
@@ -794,5 +793,21 @@ class Protector
         }
 
         fclose($outputHandle);
+    }
+
+    /**
+     * Determines encryption overhead.
+     *
+     * @param int    $chunkSize
+     * @param string $publicKey
+     *
+     * @return int
+     */
+    private function determineEncryptionOverhead(int $chunkSize, string $publicKey): int
+    {
+        $chunk = str_repeat('0', $chunkSize);
+        $encryptedChunk = sodium_crypto_box_seal($chunk, sodium_hex2bin($publicKey));
+
+        return strlen($encryptedChunk) - $chunkSize;
     }
 }
