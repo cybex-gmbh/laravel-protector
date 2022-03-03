@@ -397,7 +397,7 @@ class Protector
             Arr::get($metadata, 'dumpedAtDate.minutes', '00'),
         ];
 
-        return sprintf(config('protector.fileName'), $appUrl, $database, $connection, $year, $month, $day, $hour, $minute);
+        return sprintf(config('protector.fileName'), $appUrl, $database, $connection, $year, $month, $day, $hour, $minute, uniqid());
     }
 
     /**
