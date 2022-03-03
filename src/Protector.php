@@ -498,7 +498,7 @@ class Protector
     /**
      * Generates a response which allows downloading the dump file.
      *
-     * @param Request $request
+     * @param Request     $request
      * @param string|null $connectionName
      *
      * @return StreamedResponse
@@ -796,8 +796,6 @@ class Protector
     }
 
     /**
-     * Determines encryption overhead.
-     *
      * @param int    $chunkSize
      * @param string $publicKey
      *
@@ -805,7 +803,7 @@ class Protector
      */
     private function determineEncryptionOverhead(int $chunkSize, string $publicKey): int
     {
-        $chunk = str_repeat('0', $chunkSize);
+        $chunk          = str_repeat('0', $chunkSize);
         $encryptedChunk = sodium_crypto_box_seal($chunk, sodium_hex2bin($publicKey));
 
         return strlen($encryptedChunk) - $chunkSize;
