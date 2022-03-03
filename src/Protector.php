@@ -488,9 +488,9 @@ class Protector
      *
      * @param Request $request
      *
-     * @return JsonResponse|StreamedResponse
+     * @return StreamedResponse
      */
-    public function prepareFileDownloadResponse(Request $request): JsonResponse|StreamedResponse
+    public function prepareFileDownloadResponse(Request $request): StreamedResponse
     {
         return $this->generateFileDownloadResponse($request->user());
     }
@@ -504,7 +504,7 @@ class Protector
      *
      * @return StreamedResponse
      */
-    public function generateFileDownloadResponse(AuthUser $user, string $connectionName = null, bool $disableTokenCheck = false): StreamedResponse
+    public function generateFileDownloadResponse(AuthUser $user, string $connectionName = null): StreamedResponse
     {
         if (!is_a($user, config('auth.providers.users.model'))) {
             throw new UnauthorizedHttpException('', 'Unknown user class');
@@ -513,7 +513,7 @@ class Protector
         $sanctumIsActive = $this->isSanctumActive();
 
         // Only proceed when either Laravel Sanctum is turned off or the user's token is valid.
-        if (!$sanctumIsActive || $disableTokenCheck || $user->tokenCan('protector:import')) {
+        if (!$sanctumIsActive || $user->tokenCan('protector:import')) {
             if ($this->configure($connectionName)) {
                 $fullFileName = $this->createFilename($this->shouldEncrypt());
                 $relativePath = $this->createDump($fullFileName);
