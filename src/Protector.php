@@ -500,7 +500,6 @@ class Protector
      *
      * @param AuthUser    $user
      * @param string|null $connectionName
-     * @param bool        $disableTokenCheck
      *
      * @return StreamedResponse
      */
