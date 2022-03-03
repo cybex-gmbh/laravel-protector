@@ -750,13 +750,15 @@ class Protector
     }
 
     /**
-     * @param string $contentDispositionHeader
+     * Returns the destination file path for the database dump.
+     *
+     * @param string $fileName
      *
      * @return string
      */
-    protected function getDumpDestinationFilePath(string $contentDispositionHeader): string
+    protected function getDumpDestinationFilePath(string $fileName): string
     {
-        if (preg_match('/filename="(?P<filename>.+)"/i', $contentDispositionHeader, $matches)) {
+        if (preg_match('/filename="(?P<filename>.+)"/i', $fileName, $matches)) {
             $destinationFileName = $matches['filename'];
         }
 
@@ -769,6 +771,10 @@ class Protector
     }
 
     /**
+     * Writes the remote database dump to a specified file path.
+     * Contents are retrieved in chunks from the provided stream.
+     * When the database dump is encrypted (indicated by whether Laravel Sanctum is enabled or not) those chunks will also be decrypted.
+     *
      * @param StreamInterface $stream
      * @param string          $destinationFilePath
      * @param int             $chunkSize
