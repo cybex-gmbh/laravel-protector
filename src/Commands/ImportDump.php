@@ -31,7 +31,8 @@ class ImportDump extends Command
                 {--i|ignore-connection-filter : Ignores filter of dumps to defined connections. }
                 {--r|remote : Pull a fresh dump from the remote server as configured in the .env file. Will be used as fallback when combined with other options. }
                 {--flush : Delete all existing dumps in the dump folder when using a remote dump. }
-                {--l|latest : Import the most recent dump available in the configured dumps directory. }';
+                {--l|latest : Import the most recent dump available in the configured dumps directory. }
+                {--m|migrate : Run database migrations after import. }';
 
     /**
      * The console command description.
@@ -60,11 +61,12 @@ class ImportDump extends Command
      */
     public function handle()
     {
-        $optionDump   = $this->option('dump');
-        $optionFile   = $this->option('file');
-        $optionRemote = $this->option('remote');
-        $optionForce  = $this->option('force');
-        $optionLatest = $this->option('latest');
+        $optionDump    = $this->option('dump');
+        $optionFile    = $this->option('file');
+        $optionRemote  = $this->option('remote');
+        $optionForce   = $this->option('force');
+        $optionLatest  = $this->option('latest');
+        $optionMigrate = $this->option('migrate');
 
         if ($optionForce && !($optionRemote || $optionFile || $optionDump)) {
             $this->error('The force option requires either the file, dump or remote option to be set.');
@@ -73,20 +75,17 @@ class ImportDump extends Command
 
         $protector = app('protector');
 
-        $disk                    = $protector->getDisk();
-        $basePath                = config('protector.baseDirectory');
-        $destinationFilename     = $optionDump ?: $protector->createFilename();
-        $relativePath            = $optionFile ?: $basePath . DIRECTORY_SEPARATOR . $destinationFilename;
-        $importFilePath          = null;
+        $disk                = $protector->getDisk();
+        $basePath            = config('protector.baseDirectory');
+        $destinationFilename = $optionDump ?: $protector->createFilename();
+        $relativePath        = $optionFile ?: $basePath . DIRECTORY_SEPARATOR . $destinationFilename;
+        $importFilePath      = null;
 
         $connectionName = null;
 
         if ($this->option('connection')) {
             $connectionName = $this->option('connection');
         }
-
-        $options                     = [];
-        $options['allow-production'] = $this->option('allow-production') ?: false;
 
         if (App::environment('production') && !$this->option('allow-production')) {
             $this->error('Import is not allowed on production systems! Use --allow-production');
@@ -235,10 +234,15 @@ class ImportDump extends Command
             }
         }
 
-        if ($importFilePath && ($optionForce || $this->confirm(sprintf('Are you sure that you want to import the dump at %s?', $disk->path($importFilePath))))) {
-            // Import the desired dump.
-            $protector->importDump($importFilePath, $options);
+        if ($importFilePath && ($optionForce || $this->confirm(sprintf('Are you sure that you want to import the dump into the database: %s?', $protector->getDatabaseName())))) {
+            $this->info(sprintf('Importing %s. Running migrations: %s', $importFilePath, $optionMigrate ? 'yes' : 'no'));
 
+            try {
+                $protector->importDump($importFilePath, $this->options());
+                $this->info('Import done!');
+            } catch (Exception $exception) {
+                $this->error($exception->getMessage());
+            }
         } else {
             $this->info('Import aborted');
         }

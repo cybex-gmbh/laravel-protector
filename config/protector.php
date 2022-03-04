@@ -22,7 +22,7 @@ return [
     |
     | Here you may customize the database dump file name.
     |
-    | Parameter order:
+    | Parameter denotation:
     | 1: app url
     | 2: database name
     | 3: connection name
@@ -31,9 +31,9 @@ return [
     | 6: day
     | 7: hour
     | 8: minute
-    |
+    | 9: unique id to prevent problems which may occur when multiple users download a dump simultaneously
     */
-    'fileName' => '%1$s %4$4d-%5$02d-%6$02d %7$02d-%8$02d.sql',
+    'fileName' => '%1$s %4$4d-%5$02d-%6$02d %7$02d-%8$02d %9$s.sql',
 
     /*
     |--------------------------------------------------------------------------
@@ -93,4 +93,16 @@ return [
     'routeMiddleware' => [
         'auth:sanctum',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Chunk Size
+    |--------------------------------------------------------------------------
+    |
+    | Here you may customize the chunk size used when streaming the database dump from the server.
+    | When Laravel Sanctum is active, this chunk size will also apply to the encryption and decryption.
+    | By default the chunk size is set to 20MB.
+    |
+    */
+    'chunkSize' => 20 * 1024 * 1024
 ];

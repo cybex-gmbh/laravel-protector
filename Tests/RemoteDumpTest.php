@@ -3,7 +3,6 @@
 namespace Cybex\Protector\Tests;
 
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
-use Cybex\Protector\Exceptions\UnauthorizedException;
 use Cybex\Protector\ProtectorServiceProvider;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
@@ -11,10 +10,12 @@ use Illuminate\Support\Facades\Storage;
 use Orchestra\Testbench\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 class RemoteDumpTest extends TestCase
 {
-    protected function getPackageProviders($app)
+    protected function getPackageProviders($app): array
     {
         return [
             ProtectorServiceProvider::class,
@@ -35,7 +36,8 @@ class RemoteDumpTest extends TestCase
     {
         $fakeStorage = Storage::fake('test');
         $path        = $fakeStorage->path('dumps');
-        $this->assertDirectoryNotExists($path);
+
+        Storage::deleteDirectory($path);
 
         Config::set('protector.dumpPath', $path);
 
@@ -64,7 +66,11 @@ class RemoteDumpTest extends TestCase
         Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
         Config::set('protector.routeMiddleware', []);
 
-        Http::fake();
+        $serverUrl = app('protector')->getServerUrl();
+
+        Http::fake([
+            $serverUrl => Http::response('', 200, ['Chunk-Size' => 100]),
+        ]);
 
         app('protector')->getRemoteDump();
         Http::assertSent(function ($request) {
@@ -74,16 +80,76 @@ class RemoteDumpTest extends TestCase
 
     /**
      * @test
-     * @dataProvider responseCodes
-     *
-     * @param $code
      */
-    public function failsIfResponseCodeNot200($code)
+    public function throwUnauthorizedExceptionIfUnauthorized()
     {
-        Http::fake(['cybex.test/*' => Http::response('', $code, [])]);
+        Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
+        Config::set('protector.routeMiddleware', []);
 
-        $this->expectException(UnauthorizedException::class);
+        $serverUrl   = app('protector')->getServerUrl();
+        $statusCodes = [
+            401,
+            403,
+        ];
+
+        foreach ($statusCodes as $statusCode) {
+            $this->expectException(UnauthorizedHttpException::class);
+
+            Http::fake([
+                $serverUrl => Http::response([], $statusCode),
+            ]);
+
+            app('protector')->getRemoteDump();
+        }
+    }
+
+    /**
+     * @test
+     */
+    public function failOnUnknownRoute()
+    {
+        Config::set('protector.routeMiddleware', []);
+        Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
+
+        $this->expectException(NotFoundHttpException::class);
+
+        $serverUrl = app('protector')->getServerUrl();
+
+        Http::fake([
+            $serverUrl => Http::response([], 404),
+        ]);
+
         app('protector')->getRemoteDump();
+    }
+
+    /**
+     * @test
+     */
+    public function checkForSuccessfulDecryption()
+    {
+        $message          = env('PROTECTOR_DECRYPTED_MESSAGE');
+        $encryptedMessage = sodium_hex2bin(env('PROTECTOR_ENCRYPTED_MESSAGE'));
+
+        $serverUrl = app('protector')->getServerUrl();
+        $disk      = app('protector')->getDisk();
+
+        $determineEncryptionOverhead = $this->getAccessibleReflectionMethod('determineEncryptionOverhead');
+
+        $chunkSize          = strlen($message);
+        $encryptionOverhead = $determineEncryptionOverhead->invoke(app('protector'), $chunkSize, env('PROTECTOR_PUBLIC_KEY'));
+
+        Http::fake([
+            $serverUrl => Http::response($encryptedMessage, 200, [
+                'Sanctum-Enabled'     => true,
+                'Content-Disposition' => 'attachment; filename="HelloWorld.txt"',
+                'Chunk-Size'          => strlen($message) + $encryptionOverhead,
+            ]),
+        ]);
+
+        $destinationFilepath = app('protector')->getRemoteDump();
+
+        $this->assertFileExists($disk->path($destinationFilepath));
+        $this->assertEquals($message, $disk->get($destinationFilepath));
     }
 
     public function responseCodes()
@@ -97,28 +163,11 @@ class RemoteDumpTest extends TestCase
     /**
      * @test
      */
-    public function authenticationTokenIsInHeaderWhenLaravelSanctumIsActive()
-    {
-        Config::set('protector.routeMiddleware', ['auth:sanctum']);
-        putenv('PROTECTOR_AUTH_TOKEN=1234');
-
-        Http::fake();
-
-        app('protector')->getRemoteDump();
-        Http::assertSent(function ($request) {
-            return $request->hasHeader('Authorization', 'Bearer 1234');
-        });
-    }
-
-    /**
-     * @test
-     */
     public function failIfLaravelSanctumIsDisabledAndNoHtaccessIsDefined()
     {
         Config::set('protector.routeMiddleware', []);
         Config::set('protector.remoteEndpoint.htaccessLogin', '');
 
-        Http::fake();
         $method = $this->getAccessibleReflectionMethod('getConfiguredHttpRequest');
 
         $this->expectException(InvalidConfigurationException::class);
@@ -132,8 +181,6 @@ class RemoteDumpTest extends TestCase
     {
         Config::set('protector.routeMiddleware', ['auth:sanctum']);
         Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
-
-        Http::fake();
 
         $method = $this->getAccessibleReflectionMethod('getConfiguredHttpRequest');
 
