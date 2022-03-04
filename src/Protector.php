@@ -484,18 +484,6 @@ class Protector
     }
 
     /**
-     * Prepares the file download response for the dump by extracting the user.
-     *
-     * @param Request $request
-     *
-     * @return StreamedResponse
-     */
-    public function prepareFileDownloadResponse(Request $request): StreamedResponse
-    {
-        return $this->generateFileDownloadResponse($request);
-    }
-
-    /**
      * Generates a response which allows downloading the dump file.
      *
      * @param Request     $request
