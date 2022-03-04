@@ -484,6 +484,19 @@ class Protector
     }
 
     /**
+     * Prepares the file download response.
+     * Prevents the exposure of the connectionName parameter to routing.
+     *
+     * @param Request $request
+     *
+     * @return StreamedResponse
+     */
+    public function prepareFileDownloadResponse(Request $request): StreamedResponse
+    {
+        return $this->generateFileDownloadResponse($request);
+    }
+
+    /**
      * Generates a response which allows downloading the dump file.
      *
      * @param Request     $request
