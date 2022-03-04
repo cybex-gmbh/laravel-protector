@@ -484,7 +484,8 @@ class Protector
     }
 
     /**
-     * Prepares the file download response for the dump by extracting the user.
+     * Prepares the file download response.
+     * Prevents the exposure of the connectionName parameter to routing.
      *
      * @param Request $request
      *

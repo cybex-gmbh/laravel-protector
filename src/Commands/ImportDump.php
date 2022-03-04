@@ -238,7 +238,7 @@ class ImportDump extends Command
             $this->info(sprintf('Importing %s. Running migrations: %s', $importFilePath, $optionMigrate ? 'yes' : 'no'));
 
             try {
-                $protector->importDump($importFilePath, $this->option());
+                $protector->importDump($importFilePath, $this->options());
                 $this->info('Import done!');
             } catch (Exception $exception) {
                 $this->error($exception->getMessage());
