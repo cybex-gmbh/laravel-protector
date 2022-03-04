@@ -15,7 +15,7 @@ use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 class RemoteDumpTest extends TestCase
 {
-    protected function getPackageProviders($app)
+    protected function getPackageProviders($app): array
     {
         return [
             ProtectorServiceProvider::class,
@@ -66,12 +66,10 @@ class RemoteDumpTest extends TestCase
         Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
         Config::set('protector.routeMiddleware', []);
 
-        // 401 Status shouldn't be the default behaviour, because while Sanctum is deactivated, we decrypt still every time.
-        $this->expectException(UnauthorizedHttpException::class);
         $serverUrl = app('protector')->getServerUrl();
 
         Http::fake([
-            $serverUrl => Http::response([], 401)
+            $serverUrl => Http::response('', 200, ['Chunk-Size' => 100]),
         ]);
 
         app('protector')->getRemoteDump();
@@ -88,14 +86,17 @@ class RemoteDumpTest extends TestCase
         Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
         Config::set('protector.routeMiddleware', []);
 
-        $serverUrl = app('protector')->getServerUrl();
-        $statusCodes = [401, 403];
+        $serverUrl   = app('protector')->getServerUrl();
+        $statusCodes = [
+            401,
+            403,
+        ];
 
         foreach ($statusCodes as $statusCode) {
             $this->expectException(UnauthorizedHttpException::class);
 
             Http::fake([
-                $serverUrl => Http::response([], $statusCode)
+                $serverUrl => Http::response([], $statusCode),
             ]);
 
             app('protector')->getRemoteDump();
@@ -115,7 +116,7 @@ class RemoteDumpTest extends TestCase
         $serverUrl = app('protector')->getServerUrl();
 
         Http::fake([
-            $serverUrl => Http::response([], 404)
+            $serverUrl => Http::response([], 404),
         ]);
 
         app('protector')->getRemoteDump();
@@ -126,15 +127,23 @@ class RemoteDumpTest extends TestCase
      */
     public function checkForSuccessfulDecryption()
     {
-        $message = env('PROTECTOR_DECRYPTED_MESSAGE');
+        $message          = env('PROTECTOR_DECRYPTED_MESSAGE');
         $encryptedMessage = sodium_hex2bin(env('PROTECTOR_ENCRYPTED_MESSAGE'));
 
         $serverUrl = app('protector')->getServerUrl();
-        $headers   = ['Content-Disposition' => 'attachment; filename="HelloWorld.txt"'];
         $disk      = app('protector')->getDisk();
 
+        $determineEncryptionOverhead = $this->getAccessibleReflectionMethod('determineEncryptionOverhead');
+
+        $chunkSize          = strlen($message);
+        $encryptionOverhead = $determineEncryptionOverhead->invoke(app('protector'), $chunkSize, env('PROTECTOR_PUBLIC_KEY'));
+
         Http::fake([
-            $serverUrl => Http::response($encryptedMessage, 200, $headers)
+            $serverUrl => Http::response($encryptedMessage, 200, [
+                'Sanctum-Enabled'     => true,
+                'Content-Disposition' => 'attachment; filename="HelloWorld.txt"',
+                'Chunk-Size'          => strlen($message) + $encryptionOverhead,
+            ]),
         ]);
 
         $destinationFilepath = app('protector')->getRemoteDump();
@@ -159,7 +168,6 @@ class RemoteDumpTest extends TestCase
         Config::set('protector.routeMiddleware', []);
         Config::set('protector.remoteEndpoint.htaccessLogin', '');
 
-        Http::fake();
         $method = $this->getAccessibleReflectionMethod('getConfiguredHttpRequest');
 
         $this->expectException(InvalidConfigurationException::class);
@@ -173,8 +181,6 @@ class RemoteDumpTest extends TestCase
     {
         Config::set('protector.routeMiddleware', ['auth:sanctum']);
         Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
-
-        Http::fake();
 
         $method = $this->getAccessibleReflectionMethod('getConfiguredHttpRequest');
 
@@ -190,7 +196,7 @@ class RemoteDumpTest extends TestCase
     protected function getAccessibleReflectionMethod($method): ReflectionMethod
     {
         $reflectionProtector = new ReflectionClass(app('protector'));
-        $method = $reflectionProtector->getMethod($method);
+        $method              = $reflectionProtector->getMethod($method);
 
         $method->setAccessible(true);
 

@@ -9,21 +9,24 @@ use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Exception;
+use GuzzleHttp\Psr7\StreamWrapper;
 use Illuminate\Config\Repository;
-use Illuminate\Contracts\Routing\ResponseFactory;
 use Illuminate\Foundation\Auth\User as AuthUser;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Http;
 use League\Flysystem\FileNotFoundException;
+use Psr\Http\Message\StreamInterface;
 use Storage;
+use Symfony\Component\Console\Output\BufferedOutput;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
+use Illuminate\Support\Facades\Http;
 
 class Protector
 {
@@ -149,7 +152,10 @@ class Protector
             exec($shellCommandImport);
 
             if ($options['migrate']) {
-                Artisan::call('migrate');
+                $output = new BufferedOutput;
+
+                Artisan::call('migrate', [], $output);
+                echo $output->fetch();
             }
 
             return true;
@@ -250,10 +256,12 @@ class Protector
         }
 
         if (!$serverUrl) {
-            throw new InvalidConfigurationException('Server url is not set or invalid');
+            throw new InvalidConfigurationException('Server url is not set or invalid.');
         }
 
-        // Get and configure the HTTP Request with either the Laravel Sanctum Token or Htaccess.
+        // Create dump directory if it doesn't exist yet.
+        $this->createDirectory($this->getDisk()->path($this->getConfigValueForKey('baseDirectory')));
+
         $request = $this->getConfiguredHttpRequest();
 
         try {
@@ -265,37 +273,22 @@ class Protector
         if (!$response->ok()) {
             $httpCode = $response->status();
 
-            switch ($httpCode) {
-                case 401:
-                case 403:
-                    throw new UnauthorizedHttpException($httpCode . ' Unauthorized access');
-                case 404:
-                    throw new NotFoundHttpException('404 Not found: ' . $serverUrl);
-                default:
-                    throw new HttpException($httpCode);
-            }
+            throw match ($httpCode) {
+                401, 403 => new UnauthorizedHttpException('', $httpCode . ' Unauthorized access'),
+                404 => new NotFoundHttpException('404 Not found: ' . $serverUrl),
+                default => new HttpException($httpCode, 'Status code ' . $httpCode),
+            };
         }
 
-        $body = $response->body();
+        $destinationFilePath = $this->getDumpDestinationFilePath($response->header('Content-Disposition'));
 
-        // Get remote filename from header.
-        $contentDispositionHeader = $response->header('Content-Disposition');
+        $stream = $response->toPsrResponse()->getBody();
 
-        if (preg_match('/filename="(?P<filename>.+)"/i', $contentDispositionHeader, $matches)) {
-            $destinationFilename = $matches['filename'];
-        }
+        $this->writeDumpFile($stream, $destinationFilePath, $response->header('Chunk-Size'), $response->header('Sanctum-Enabled'));
 
-        $disk                = $this->getDisk();
-        $destinationFilepath = sprintf(
-            '%s%s%s',
-            $this->getConfigValueForKey('baseDirectory'),
-            DIRECTORY_SEPARATOR,
-            ($destinationFilename ?? 'remote_dump.sql')
-        );
+        $stream->close();
 
-        $disk->put($destinationFilepath, $this->decryptDump($body));
-
-        return $destinationFilepath;
+        return $destinationFilePath;
     }
 
     /**
@@ -388,8 +381,6 @@ class Protector
     /**
      * Creates a filename for the dump file.
      *
-     * @param bool $encrypted
-     *
      * @return string
      */
     public function createFilename(): string
@@ -406,7 +397,7 @@ class Protector
             Arr::get($metadata, 'dumpedAtDate.minutes', '00'),
         ];
 
-        return sprintf(config('protector.fileName'), $appUrl, $database, $connection, $year, $month, $day, $hour, $minute);
+        return sprintf(config('protector.fileName'), $appUrl, $database, $connection, $year, $month, $day, $hour, $minute, uniqid());
     }
 
     /**
@@ -497,61 +488,64 @@ class Protector
      *
      * @param Request $request
      *
-     * @return ResponseFactory|Response|null
+     * @return StreamedResponse
      */
-    public function prepareFileDownloadResponse(Request $request) {
-        return $this->generateFileDownloadResponse($request->user());
+    public function prepareFileDownloadResponse(Request $request): StreamedResponse
+    {
+        return $this->generateFileDownloadResponse($request);
     }
 
     /**
      * Generates a response which allows downloading the dump file.
      *
-     * @param AuthUser    $user
+     * @param Request     $request
      * @param string|null $connectionName
-     * @param bool        $disableTokenCheck
      *
-     * @return ResponseFactory|Response|null
+     * @return StreamedResponse
      */
-    public function generateFileDownloadResponse(AuthUser $user, string $connectionName = null, bool $disableTokenCheck = false)
+    public function generateFileDownloadResponse(Request $request, string $connectionName = null): StreamedResponse
     {
-        if (!is_a($user, config('auth.providers.users.model'))) {
-            return response()->json('Unknown user class', 401);
-        }
-
         $sanctumIsActive = $this->isSanctumActive();
 
         // Only proceed when either Laravel Sanctum is turned off or the user's token is valid.
-        if (!$sanctumIsActive || $disableTokenCheck || $user->tokenCan('protector:import')) {
+        if (!$sanctumIsActive || $request->user()->tokenCan('protector:import')) {
             if ($this->configure($connectionName)) {
                 $fullFileName = $this->createFilename($this->shouldEncrypt());
                 $relativePath = $this->createDump($fullFileName);
                 $fileName     = basename($relativePath);
                 $localDisk    = Storage::disk('local');
 
-                // Encrypt the data when Laravel Sanctum is active.
-                if ($sanctumIsActive) {
-                    $publicKey = $user->protector_public_key;
-                    $fileData  = sodium_crypto_box_seal($localDisk->get($relativePath), sodium_hex2bin($publicKey));
-                    $fileSize  = mb_strlen($fileData, '8bit');
-                } else {
-                    $fileData = $localDisk->get($relativePath);
-                    $fileSize = $localDisk->size($relativePath);
-                }
+                $chunkSize = $this->getConfigValueForKey('chunkSize');
 
-                $localDisk->delete($relativePath);
+                return response()->streamDownload(
+                    function () use ($request, $localDisk, $relativePath, $chunkSize, $sanctumIsActive) {
+                        $inputHandle = fopen($localDisk->path($relativePath), 'rb');
 
-                return response($fileData)
-                    ->withHeaders([
-                        'Content-Type'        => 'text/plain',
-                        'Pragma'              => 'no-cache',
-                        'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-                        'Content-Length'      => $fileSize,
-                        'Expires'             => gmdate('D, d M Y H:i:s', time() - 3600) . ' GMT',
-                    ]);
+                        while (!feof($inputHandle)) {
+                            $chunk = fread($inputHandle, $chunkSize);
+
+                            // Encrypt the data when Laravel Sanctum is active.
+                            if ($sanctumIsActive) {
+                                $publicKey = $request->user()->protector_public_key;
+                                $chunk     = sodium_crypto_box_seal($chunk, sodium_hex2bin($publicKey));
+                            }
+
+                            echo $chunk;
+                        }
+
+                        fclose($inputHandle);
+                        $localDisk->delete($relativePath);
+                    }, $fileName, [
+                    'Content-Type'    => 'text/plain',
+                    'Pragma'          => 'no-cache',
+                    'Expires'         => gmdate('D, d M Y H:i:s', time() - 3600) . ' GMT',
+                    'Chunk-Size'      => $sanctumIsActive ? $chunkSize + $this->determineEncryptionOverhead($chunkSize, $request->user()->protector_public_key) : $chunkSize,
+                    'Sanctum-Enabled' => $sanctumIsActive,
+                ]);
             }
         }
 
-        return response()->json('Unauthorized', 401);
+        throw new UnauthorizedHttpException('', 'Unauthorized');
     }
 
     /**
@@ -579,6 +573,8 @@ class Protector
     }
 
     /**
+     * Configure Http request with either the sanctum token or htaccess credentials.
+     *
      * @return PendingRequest
      * @throws InvalidConfigurationException
      */
@@ -599,7 +595,7 @@ class Protector
             throw new InvalidConfigurationException('Either Laravel Sanctum has to be active or a htaccess login has to be defined.');
         }
 
-        return $request;
+        return $request->withOptions(['stream' => true])->withHeaders(['Accept' => 'application/json']);
     }
 
     /**
@@ -627,7 +623,7 @@ class Protector
      *
      * @param string $privateKeyName
      */
-    public function setPrivateKeyName($privateKeyName): void
+    public function setPrivateKeyName(string $privateKeyName): void
     {
         $this->privateKeyName = $privateKeyName;
     }
@@ -715,20 +711,20 @@ class Protector
     }
 
     /**
-     * @param $body
+     * @param string $encryptedString
      *
      * @return string
      * @throws InvalidConfigurationException
      */
-    public function decryptDump($body): string
+    public function decryptString(string $encryptedString): string
     {
-        $body = sodium_crypto_box_seal_open($body, sodium_hex2bin($this->getPrivateKey()));
+        $decryptedString = sodium_crypto_box_seal_open($encryptedString, sodium_hex2bin($this->getPrivateKey()));
 
-        if ($body === false) {
-            throw new InvalidConfigurationException("There was an error decrypting the database dump. This might be due to mismatching crypto keys.");
+        if ($decryptedString === false) {
+            throw new InvalidConfigurationException("There was an error decrypting the provided string. This might be due to mismatching crypto keys.");
         }
 
-        return $body;
+        return $decryptedString;
     }
 
     /**
@@ -745,5 +741,71 @@ class Protector
     protected function isSanctumActive(): bool
     {
         return in_array('auth:sanctum', config('protector.routeMiddleware'));
+    }
+
+    /**
+     * Returns the destination file path for the database dump.
+     *
+     * @param string $fileName
+     *
+     * @return string
+     */
+    protected function getDumpDestinationFilePath(string $fileName): string
+    {
+        if (preg_match('/filename="(?P<filename>.+)"/i', $fileName, $matches)) {
+            $destinationFileName = $matches['filename'];
+        }
+
+        return sprintf(
+            '%s%s%s',
+            $this->getConfigValueForKey('baseDirectory'),
+            DIRECTORY_SEPARATOR,
+            ($destinationFileName ?? 'remote_dump.sql')
+        );
+    }
+
+    /**
+     * Writes the remote database dump to a specified file path.
+     * Contents are retrieved in chunks from the provided stream.
+     * When the database dump is encrypted (indicated by whether Laravel Sanctum is enabled or not) those chunks will also be decrypted.
+     *
+     * @param StreamInterface $stream
+     * @param string          $destinationFilePath
+     * @param int             $chunkSize
+     * @param bool            $sanctumEnabled
+     *
+     * @return void
+     */
+    protected function writeDumpFile(StreamInterface $stream, string $destinationFilePath, int $chunkSize, bool $sanctumEnabled): void
+    {
+        $resource = StreamWrapper::getResource($stream);
+
+        $outputHandle = fopen($this->getDisk()->path($destinationFilePath), 'wb');
+
+        while (!feof($resource)) {
+            $chunk = stream_get_contents($resource, $chunkSize);
+
+            if ($sanctumEnabled) {
+                $chunk = $this->decryptString($chunk);
+            }
+
+            fwrite($outputHandle, $chunk);
+        }
+
+        fclose($outputHandle);
+    }
+
+    /**
+     * @param int    $chunkSize
+     * @param string $publicKey
+     *
+     * @return int
+     */
+    private function determineEncryptionOverhead(int $chunkSize, string $publicKey): int
+    {
+        $chunk          = str_repeat('0', $chunkSize);
+        $encryptedChunk = sodium_crypto_box_seal($chunk, sodium_hex2bin($publicKey));
+
+        return strlen($encryptedChunk) - $chunkSize;
     }
 }
