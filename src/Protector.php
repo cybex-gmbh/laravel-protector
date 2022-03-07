@@ -5,20 +5,18 @@ namespace Cybex\Protector;
 use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
 use Cybex\Protector\Exceptions\FailedDumpGenerationException;
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
+use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Exception;
 use GuzzleHttp\Psr7\StreamWrapper;
 use Illuminate\Config\Repository;
-use Illuminate\Foundation\Auth\User as AuthUser;
 use Illuminate\Http\Client\PendingRequest;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
-use League\Flysystem\FileNotFoundException;
 use Psr\Http\Message\StreamInterface;
 use Storage;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -693,6 +691,7 @@ class Protector
      * Returns the name of the most recent dump.
      *
      * @return string
+     * @throws FileNotFoundException
      */
     public function getLatestDumpName(): string
     {

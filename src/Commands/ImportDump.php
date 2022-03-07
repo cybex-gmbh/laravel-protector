@@ -2,12 +2,11 @@
 
 namespace Cybex\Protector\Commands;
 
+use Cybex\Protector\Exceptions\FileNotFoundException;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\File;
-use League\Flysystem\FileNotFoundException;
 use LogicException;
 
 /**
