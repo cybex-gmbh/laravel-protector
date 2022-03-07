@@ -3,25 +3,16 @@
 namespace Cybex\Protector\Tests;
 
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
-use Cybex\Protector\ProtectorServiceProvider;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
-use Orchestra\Testbench\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
-class RemoteDumpTest extends TestCase
+class RemoteDumpTest extends BaseTest
 {
-    protected function getPackageProviders($app): array
-    {
-        return [
-            ProtectorServiceProvider::class,
-        ];
-    }
-
     protected function setUp(): void
     {
         parent::setUp();

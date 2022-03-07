@@ -2,22 +2,13 @@
 
 namespace Cybex\Protector\Tests;
 
-use Cybex\Protector\ProtectorServiceProvider;
 use LogicException;
-use Orchestra\Testbench\TestCase;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
-class ExceptionTest extends TestCase
+class ExceptionTest extends BaseTest
 {
-    protected function getPackageProviders($app): array
-    {
-        return [
-            ProtectorServiceProvider::class,
-        ];
-    }
-
     /**
      * @test
      */

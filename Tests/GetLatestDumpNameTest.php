@@ -4,12 +4,10 @@ namespace Cybex\Protector\Tests;
 
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Protector;
-use Cybex\Protector\ProtectorServiceProvider;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Config;
-use Orchestra\Testbench\TestCase;
 
-class GetLatestDumpNameTest extends TestCase
+class GetLatestDumpNameTest extends BaseTest
 {
     /**
      *  Protector instance.
@@ -25,13 +23,6 @@ class GetLatestDumpNameTest extends TestCase
      * Base directory for dumps.
      */
     protected string $baseDirectory;
-
-    protected function getPackageProviders($app): array
-    {
-        return [
-            ProtectorServiceProvider::class,
-        ];
-    }
 
     protected function setUp(): void
     {
