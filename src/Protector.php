@@ -12,6 +12,7 @@ use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Exception;
 use GuzzleHttp\Psr7\StreamWrapper;
 use Illuminate\Config\Repository;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Request;
@@ -39,9 +40,9 @@ class Protector
     /**
      * Cache for the current connection-configuration.
      *
-     * @var
+     * @var mixed
      */
-    protected $connectionConfig;
+    protected mixed $connectionConfig;
 
     /**
      * Cache for the runtime-metadata for a new dump.
@@ -193,7 +194,7 @@ class Protector
     }
 
     /**
-     * Returns the appended Meta-Data from a file
+     * Returns the appended Meta-Data from a file.
      *
      * @param string $dumpFile
      *
@@ -228,6 +229,7 @@ class Protector
                     if (!is_array($decodedData)) {
                         return false;
                     }
+
                     $data[$matches['type']] = $decodedData;
                 }
             }
@@ -251,13 +253,11 @@ class Protector
             throw new InvalidEnvironmentException('Retrieving a dump is not allowed on production systems.');
         }
 
-        $serverUrl = $this->getServerUrl();
-
         if ($this->isSanctumActive() && !$this->getPrivateKey()) {
             throw new InvalidConfigurationException('For using Laravel Sanctum a crypto keypair is required. There was none found in your .env file.');
         }
 
-        if (!$serverUrl) {
+        if (!$serverUrl = $this->getServerUrl()) {
             throw new InvalidConfigurationException('Server url is not set or invalid.');
         }
 
@@ -360,11 +360,16 @@ class Protector
             $this->getDisk()->append($destinationFilePath, $metaData);
 
             return true;
-        } catch (Exception $exception) {
+        } catch (Exception) {
             return false;
         }
     }
 
+    /**
+     * Returns the database name specified in the connectionConfig array.
+     *
+     * @return string
+     */
     public function getDatabaseName(): string
     {
         return $this->connectionConfig['database'];
@@ -373,9 +378,9 @@ class Protector
     /**
      * Returns the database config for the given connection.
      *
-     * @return Repository|bool
+     * @return Repository|Application|mixed
      */
-    protected function getDatabaseConfig(): Repository|bool
+    protected function getDatabaseConfig(): mixed
     {
         return config(sprintf('database.connections.%s', $this->connection), false);
     }
@@ -389,7 +394,7 @@ class Protector
     {
         $metadata = $this->getMetaData();
         [$appUrl, $database, $connection, $year, $month, $day, $hour, $minute,] = [
-            $appUrl = parse_url(env('APP_URL'), PHP_URL_HOST),
+            parse_url(env('APP_URL'), PHP_URL_HOST),
             $metadata['database'] ?? '',
             $metadata['connection'] ?? '',
             Arr::get($metadata, 'dumpedAtDate.year', '0000'),
@@ -542,6 +547,7 @@ class Protector
                     'Content-Type'    => 'text/plain',
                     'Pragma'          => 'no-cache',
                     'Expires'         => gmdate('D, d M Y H:i:s', time() - 3600) . ' GMT',
+                    // Encryption adds some overhead to the chunk, which has to be considered when decrypting it.
                     'Chunk-Size'      => $sanctumIsActive ? $chunkSize + $this->determineEncryptionOverhead($chunkSize, $request->user()->protector_public_key) : $chunkSize,
                     'Sanctum-Enabled' => $sanctumIsActive,
                 ]);
@@ -562,6 +568,8 @@ class Protector
     }
 
     /**
+     * Creates a directory at the given path, if it doesn't exist already.
+     *
      * @param string|null $destinationPath
      *
      * @throws FailedCreatingDestinationPathException
@@ -586,15 +594,19 @@ class Protector
         $htaccessLogin = $this->getConfigValueForKey('remoteEndpoint.htaccessLogin');
 
         if ($this->isSanctumActive()) {
+            // Laravel Sanctum and htaccess cannot be used simultaneously since they use the same header.
             if ($htaccessLogin) {
                 throw new InvalidConfigurationException('Laravel Sanctum and Htaccess can not be used simultaneously');
             }
 
+            // Add Bearer token authentication to request.
             $request = Http::withToken($this->getAuthToken());
         } elseif ($htaccessLogin) {
+            // Add basic authentication to request.
             $credentials = explode(':', $htaccessLogin);
             $request     = Http::withBasicAuth($credentials[0], $credentials[1]);
         } else {
+            // Protector cannot be used without any authentication.
             throw new InvalidConfigurationException('Either Laravel Sanctum has to be active or a htaccess login has to be defined.');
         }
 
@@ -740,6 +752,8 @@ class Protector
     }
 
     /**
+     * Returns whether the Sanctum middleware is activated in the config.
+     *
      * @return bool
      */
     protected function isSanctumActive(): bool
