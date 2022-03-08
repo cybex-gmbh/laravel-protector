@@ -12,6 +12,7 @@ use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Exception;
 use GuzzleHttp\Psr7\StreamWrapper;
 use Illuminate\Config\Repository;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -31,9 +32,9 @@ class Protector
     /**
      * Cache for the current connection-name.
      *
-     * @var
+     * @var string
      */
-    protected $connection;
+    protected string $connection;
 
     /**
      * Cache for the current connection-configuration.
@@ -45,37 +46,37 @@ class Protector
     /**
      * Cache for the runtime-metadata for a new dump.
      *
-     * @var
+     * @var array
      */
-    protected $cacheMetaData;
+    protected array $cacheMetaData;
 
     /**
      * The name of the .env key for the Protector DB Token.
      *
-     * @var
+     * @var string
      */
-    protected $authTokenKeyName = 'PROTECTOR_AUTH_TOKEN';
+    protected string $authTokenKeyName = 'PROTECTOR_AUTH_TOKEN';
 
     /**
      * The name of the .env key for the Protector Private Key.
      *
-     * @var
+     * @var string
      */
-    protected $privateKeyName = 'PROTECTOR_PRIVATE_KEY';
+    protected string $privateKeyName = 'PROTECTOR_PRIVATE_KEY';
 
     /**
      * The server url for the dump endpoint.
      *
-     * @var
+     * @var string
      */
-    protected $serverUrl = '';
+    protected string $serverUrl = '';
 
     /**
      * The Protector Auth Token.
      *
-     * @var
+     * @var string
      */
-    protected $authToken = '';
+    protected string $authToken = '';
 
     public function __construct()
     {
@@ -153,11 +154,14 @@ class Protector
                 $output = new BufferedOutput;
 
                 Artisan::call('migrate', [], $output);
-                echo $output->fetch();
+
+                if (app()->runningInConsole()) {
+                    echo $output->fetch();
+                }
             }
 
             return true;
-        } catch (Exception $exception) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -165,13 +169,13 @@ class Protector
     /**
      * Public function to create a dump for the given configuration.
      *
-     * @param string|null $fileName
-     * @param array       $options
+     * @param string $fileName
+     * @param array  $options
      *
      * @return string
      *
-     * @throws InvalidConnectionException
      * @throws FailedDumpGenerationException
+     * @throws InvalidConnectionException
      */
     public function createDump(string $fileName, array $options = []): string
     {
@@ -195,7 +199,7 @@ class Protector
      *
      * @return array|bool
      */
-    public function getDumpMetaData(string $dumpFile)
+    public function getDumpMetaData(string $dumpFile): bool|array
     {
         $desiredMetaLines = [
             'options',
@@ -244,7 +248,7 @@ class Protector
     public function getRemoteDump(): string
     {
         if (App::environment('production')) {
-            throw new InvalidEnvironmentException(sprintf('Retrieving a dump is not allowed on production systems.'));
+            throw new InvalidEnvironmentException('Retrieving a dump is not allowed on production systems.');
         }
 
         $serverUrl = $this->getServerUrl();
@@ -371,7 +375,7 @@ class Protector
      *
      * @return Repository|bool
      */
-    protected function getDatabaseConfig()
+    protected function getDatabaseConfig(): Repository|bool
     {
         return config(sprintf('database.connections.%s', $this->connection), false);
     }
@@ -472,7 +476,7 @@ class Protector
      * @param string $key
      * @param null   $default
      *
-     * @return string
+     * @return string|null
      */
     protected function getConfigValueForKey(string $key, $default = null): ?string
     {
@@ -550,9 +554,9 @@ class Protector
     /**
      * Returns the disk which is stated in the config. If no disk is stated the default filesystem disk will be returned.
      *
-     * @return Illuminate\Filesystem\FilesystemAdapter
+     * @return FilesystemAdapter
      */
-    public function getDisk()
+    public function getDisk(): FilesystemAdapter
     {
         return Storage::disk($this->getConfigValueForKey('diskName', config('filesystems.default')));
     }
@@ -600,9 +604,9 @@ class Protector
     /**
      * Sets the name of the .env key for the Protector DB Token.
      *
-     * @param $authTokenKeyName
+     * @param string $authTokenKeyName
      */
-    public function setAuthTokenKeyName($authTokenKeyName): void
+    public function setAuthTokenKeyName(string $authTokenKeyName): void
     {
         $this->authTokenKeyName = $authTokenKeyName;
     }

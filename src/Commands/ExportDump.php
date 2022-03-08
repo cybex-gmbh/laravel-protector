@@ -17,7 +17,7 @@ class ExportDump extends Command
      */
     protected $signature = 'protector:export
                 {--f|file= : The destination file name of the SQL export. }
-                {--c|connection= : The configured database-connection in Laravels config/database.php. }
+                {--c|connection= : The configured database-connection in Laravel\'s config/database.php. }
                 {--no-data : Exclude data from dump.}';
 
     /**
@@ -25,7 +25,7 @@ class ExportDump extends Command
      *
      * @var string
      */
-    protected $description = 'Exports a dump of the current Database including Data as backup.';
+    protected $description = 'Exports a dump of the current database including data as backup.';
 
     /**
      * Create a new command instance.
