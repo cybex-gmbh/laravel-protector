@@ -800,9 +800,8 @@ class Protector
 
         $outputHandle = fopen($this->getDisk()->path($destinationFilePath), 'wb');
 
-        while (!feof($resource)) {
-            $chunk = stream_get_contents($resource, $chunkSize);
-
+        // Stop when EOF is reached or an empty chunk was read.
+        while (!feof($resource) && $chunk = stream_get_contents($resource, $chunkSize)) {
             if ($sanctumEnabled) {
                 $chunk = $this->decryptString($chunk);
             }
