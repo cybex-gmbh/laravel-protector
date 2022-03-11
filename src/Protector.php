@@ -170,23 +170,24 @@ class Protector
     /**
      * Public function to create a dump for the given configuration.
      *
-     * @param string $fileName
-     * @param array  $options
+     * @param string      $fileName
+     * @param array       $options
+     * @param string|null $subFolder
      *
      * @return string
      *
      * @throws FailedDumpGenerationException
      * @throws InvalidConnectionException
      */
-    public function createDump(string $fileName, array $options = []): string
+    public function createDump(string $fileName, array $options = [], ?string $subFolder = null): string
     {
         if (!$this->connectionConfig) {
             throw new InvalidConnectionException('Connection is not configured properly.');
         }
 
-        $destinationFilePath = sprintf('%s%s%s', $this->getConfigValueForKey('baseDirectory'), DIRECTORY_SEPARATOR, $fileName);
+        $destinationFilePath = sprintf('%s%s%s%s%s', $this->getConfigValueForKey('baseDirectory'), DIRECTORY_SEPARATOR, $subFolder, DIRECTORY_SEPARATOR, $fileName);
 
-        if (!$this->generateDump($destinationFilePath, $options)) {
+        if (!$this->generateDump($destinationFilePath, $options, $subFolder)) {
             throw new FailedDumpGenerationException('Error while creating the dump.');
         }
 
@@ -326,12 +327,13 @@ class Protector
     /**
      * Generates an SQL dump from the current app database and returns the path to the file.
      *
-     * @param string $destinationFilePath
-     * @param array  $options
+     * @param string      $destinationFilePath
+     * @param array       $options
+     * @param string|null $subFolder
      *
      * @return bool
      */
-    protected function generateDump(string $destinationFilePath, array $options = []): bool
+    protected function generateDump(string $destinationFilePath, array $options = [], ?string $subFolder = null): bool
     {
         $dumpOptions = collect();
         $dumpOptions->push(sprintf('-h%s', escapeshellarg($this->connectionConfig['host'])));
@@ -346,7 +348,7 @@ class Protector
 
         $dumpOptions->push(sprintf('%s', escapeshellarg($this->connectionConfig['database'])));
 
-        $this->createDirectory(Storage::disk('local')->path($this->getConfigValueForKey('baseDirectory')));
+        $this->createDirectory(Storage::disk('local')->path(sprintf('%s%s%s', $this->getConfigValueForKey('baseDirectory'), DIRECTORY_SEPARATOR, $subFolder ?? '')));
 
         try {
             // Write dump using specific options.
@@ -378,7 +380,7 @@ class Protector
     /**
      * Returns the database config for the given connection.
      *
-     * @return Repository|Application|mixed
+     * @return mixed
      */
     protected function getDatabaseConfig(): mixed
     {
@@ -474,10 +476,10 @@ class Protector
     /**
      * Returns a config value for a specific key and checks for Callables.
      *
-     * @param string     $key
-     * @param mixed|null $default
+     * @param string $key
+     * @param mixed  $default
      *
-     * @return Repository|Application|mixed
+     * @return mixed
      */
     protected function getConfigValueForKey(string $key, mixed $default = null): mixed
     {
@@ -515,7 +517,7 @@ class Protector
         if (!$sanctumIsActive || $request->user()->tokenCan('protector:import')) {
             if ($this->configure($connectionName)) {
                 $fileName = $this->createFilename();
-                $relativePath = $this->createDump($fileName . '.server');
+                $relativePath = $this->createDump($fileName, subFolder: 'server');
                 $localDisk    = Storage::disk('local');
 
                 $chunkSize = $this->getConfigValueForKey('chunkSize');
