@@ -516,7 +516,7 @@ class Protector
         // Only proceed when either Laravel Sanctum is turned off or the user's token is valid.
         if (!$sanctumIsActive || $request->user()->tokenCan('protector:import')) {
             if ($this->configure($connectionName)) {
-                $fileName = $this->createFilename();
+                $fileName     = $this->createFilename();
                 $relativePath = $this->createDump($fileName, subFolder: 'server');
                 $localDisk    = Storage::disk('local');
 
