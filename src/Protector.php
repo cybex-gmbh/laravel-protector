@@ -478,12 +478,12 @@ class Protector
     /**
      * Returns a config value for a specific key and checks for Callables.
      *
-     * @param string $key
-     * @param null   $default
+     * @param string     $key
+     * @param mixed|null $default
      *
-     * @return string|null
+     * @return Repository|Application|mixed
      */
-    protected function getConfigValueForKey(string $key, $default = null): ?string
+    protected function getConfigValueForKey(string $key, mixed $default = null): mixed
     {
         $value = config(sprintf('protector.%s', $key), $default);
 
@@ -518,9 +518,8 @@ class Protector
         // Only proceed when either Laravel Sanctum is turned off or the user's token is valid.
         if (!$sanctumIsActive || $request->user()->tokenCan('protector:import')) {
             if ($this->configure($connectionName)) {
-                $fullFileName = $this->createFilename($this->shouldEncrypt());
-                $relativePath = $this->createDump($fullFileName);
-                $fileName     = basename($relativePath);
+                $fileName = $this->createFilename();
+                $relativePath = $this->createDump($fileName . '.server');
                 $localDisk    = Storage::disk('local');
 
                 $chunkSize = $this->getConfigValueForKey('chunkSize');
