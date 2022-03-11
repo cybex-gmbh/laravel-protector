@@ -11,8 +11,6 @@ use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Exception;
 use GuzzleHttp\Psr7\StreamWrapper;
-use Illuminate\Config\Repository;
-use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Request;
