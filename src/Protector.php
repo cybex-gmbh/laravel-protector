@@ -49,7 +49,7 @@ class Protector
      *
      * @var array
      */
-    protected array $cacheMetaData;
+    protected array $cacheMetaData = [];
 
     /**
      * The name of the .env key for the Protector DB Token.
@@ -420,16 +420,12 @@ class Protector
             return $this->cacheMetaData;
         }
 
-        $gitRevision     = $this->getGitRevision();
-        $gitBranch       = $this->getGitBranch();
-        $gitRevisionDate = $this->getGitHeadDate();
-
         return $this->cacheMetaData = [
             'database'        => $this->connectionConfig['database'],
             'connection'      => $this->connection,
-            'gitRevision'     => $gitRevision,
-            'gitBranch'       => $gitBranch,
-            'gitRevisionDate' => $gitRevisionDate,
+            'gitRevision'     => $this->getGitRevision(),
+            'gitBranch'       => $this->getGitBranch(),
+            'gitRevisionDate' => $this->getGitHeadDate(),
             'dumpedAtDate'    => getdate(),
         ];
     }
