@@ -24,7 +24,7 @@ class ImportDump extends Command
     protected $signature = 'protector:import
                 {--d|dump= : The file name in the database dump folder. }
                 {--f|file= : The absolute path and filename to the dump to import. }
-                {--c|connection= : The configured database-connection in Laravels config/database.php. }
+                {--c|connection= : The configured database-connection in Laravel\'s config/database.php. }
                 {--allow-production : Enable importing SQL dumps on a production system. }
                 {--force : Forces the import of the given file or remote download. Requires the dump, file or remote option. }
                 {--i|ignore-connection-filter : Ignores filter of dumps to defined connections. }
@@ -203,7 +203,7 @@ class ImportDump extends Command
                 $connectionName = Arr::first($sortedFiles->keys()->sort()->toArray());
                 $this->info(sprintf('Using connection "%s" because there are no dumps created through other connections.', $connectionName));
             } elseif ($this->option('ignore-connection-filter')) {
-                // In this case dont limit the files to the connection, no code required.
+                // In this case don't limit the files to the connection, no code required.
             } elseif ($connectionName) {
                 $connectionName = $this->choice('Import dump for which connection?', $sortedFiles->keys()->toArray());
                 $this->info(sprintf('Using connection "%s".', $connectionName));
@@ -224,7 +224,7 @@ class ImportDump extends Command
                         $connectionFiles->map(function ($item) {
                             return $item['file'];
                         })->toArray());
-                } catch (LogicException $logicException) {
+                } catch (LogicException) {
                     $this->error('There are no dumps in the dump folder.');
                     return;
                 }

@@ -11,7 +11,7 @@ use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Exception;
 use GuzzleHttp\Psr7\StreamWrapper;
-use Illuminate\Config\Repository;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -31,51 +31,51 @@ class Protector
     /**
      * Cache for the current connection-name.
      *
-     * @var
+     * @var string
      */
-    protected $connection;
+    protected string $connection;
 
     /**
      * Cache for the current connection-configuration.
      *
-     * @var
+     * @var mixed
      */
-    protected $connectionConfig;
+    protected mixed $connectionConfig;
 
     /**
      * Cache for the runtime-metadata for a new dump.
      *
-     * @var
+     * @var array
      */
-    protected $cacheMetaData;
+    protected array $cacheMetaData = [];
 
     /**
      * The name of the .env key for the Protector DB Token.
      *
-     * @var
+     * @var string
      */
-    protected $authTokenKeyName = 'PROTECTOR_AUTH_TOKEN';
+    protected string $authTokenKeyName = 'PROTECTOR_AUTH_TOKEN';
 
     /**
      * The name of the .env key for the Protector Private Key.
      *
-     * @var
+     * @var string
      */
-    protected $privateKeyName = 'PROTECTOR_PRIVATE_KEY';
+    protected string $privateKeyName = 'PROTECTOR_PRIVATE_KEY';
 
     /**
      * The server url for the dump endpoint.
      *
-     * @var
+     * @var string
      */
-    protected $serverUrl = '';
+    protected string $serverUrl = '';
 
     /**
      * The Protector Auth Token.
      *
-     * @var
+     * @var string
      */
-    protected $authToken = '';
+    protected string $authToken = '';
 
     public function __construct()
     {
@@ -153,11 +153,14 @@ class Protector
                 $output = new BufferedOutput;
 
                 Artisan::call('migrate', [], $output);
-                echo $output->fetch();
+
+                if (app()->runningInConsole()) {
+                    echo $output->fetch();
+                }
             }
 
             return true;
-        } catch (Exception $exception) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -165,23 +168,24 @@ class Protector
     /**
      * Public function to create a dump for the given configuration.
      *
-     * @param string|null $fileName
+     * @param string      $fileName
      * @param array       $options
+     * @param string|null $subFolder
      *
      * @return string
      *
-     * @throws InvalidConnectionException
      * @throws FailedDumpGenerationException
+     * @throws InvalidConnectionException
      */
-    public function createDump(string $fileName, array $options = []): string
+    public function createDump(string $fileName, array $options = [], ?string $subFolder = null): string
     {
         if (!$this->connectionConfig) {
             throw new InvalidConnectionException('Connection is not configured properly.');
         }
 
-        $destinationFilePath = sprintf('%s%s%s', $this->getConfigValueForKey('baseDirectory'), DIRECTORY_SEPARATOR, $fileName);
+        $destinationFilePath = sprintf('%s%s%s%s%s', $this->getConfigValueForKey('baseDirectory'), DIRECTORY_SEPARATOR, $subFolder, DIRECTORY_SEPARATOR, $fileName);
 
-        if (!$this->generateDump($destinationFilePath, $options)) {
+        if (!$this->generateDump($destinationFilePath, $options, $subFolder)) {
             throw new FailedDumpGenerationException('Error while creating the dump.');
         }
 
@@ -189,13 +193,13 @@ class Protector
     }
 
     /**
-     * Returns the appended Meta-Data from a file
+     * Returns the appended Meta-Data from a file.
      *
      * @param string $dumpFile
      *
      * @return array|bool
      */
-    public function getDumpMetaData(string $dumpFile)
+    public function getDumpMetaData(string $dumpFile): bool|array
     {
         $desiredMetaLines = [
             'options',
@@ -224,6 +228,7 @@ class Protector
                     if (!is_array($decodedData)) {
                         return false;
                     }
+
                     $data[$matches['type']] = $decodedData;
                 }
             }
@@ -244,16 +249,14 @@ class Protector
     public function getRemoteDump(): string
     {
         if (App::environment('production')) {
-            throw new InvalidEnvironmentException(sprintf('Retrieving a dump is not allowed on production systems.'));
+            throw new InvalidEnvironmentException('Retrieving a dump is not allowed on production systems.');
         }
-
-        $serverUrl = $this->getServerUrl();
 
         if ($this->isSanctumActive() && !$this->getPrivateKey()) {
             throw new InvalidConfigurationException('For using Laravel Sanctum a crypto keypair is required. There was none found in your .env file.');
         }
 
-        if (!$serverUrl) {
+        if (!$serverUrl = $this->getServerUrl()) {
             throw new InvalidConfigurationException('Server url is not set or invalid.');
         }
 
@@ -322,12 +325,13 @@ class Protector
     /**
      * Generates an SQL dump from the current app database and returns the path to the file.
      *
-     * @param string $destinationFilePath
-     * @param array  $options
+     * @param string      $destinationFilePath
+     * @param array       $options
+     * @param string|null $subFolder
      *
      * @return bool
      */
-    protected function generateDump(string $destinationFilePath, array $options = []): bool
+    protected function generateDump(string $destinationFilePath, array $options = [], ?string $subFolder = null): bool
     {
         $dumpOptions = collect();
         $dumpOptions->push(sprintf('-h%s', escapeshellarg($this->connectionConfig['host'])));
@@ -342,7 +346,7 @@ class Protector
 
         $dumpOptions->push(sprintf('%s', escapeshellarg($this->connectionConfig['database'])));
 
-        $this->createDirectory(Storage::disk('local')->path($this->getConfigValueForKey('baseDirectory')));
+        $this->createDirectory(Storage::disk('local')->path(sprintf('%s%s%s', $this->getConfigValueForKey('baseDirectory'), DIRECTORY_SEPARATOR, $subFolder ?? '')));
 
         try {
             // Write dump using specific options.
@@ -356,11 +360,16 @@ class Protector
             $this->getDisk()->append($destinationFilePath, $metaData);
 
             return true;
-        } catch (Exception $exception) {
+        } catch (Exception) {
             return false;
         }
     }
 
+    /**
+     * Returns the database name specified in the connectionConfig array.
+     *
+     * @return string
+     */
     public function getDatabaseName(): string
     {
         return $this->connectionConfig['database'];
@@ -369,9 +378,9 @@ class Protector
     /**
      * Returns the database config for the given connection.
      *
-     * @return Repository|bool
+     * @return mixed
      */
-    protected function getDatabaseConfig()
+    protected function getDatabaseConfig(): mixed
     {
         return config(sprintf('database.connections.%s', $this->connection), false);
     }
@@ -385,7 +394,7 @@ class Protector
     {
         $metadata = $this->getMetaData();
         [$appUrl, $database, $connection, $year, $month, $day, $hour, $minute,] = [
-            $appUrl = parse_url(env('APP_URL'), PHP_URL_HOST),
+            parse_url(env('APP_URL'), PHP_URL_HOST),
             $metadata['database'] ?? '',
             $metadata['connection'] ?? '',
             Arr::get($metadata, 'dumpedAtDate.year', '0000'),
@@ -411,16 +420,12 @@ class Protector
             return $this->cacheMetaData;
         }
 
-        $gitRevision     = $this->getGitRevision();
-        $gitBranch       = $this->getGitBranch();
-        $gitRevisionDate = $this->getGitHeadDate();
-
         return $this->cacheMetaData = [
             'database'        => $this->connectionConfig['database'],
             'connection'      => $this->connection,
-            'gitRevision'     => $gitRevision,
-            'gitBranch'       => $gitBranch,
-            'gitRevisionDate' => $gitRevisionDate,
+            'gitRevision'     => $this->getGitRevision(),
+            'gitBranch'       => $this->getGitBranch(),
+            'gitRevisionDate' => $this->getGitHeadDate(),
             'dumpedAtDate'    => getdate(),
         ];
     }
@@ -470,11 +475,11 @@ class Protector
      * Returns a config value for a specific key and checks for Callables.
      *
      * @param string $key
-     * @param null   $default
+     * @param mixed  $default
      *
-     * @return string
+     * @return mixed
      */
-    protected function getConfigValueForKey(string $key, $default = null): ?string
+    protected function getConfigValueForKey(string $key, mixed $default = null): mixed
     {
         $value = config(sprintf('protector.%s', $key), $default);
 
@@ -509,9 +514,8 @@ class Protector
         // Only proceed when either Laravel Sanctum is turned off or the user's token is valid.
         if (!$sanctumIsActive || $request->user()->tokenCan('protector:import')) {
             if ($this->configure($connectionName)) {
-                $fullFileName = $this->createFilename($this->shouldEncrypt());
-                $relativePath = $this->createDump($fullFileName);
-                $fileName     = basename($relativePath);
+                $fileName     = $this->createFilename();
+                $relativePath = $this->createDump($fileName, subFolder: 'server');
                 $localDisk    = Storage::disk('local');
 
                 $chunkSize = $this->getConfigValueForKey('chunkSize');
@@ -538,6 +542,7 @@ class Protector
                     'Content-Type'    => 'text/plain',
                     'Pragma'          => 'no-cache',
                     'Expires'         => gmdate('D, d M Y H:i:s', time() - 3600) . ' GMT',
+                    // Encryption adds some overhead to the chunk, which has to be considered when decrypting it.
                     'Chunk-Size'      => $sanctumIsActive ? $chunkSize + $this->determineEncryptionOverhead($chunkSize, $request->user()->protector_public_key) : $chunkSize,
                     'Sanctum-Enabled' => $sanctumIsActive,
                 ]);
@@ -550,14 +555,16 @@ class Protector
     /**
      * Returns the disk which is stated in the config. If no disk is stated the default filesystem disk will be returned.
      *
-     * @return Illuminate\Filesystem\FilesystemAdapter
+     * @return FilesystemAdapter
      */
-    public function getDisk()
+    public function getDisk(): FilesystemAdapter
     {
         return Storage::disk($this->getConfigValueForKey('diskName', config('filesystems.default')));
     }
 
     /**
+     * Creates a directory at the given path, if it doesn't exist already.
+     *
      * @param string|null $destinationPath
      *
      * @throws FailedCreatingDestinationPathException
@@ -582,15 +589,19 @@ class Protector
         $htaccessLogin = $this->getConfigValueForKey('remoteEndpoint.htaccessLogin');
 
         if ($this->isSanctumActive()) {
+            // Laravel Sanctum and htaccess cannot be used simultaneously since they use the same header.
             if ($htaccessLogin) {
                 throw new InvalidConfigurationException('Laravel Sanctum and Htaccess can not be used simultaneously');
             }
 
+            // Add Bearer token authentication to request.
             $request = Http::withToken($this->getAuthToken());
         } elseif ($htaccessLogin) {
+            // Add basic authentication to request.
             $credentials = explode(':', $htaccessLogin);
             $request     = Http::withBasicAuth($credentials[0], $credentials[1]);
         } else {
+            // Protector cannot be used without any authentication.
             throw new InvalidConfigurationException('Either Laravel Sanctum has to be active or a htaccess login has to be defined.');
         }
 
@@ -600,9 +611,9 @@ class Protector
     /**
      * Sets the name of the .env key for the Protector DB Token.
      *
-     * @param $authTokenKeyName
+     * @param string $authTokenKeyName
      */
-    public function setAuthTokenKeyName($authTokenKeyName): void
+    public function setAuthTokenKeyName(string $authTokenKeyName): void
     {
         $this->authTokenKeyName = $authTokenKeyName;
     }
@@ -736,6 +747,8 @@ class Protector
     }
 
     /**
+     * Returns whether the Sanctum middleware is activated in the config.
+     *
      * @return bool
      */
     protected function isSanctumActive(): bool
@@ -782,9 +795,8 @@ class Protector
 
         $outputHandle = fopen($this->getDisk()->path($destinationFilePath), 'wb');
 
-        while (!feof($resource)) {
-            $chunk = stream_get_contents($resource, $chunkSize);
-
+        // Stop when EOF is reached or an empty chunk was read.
+        while (!feof($resource) && $chunk = stream_get_contents($resource, $chunkSize)) {
             if ($sanctumEnabled) {
                 $chunk = $this->decryptString($chunk);
             }
