@@ -339,6 +339,7 @@ class Protector
         $dumpOptions->push(sprintf('-p%s', escapeshellarg($this->connectionConfig['password'])));
         $dumpOptions->push(sprintf('--max-allowed-packet=%s', escapeshellarg(config('protector.maxPacketLength'))));
         $dumpOptions->push('--no-create-db');
+        $dumpOptions->push('--set-gtid-purged=off');
 
         if ($options['no-data'] ?? false) {
             $dumpOptions->push('--no-data');
