@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Http;
 use Psr\Http\Message\StreamInterface;
 use Storage;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -24,7 +25,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
-use Illuminate\Support\Facades\Http;
 
 class Protector
 {
@@ -166,6 +166,25 @@ class Protector
     }
 
     /**
+     * Public function to create the Destination File Path for the dump.
+     *
+     * @param string $fileName
+     * @param string|null $subFolder
+     * @return string
+     */
+    public function createDestinationFilePath(string $fileName, ?string $subFolder = null): string
+    {
+        return sprintf(
+            '%s%s%s%s%s',
+            $this->getConfigValueForKey('baseDirectory'),
+            DIRECTORY_SEPARATOR,
+            $subFolder,
+            $subFolder ? DIRECTORY_SEPARATOR : '',
+            $fileName,
+        );
+    }
+
+    /**
      * Public function to create a dump for the given configuration.
      *
      * @param string      $fileName
@@ -183,9 +202,9 @@ class Protector
             throw new InvalidConnectionException('Connection is not configured properly.');
         }
 
-        $destinationFilePath = sprintf('%s%s%s%s%s', $this->getConfigValueForKey('baseDirectory'), DIRECTORY_SEPARATOR, $subFolder, DIRECTORY_SEPARATOR, $fileName);
+        $destinationFilePath = $this->createDestinationFilePath($fileName, $subFolder);
 
-        if (!$this->generateDump($destinationFilePath, $options, $subFolder)) {
+        if (!$this->generateDump($destinationFilePath, $options)) {
             throw new FailedDumpGenerationException('Error while creating the dump.');
         }
 
@@ -325,13 +344,11 @@ class Protector
     /**
      * Generates an SQL dump from the current app database and returns the path to the file.
      *
-     * @param string      $destinationFilePath
-     * @param array       $options
-     * @param string|null $subFolder
-     *
+     * @param string $destinationFilePath
+     * @param array $options
      * @return bool
      */
-    protected function generateDump(string $destinationFilePath, array $options = [], ?string $subFolder = null): bool
+    protected function generateDump(string $destinationFilePath, array $options = []): bool
     {
         $dumpOptions = collect();
         $dumpOptions->push(sprintf('-h%s', escapeshellarg($this->connectionConfig['host'])));
@@ -347,7 +364,7 @@ class Protector
 
         $dumpOptions->push(sprintf('%s', escapeshellarg($this->connectionConfig['database'])));
 
-        $this->createDirectory(Storage::disk('local')->path(sprintf('%s%s%s', $this->getConfigValueForKey('baseDirectory'), DIRECTORY_SEPARATOR, $subFolder ?? '')));
+        $this->createDirectory(Storage::disk('local')->path(dirname($destinationFilePath)));
 
         try {
             // Write dump using specific options.

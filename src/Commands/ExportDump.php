@@ -55,7 +55,6 @@ class ExportDump extends Command
         $options['no-data'] = $this->option('no-data') ?: false;
 
         if ($protector->configure($connectionName ?? null)) {
-            // Create the desired dump.
             $filePath = $protector->createDump($fileName, $options);
             $this->info(sprintf('Dump was created at %s', $protector->getDisk()->path($filePath)));
         } else {
