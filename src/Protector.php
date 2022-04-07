@@ -174,14 +174,11 @@ class Protector
      */
     public function createDestinationFilePath(string $fileName, ?string $subFolder = null): string
     {
-        return sprintf(
-            '%s%s%s%s%s',
+        return implode(DIRECTORY_SEPARATOR, array_filter([
             $this->getConfigValueForKey('baseDirectory'),
-            DIRECTORY_SEPARATOR,
             $subFolder,
-            $subFolder ? DIRECTORY_SEPARATOR : '',
             $fileName,
-        );
+        ]));
     }
 
     /**
