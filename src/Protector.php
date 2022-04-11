@@ -408,18 +408,14 @@ class Protector
     public function createFilename(): string
     {
         $metadata = $this->getMetaData();
-        [$appUrl, $database, $connection, $year, $month, $day, $hour, $minute,] = [
+        [$appUrl, $database, $connection, $date] = [
             parse_url(env('APP_URL'), PHP_URL_HOST),
             $metadata['database'] ?? '',
             $metadata['connection'] ?? '',
-            Arr::get($metadata, 'dumpedAtDate.year', '0000'),
-            Arr::get($metadata, 'dumpedAtDate.mon', '00'),
-            Arr::get($metadata, 'dumpedAtDate.mday', '00'),
-            Arr::get($metadata, 'dumpedAtDate.hours', '00'),
-            Arr::get($metadata, 'dumpedAtDate.minutes', '00'),
+            $metadata['dumpedAtDate'],
         ];
 
-        return sprintf(config('protector.fileName'), $appUrl, $database, $connection, $year, $month, $day, $hour, $minute, uniqid());
+        return sprintf(config('protector.fileName'), $appUrl, $database, $connection, $date->year, $date->month, $date->day, $date->hour, $date->minute, $date->second);
     }
 
     /**
@@ -441,7 +437,7 @@ class Protector
             'gitRevision'     => $this->getGitRevision(),
             'gitBranch'       => $this->getGitBranch(),
             'gitRevisionDate' => $this->getGitHeadDate(),
-            'dumpedAtDate'    => getdate(),
+            'dumpedAtDate'    => now(),
         ];
     }
 
