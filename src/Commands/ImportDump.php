@@ -144,7 +144,7 @@ class ImportDump extends Command
                 return;
             }
 
-            $this->line(sprintf('>>> Successfully retrieved remote dump from %s', app('protector')->getServerUrl()));
+            $this->line(sprintf('>>> Successfully retrieved remote dump from %s', $protector->getServerUrl()));
 
             $importFilePath = $fullRemoteDumpFileName;
         }
@@ -215,7 +215,7 @@ class ImportDump extends Command
                 $connectionFiles = $matchingFiles->sortByDesc('dateTime');
             }
 
-            if ($connectionFiles->count() == 1) {
+            if ($connectionFiles->count() === 1) {
                 $importFilePath = $connectionFiles->first()['path'];
                 $this->info(sprintf('Using file "%s" because there are no other dumps.', $importFilePath));
             } else {
