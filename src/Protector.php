@@ -14,7 +14,6 @@ use GuzzleHttp\Psr7\StreamWrapper;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
@@ -166,17 +165,15 @@ class Protector
     }
 
     /**
-     * Public function to create the Destination File Path for the dump.
+     * Public function to create the relative File Path for the dump.
      *
      * @param string $fileName
-     * @param string|null $subFolder
      * @return string
      */
-    public function createDestinationFilePath(string $fileName, ?string $subFolder = null): string
+    public function createRelativePath(string $fileName): string
     {
         return implode(DIRECTORY_SEPARATOR, array_filter([
             $this->getConfigValueForKey('baseDirectory'),
-            $subFolder,
             $fileName,
         ]));
     }
@@ -184,28 +181,22 @@ class Protector
     /**
      * Public function to create a dump for the given configuration.
      *
-     * @param string      $fileName
-     * @param array       $options
-     * @param string|null $subFolder
-     *
-     * @return string
+     * @param string|null $destinationFilePath
+     * @param array $options
+     * @return void
      *
      * @throws FailedDumpGenerationException
      * @throws InvalidConnectionException
      */
-    public function createDump(string $fileName, array $options = [], ?string $subFolder = null): string
+    public function createDump(?string $destinationFilePath, array $options = []): void
     {
         if (!$this->connectionConfig) {
             throw new InvalidConnectionException('Connection is not configured properly.');
         }
 
-        $destinationFilePath = $this->createDestinationFilePath($fileName, $subFolder);
-
         if (!$this->generateDump($destinationFilePath, $options)) {
             throw new FailedDumpGenerationException('Error while creating the dump.');
         }
-
-        return $destinationFilePath;
     }
 
     /**
@@ -525,15 +516,14 @@ class Protector
         // Only proceed when either Laravel Sanctum is turned off or the user's token is valid.
         if (!$sanctumIsActive || $request->user()->tokenCan('protector:import')) {
             if ($this->configure($connectionName)) {
-                $fileName     = $this->createFilename();
-                $relativePath = $this->createDump($fileName, subFolder: 'server');
-                $localDisk    = Storage::disk('local');
-
-                $chunkSize = $this->getConfigValueForKey('chunkSize');
+                $clientFileName = $this->createFilename();
+                $serverFilePath = tempnam('', 'protector'); // /tmp/protector
+                $this->createDump($serverFilePath);
+                $chunkSize      = $this->getConfigValueForKey('chunkSize');
 
                 return response()->streamDownload(
-                    function () use ($request, $localDisk, $relativePath, $chunkSize, $sanctumIsActive) {
-                        $inputHandle = fopen($localDisk->path($relativePath), 'rb');
+                    function () use ($request, $serverFilePath, $chunkSize, $sanctumIsActive) {
+                        $inputHandle = fopen($serverFilePath, 'rb');
 
                         while (!feof($inputHandle)) {
                             $chunk = fread($inputHandle, $chunkSize);
@@ -548,8 +538,8 @@ class Protector
                         }
 
                         fclose($inputHandle);
-                        $localDisk->delete($relativePath);
-                    }, $fileName, [
+                        unlink($serverFilePath);
+                    }, $clientFileName, [
                     'Content-Type'    => 'text/plain',
                     'Pragma'          => 'no-cache',
                     'Expires'         => gmdate('D, d M Y H:i:s', time() - 3600) . ' GMT',
