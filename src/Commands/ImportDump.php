@@ -156,7 +156,7 @@ class ImportDump extends Command
             }
 
             if ($this->option('flush')) {
-                $this->protector->flush(config('protector.baseDirectory'), $importFilePath);
+                $this->protector->flush($importFilePath);
                 $this->warn(sprintf('Deleted all old files in %s', $disk->path($basePath)));
             }
 

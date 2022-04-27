@@ -245,14 +245,13 @@ class Protector
     /**
      * Deletes either all dumps or all old dumps on the client disk.
      *
-     * @param string $basePath
      * @param string|null $sourceFilePath
      * @return void
      */
-    public function flush(string $basePath, ?string $sourceFilePath = null): void
+    public function flush(?string $sourceFilePath = null): void
     {
         $disk  = $this->getDisk();
-        $files = $disk->files($basePath);
+        $files = $disk->files(config('protector.baseDirectory'));
 
         $sourceFilePath && $files = array_diff($files, [$sourceFilePath]);
 
