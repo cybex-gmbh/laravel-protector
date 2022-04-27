@@ -17,8 +17,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Psr\Http\Message\StreamInterface;
-use Storage;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -103,14 +103,12 @@ class Protector
      * Imports a specific SQL dump.
      *
      * @param string $sourceFilePath
-     * @param array  $options
-     *
+     * @param array $options
      * @return bool
      *
-     * @throws InvalidEnvironmentException
-     * @throws InvalidConnectionException
      * @throws FileNotFoundException
-     * @throws Exception
+     * @throws InvalidConnectionException
+     * @throws InvalidEnvironmentException
      */
     public function importDump(string $sourceFilePath, array $options): bool
     {
@@ -129,7 +127,7 @@ class Protector
 
         // Getting a local copy because disk files might not be possible to import.
         Storage::disk('local')->put($sourceFilePath, $this->getDisk()->get($sourceFilePath));
-        $filePath = Storage::disk('local')->path($sourceFilePath);
+        $filePath = $this->getDisk()->path($sourceFilePath);
 
         try {
             $shellCommandDropCreateDatabase = sprintf('mysql -h%s -u%s -p%s -e %s 2> /dev/null',
@@ -245,6 +243,23 @@ class Protector
     }
 
     /**
+     * Deletes either all dumps or all old dumps on the client disk.
+     *
+     * @param string $basePath
+     * @param string|null $sourceFilePath
+     * @return void
+     */
+    public function flush(string $basePath, ?string $sourceFilePath = null): void
+    {
+        $disk  = $this->getDisk();
+        $files = $disk->files($basePath);
+
+        $sourceFilePath && $files = array_diff($files, [$sourceFilePath]);
+
+        $disk->delete($files);
+    }
+
+    /**
      * Reads the remote dump file and stores it on the client disk.
      *
      * @return string
@@ -267,7 +282,6 @@ class Protector
             throw new InvalidConfigurationException('Server url is not set or invalid.');
         }
 
-        // Create dump directory if it doesn't exist yet.
         $this->createDirectory($this->getDisk()->path($this->getConfigValueForKey('baseDirectory')));
 
         $request = $this->getConfiguredHttpRequest();

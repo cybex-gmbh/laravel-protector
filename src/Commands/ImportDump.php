@@ -137,23 +137,30 @@ class ImportDump extends Command
         }
 
         if (!$importFilePath && $optionRemote) {
-            if ($this->option('flush')) {
-                $disk->delete($disk->files($basePath));
-                $this->warn(sprintf('Deleted all files in %s', $disk->path($basePath)));
-            }
-
             $this->line(sprintf('<<< Downloading dump from remote server to directory: <comment>%s</comment>', $disk->path($basePath)));
 
             try {
-                $fullRemoteDumpFileName = $protector->getRemoteDump();
+                $importFilePath = $this->protector->getRemoteDump();
+
             } catch (Exception $exception) {
                 $this->error(sprintf('Error retrieving dump from remote server: %s', $exception->getMessage()));
+
                 return;
             }
 
-            $this->line(sprintf('>>> Successfully retrieved remote dump from %s', $protector->getServerUrl()));
+            if (!$disk->size($importFilePath)) {
+                $this->error(sprintf('Retrieved empty response from %s', $this->protector->getServerUrl()));
+                $disk->delete($importFilePath);
 
-            $importFilePath = $fullRemoteDumpFileName;
+                return;
+            }
+
+            if ($this->option('flush')) {
+                $this->protector->flush(config('protector.baseDirectory'), $importFilePath);
+                $this->warn(sprintf('Deleted all old files in %s', $disk->path($basePath)));
+            }
+
+            $this->line(sprintf('>>> Successfully retrieved remote dump from %s', $this->protector->getServerUrl()));
         }
 
         if (!$importFilePath) {
