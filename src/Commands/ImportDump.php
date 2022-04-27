@@ -3,6 +3,7 @@
 namespace Cybex\Protector\Commands;
 
 use Cybex\Protector\Exceptions\FileNotFoundException;
+use Cybex\Protector\Protector;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -42,6 +43,7 @@ class ImportDump extends Command
 
     protected const DOWNLOAD_REMOTE_DUMP       = 'Download remote dump';
     protected const IMPORT_EXISTING_LOCAL_DUMP = 'Import existing local dump';
+    protected ?Protector $protector = null;
 
     /**
      * Create a new command instance.
@@ -69,14 +71,15 @@ class ImportDump extends Command
 
         if ($optionForce && !($optionRemote || $optionFile || $optionDump)) {
             $this->error('The force option requires either the file, dump or remote option to be set.');
+
             return;
         }
 
-        $protector = app('protector');
+        $this->protector = app('protector');
 
-        $disk                = $protector->getDisk();
+        $disk                = $this->protector->getDisk();
         $basePath            = config('protector.baseDirectory');
-        $destinationFilename = $optionDump ?: $protector->createFilename();
+        $destinationFilename = $optionDump ?: $this->protector->createFilename();
         $relativePath        = $optionFile ?: $basePath . DIRECTORY_SEPARATOR . $destinationFilename;
         $importFilePath      = null;
 
@@ -88,11 +91,13 @@ class ImportDump extends Command
 
         if (App::environment('production') && !$this->option('allow-production')) {
             $this->error('Import is not allowed on production systems! Use --allow-production');
+
             return;
         }
 
-        if (!$protector->configure($connectionName)) {
+        if (!$this->protector->configure($connectionName)) {
             $this->error('Configuration is invalid');
+
             return;
         }
 
@@ -109,10 +114,11 @@ class ImportDump extends Command
 
         if ($optionLatest) {
             try {
-                $importFilePath = $protector->getLatestDumpName();
+                $importFilePath = $this->protector->getLatestDumpName();
             } catch (FileNotFoundException $fileNotFoundException) {
                 if (!$optionRemote) {
                     $this->error($fileNotFoundException->getMessage());
+
                     return;
                 } else {
                     $this->warn(sprintf('There are no files in %s', $disk->path($basePath)));
@@ -123,6 +129,7 @@ class ImportDump extends Command
                 $importFilePath = $relativePath;
             } elseif (!$optionRemote) {
                 $this->error((new FileNotFoundException($relativePath))->getMessage());
+
                 return;
             } else {
                 $this->warn(sprintf('File not found: %s', $relativePath));
@@ -154,7 +161,7 @@ class ImportDump extends Command
             $matchingFiles  = collect();
 
             foreach ($directoryFiles as $directoryFile) {
-                $metaData = $protector->getDumpMetaData($directoryFile);
+                $metaData = $this->protector->getDumpMetaData($directoryFile);
 
                 if (is_array($metaData) && !empty($metaData) && array_key_exists($metaData['meta']['connection'], config('database.connections'))) {
 
@@ -226,6 +233,7 @@ class ImportDump extends Command
                         })->toArray());
                 } catch (LogicException) {
                     $this->error('There are no dumps in the dump folder.');
+
                     return;
                 }
 
@@ -233,11 +241,11 @@ class ImportDump extends Command
             }
         }
 
-        if ($importFilePath && ($optionForce || $this->confirm(sprintf('Are you sure that you want to import the dump into the database: %s?', $protector->getDatabaseName())))) {
+        if ($importFilePath && ($optionForce || $this->confirm(sprintf('Are you sure that you want to import the dump into the database: %s?', $this->protector->getDatabaseName())))) {
             $this->info(sprintf('Importing %s. Running migrations: %s', $importFilePath, $optionMigrate ? 'yes' : 'no'));
 
             try {
-                $protector->importDump($importFilePath, $this->options());
+                $this->protector->importDump($importFilePath, $this->options());
                 $this->info('Import done!');
             } catch (Exception $exception) {
                 $this->error($exception->getMessage());
