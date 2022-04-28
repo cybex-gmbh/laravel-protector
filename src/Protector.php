@@ -127,8 +127,15 @@ class Protector
         }
 
         // Getting a local copy because disk files might not be possible to import.
-        Storage::disk('local')->put($sourceFilePath, $this->getDisk()->get($sourceFilePath));
-        $filePath = $this->getDisk()->path($sourceFilePath);
+        $tempFilePath = tempnam('', 'protector');
+        $handle = fopen($tempFilePath, 'w');
+        $stream = $this->getDisk()->readStream($sourceFilePath);
+
+        stream_copy_to_stream($stream, $handle);
+
+        fclose($handle);
+
+        $success = true;
 
         try {
             $shellCommandDropCreateDatabase = sprintf('mysql -h%s -u%s -p%s -e %s 2> /dev/null',
@@ -142,7 +149,7 @@ class Protector
                 escapeshellarg($this->connectionConfig['username']),
                 escapeshellarg($this->connectionConfig['password']),
                 escapeshellarg($this->connectionConfig['database']),
-                escapeshellarg($filePath));
+                escapeshellarg($tempFilePath));
 
             exec($shellCommandDropCreateDatabase);
             exec($shellCommandImport);
@@ -156,11 +163,13 @@ class Protector
                     echo $output->fetch();
                 }
             }
-
-            return true;
         } catch (Exception) {
-            return false;
+            $success = false;
         }
+
+        unlink($tempFilePath);
+
+        return $success;
     }
 
     /**
