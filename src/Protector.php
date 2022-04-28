@@ -13,6 +13,7 @@ use Exception;
 use GuzzleHttp\Psr7\StreamWrapper;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\File;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
@@ -365,18 +366,20 @@ class Protector
 
         $dumpOptions->push(sprintf('%s', escapeshellarg($this->connectionConfig['database'])));
 
-        $this->createDirectory(Storage::disk('local')->path(dirname($destinationFilePath)));
+        $tempFile = tempnam('', 'protector');
 
         try {
             // Write dump using specific options.
             exec(sprintf('mysqldump %s > %s 2> /dev/null',
                 $dumpOptions->implode(' '),
-                escapeshellarg(Storage::disk('local')->path($destinationFilePath))));
+                escapeshellarg($tempFile)));
 
-            $this->getDisk()->put($destinationFilePath, Storage::disk('local')->get($destinationFilePath));
+            $this->getDisk()->putFileAs(dirname($destinationFilePath), new File($tempFile), basename($destinationFilePath));
+
             // Append some import/export-meta-data to the end.
             $metaData = sprintf("-- options:%s\n-- meta:%s", json_encode($options, JSON_UNESCAPED_UNICODE), json_encode($this->getMetaData(), JSON_UNESCAPED_UNICODE));
             $this->getDisk()->append($destinationFilePath, $metaData);
+            unlink($tempFile);
 
             return true;
         } catch (Exception) {
@@ -569,25 +572,38 @@ class Protector
     /**
      * Returns the disk which is stated in the config. If no disk is stated the default filesystem disk will be returned.
      *
+     * @param string|null $diskName
      * @return FilesystemAdapter
      */
-    public function getDisk(): FilesystemAdapter
+    public function getDisk(?string $diskName = null): FilesystemAdapter
     {
-        return Storage::disk($this->getConfigValueForKey('diskName', config('filesystems.default')));
+        return Storage::disk($this->getDiskName($diskName));
+    }
+
+    /**
+     * @param string|null $diskName
+     * @return string
+     */
+    public function getDiskName(?string $diskName): string
+    {
+        return $diskName ?? $this->getConfigValueForKey('diskName', config('filesystems.default'));
     }
 
     /**
      * Creates a directory at the given path, if it doesn't exist already.
      *
      * @param string|null $destinationPath
-     *
+     * @param string|null $diskName
+     * @return void
      * @throws FailedCreatingDestinationPathException
      */
-    protected function createDirectory(?string $destinationPath): void
+    protected function createDirectory(?string $destinationPath, ?string $diskName = null): void
     {
+        $disk = $this->getDisk($diskName);
+
         if (!is_dir($destinationPath)) {
-            if (mkdir($destinationPath, 0777, true) === false) {
-                throw new FailedCreatingDestinationPathException(sprintf('Could not create the non-existing destination path %s.', $destinationPath));
+            if ($disk->createDir($destinationPath) === false) {
+                throw new FailedCreatingDestinationPathException(sprintf('Could not create the non-existing destination path %s on disk %s.', $destinationPath, $this->getDiskName($diskName)));
             }
         }
     }
