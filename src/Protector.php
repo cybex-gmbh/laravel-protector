@@ -291,7 +291,7 @@ class Protector
             throw new InvalidConfigurationException('Server url is not set or invalid.');
         }
 
-        $this->createDirectory($this->getDisk()->path($this->getConfigValueForKey('baseDirectory')));
+        $this->createDirectory($this->getConfigValueForKey('baseDirectory'), $this->getDisk());
 
         $request = $this->getConfiguredHttpRequest();
 
@@ -593,7 +593,7 @@ class Protector
      * @param string|null $diskName
      * @return string
      */
-    public function getDiskName(?string $diskName): string
+    public function getDiskName(?string $diskName = null): string
     {
         return $diskName ?? $this->getConfigValueForKey('diskName', config('filesystems.default'));
     }
@@ -602,17 +602,15 @@ class Protector
      * Creates a directory at the given path, if it doesn't exist already.
      *
      * @param string|null $destinationPath
-     * @param string|null $diskName
+     * @param FilesystemAdapter $disk
      * @return void
      * @throws FailedCreatingDestinationPathException
      */
-    protected function createDirectory(?string $destinationPath, ?string $diskName = null): void
+    protected function createDirectory(?string $destinationPath, FilesystemAdapter $disk): void
     {
-        $disk = $this->getDisk($diskName);
-
-        if (!is_dir($destinationPath)) {
-            if ($disk->createDir($destinationPath) === false) {
-                throw new FailedCreatingDestinationPathException(sprintf('Could not create the non-existing destination path %s on disk %s.', $destinationPath, $this->getDiskName($diskName)));
+        if ($disk->missing($destinationPath)) {
+            if ($disk->makeDirectory($destinationPath) === false) {
+                throw new FailedCreatingDestinationPathException(sprintf('Could not create the non-existing destination path %s on disk %s.', $destinationPath, $this->getDiskName()));
             }
         }
     }

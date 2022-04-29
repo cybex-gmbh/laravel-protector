@@ -17,7 +17,7 @@ class RemoteDumpTest extends BaseTest
     {
         parent::setUp();
 
-        Config::set('protector.remoteEndpoint.serverUrl', 'cybex.test/protector/exportDump');
+        Config::set('protector.remoteEndpoint.serverUrl', 'example.com/protector/exportDump');
     }
 
     /**
@@ -26,16 +26,15 @@ class RemoteDumpTest extends BaseTest
     public function createsDumpPathDestinationIfNotExists()
     {
         $fakeStorage = Storage::fake('test');
-        $path        = $fakeStorage->path('dumps');
+        $path        = 'dumps';
 
-        Storage::deleteDirectory($path);
-
-        Config::set('protector.dumpPath', $path);
+        $fakeStorage->deleteDirectory($path);
 
         $method = $this->getAccessibleReflectionMethod('createDirectory');
-        $method->invokeArgs(app('protector'), [$path]);
 
-        $this->assertDirectoryExists($path);
+        $method->invokeArgs(app('protector'), [$path, $fakeStorage]);
+
+        $this->assertDirectoryExists($fakeStorage->path($path));
     }
 
     /**
