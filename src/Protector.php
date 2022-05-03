@@ -173,12 +173,12 @@ class Protector
     }
 
     /**
-     * Public function to create the relative File Path for the dump.
+     * Public function to create the relative file path for the dump.
      *
      * @param string $fileName
      * @return string
      */
-    public function createRelativePath(string $fileName): string
+    public function getDumpFilePath(string $fileName): string
     {
         return implode(DIRECTORY_SEPARATOR, array_filter([
             $this->getConfigValueForKey('baseDirectory'),
