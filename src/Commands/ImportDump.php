@@ -80,7 +80,7 @@ class ImportDump extends Command
         $disk                = $this->protector->getDisk();
         $basePath            = config('protector.baseDirectory');
         $destinationFilename = $optionDump ?: $this->protector->createFilename();
-        $relativePath        = $optionFile ?: $basePath . DIRECTORY_SEPARATOR . $destinationFilename;
+        $filePath            = $optionFile ?: $this->protector->getDumpFilePath($destinationFilename);
         $importFilePath      = null;
 
         $connectionName = null;
@@ -125,14 +125,14 @@ class ImportDump extends Command
                 }
             }
         } elseif ($optionFile || $optionDump) {
-            if ($disk->exists($relativePath)) {
-                $importFilePath = $relativePath;
+            if ($disk->exists($filePath)) {
+                $importFilePath = $filePath;
             } elseif (!$optionRemote) {
-                $this->error((new FileNotFoundException($relativePath))->getMessage());
+                $this->error((new FileNotFoundException($filePath))->getMessage());
 
                 return;
             } else {
-                $this->warn(sprintf('File not found: %s', $relativePath));
+                $this->warn(sprintf('File not found: %s', $filePath));
             }
         }
 

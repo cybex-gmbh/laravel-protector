@@ -55,7 +55,7 @@ class ExportDump extends Command
         $options['no-data'] = $this->option('no-data') ?: false;
 
         if ($protector->configure($connectionName ?? null)) {
-            $relativeFilePath = $protector->createRelativePath($fileName);
+            $relativeFilePath = $protector->getDumpFilePath($fileName);
             $protector->createDump($relativeFilePath, $options);
             $this->info(sprintf('Dump was created at %s', $protector->getDisk()->path($relativeFilePath)));
         } else {
