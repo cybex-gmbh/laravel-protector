@@ -3,6 +3,7 @@
 namespace Cybex\Protector\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Http\File;
 
 /**
  * Class ExportDump
@@ -42,7 +43,7 @@ class ExportDump extends Command
      *
      * @return void
      */
-    public function handle()
+    public function handle(): void
     {
         $protector = app('protector');
         $fileName  = $this->option('file') ?: $protector->createFilename();
@@ -55,8 +56,12 @@ class ExportDump extends Command
         $options['no-data'] = $this->option('no-data') ?: false;
 
         if ($protector->configure($connectionName ?? null)) {
+            $tempFilePath     = $protector->createDump($options);
             $relativeFilePath = $protector->getDumpFilePath($fileName);
-            $protector->createDump($relativeFilePath, $options);
+
+            $protector->getDisk()->putFileAs(dirname($relativeFilePath), new File($tempFilePath), basename($relativeFilePath));
+            unlink($tempFilePath);
+
             $this->info(sprintf('Dump was created at %s', $protector->getDisk()->path($relativeFilePath)));
         } else {
             $this->error('Configuration is invalid.');
