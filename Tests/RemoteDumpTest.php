@@ -23,7 +23,7 @@ class RemoteDumpTest extends BaseTest
     /**
      * @test
      */
-    public function createsDumpPathDestinationIfNotExists()
+    public function canCreateDestinationDumpPath()
     {
         $fakeStorage = Storage::fake('test');
         $path        = 'dumps';
