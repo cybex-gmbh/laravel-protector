@@ -119,6 +119,7 @@ class RemoteDumpTest extends BaseTest
     {
         $message          = env('PROTECTOR_DECRYPTED_MESSAGE');
         $encryptedMessage = sodium_hex2bin(env('PROTECTOR_ENCRYPTED_MESSAGE'));
+        $publicKey        = sodium_hex2bin(env('PROTECTOR_PUBLIC_KEY'));
 
         $serverUrl = app('protector')->getServerUrl();
         $disk      = app('protector')->getDisk();
@@ -126,7 +127,7 @@ class RemoteDumpTest extends BaseTest
         $determineEncryptionOverhead = $this->getAccessibleReflectionMethod('determineEncryptionOverhead');
 
         $chunkSize          = strlen($message);
-        $encryptionOverhead = $determineEncryptionOverhead->invoke(app('protector'), $chunkSize, env('PROTECTOR_PUBLIC_KEY'));
+        $encryptionOverhead = $determineEncryptionOverhead->invoke(app('protector'), $chunkSize, $publicKey);
 
         Http::fake([
             $serverUrl => Http::response($encryptedMessage, 200, [
