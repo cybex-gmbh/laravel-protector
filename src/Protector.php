@@ -116,7 +116,6 @@ class Protector
      */
     public function importDump(string $sourceFilePath, array $options): bool
     {
-        // Production environment is not allowed unless set in options.
         if (App::environment('production') && !($options['allow-production'])) {
             throw new InvalidEnvironmentException('Production environment is not allowed and option was not set.');
         }
@@ -125,18 +124,9 @@ class Protector
             throw new InvalidConnectionException('Connection is not configured properly');
         }
 
-        if (!$this->getDisk()->exists($sourceFilePath)) {
+       /* if (!$this->getDisk()->exists($sourceFilePath)) {
             throw new FileNotFoundException($sourceFilePath);
-        }
-
-        // Getting a local copy because disk files might not be possible to import.
-        $tempFilePath = tempnam('', 'protector');
-        $handle = fopen($tempFilePath, 'w');
-        $stream = $this->getDisk()->readStream($sourceFilePath);
-
-        stream_copy_to_stream($stream, $handle);
-
-        fclose($handle);
+        }*/
 
         $success = true;
 
@@ -152,7 +142,7 @@ class Protector
                 escapeshellarg($this->connectionConfig['username']),
                 escapeshellarg($this->connectionConfig['password']),
                 escapeshellarg($this->connectionConfig['database']),
-                escapeshellarg($tempFilePath));
+                escapeshellarg($sourceFilePath));
 
             exec($shellCommandDropCreateDatabase);
             exec($shellCommandImport);
@@ -170,7 +160,7 @@ class Protector
             $success = false;
         }
 
-        unlink($tempFilePath);
+        unlink($sourceFilePath);
 
         return $success;
     }
@@ -801,6 +791,22 @@ class Protector
         }
 
         return $publicKey;
+    }
+
+    /**
+     * @param string $sourceFilePath
+     * @return false|string
+     */
+    public function createTempFilePath(string $sourceFilePath): string|false
+    {
+        $tempFilePath = tempnam('', 'protector');
+        $handle = fopen($tempFilePath, 'w');
+        $stream = $this->getDisk()->readStream($sourceFilePath);
+
+        stream_copy_to_stream($stream, $handle);
+
+        fclose($handle);
+        return $tempFilePath;
     }
 
     /**

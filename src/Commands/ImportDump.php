@@ -114,7 +114,8 @@ class ImportDump extends Command
 
         if ($optionLatest) {
             try {
-                $importFilePath = $this->protector->getLatestDumpName();
+                $filePath = $this->protector->getLatestDumpName();
+                $importFilePath = $this->protector->createTempFilePath($filePath);
             } catch (FileNotFoundException $fileNotFoundException) {
                 if (!$optionRemote) {
                     $this->error($fileNotFoundException->getMessage());
@@ -125,8 +126,10 @@ class ImportDump extends Command
                 }
             }
         } elseif ($optionFile || $optionDump) {
-            if ($disk->exists($filePath)) {
+            if ($optionFile) {
                 $importFilePath = $filePath;
+            } elseif ($disk->exists($filePath)) {
+                $importFilePath = $this->protector->createTempFilePath($filePath);
             } elseif (!$optionRemote) {
                 $this->error((new FileNotFoundException($filePath))->getMessage());
 
@@ -140,23 +143,23 @@ class ImportDump extends Command
             $this->line(sprintf('<<< Downloading dump from remote server to directory: <comment>%s</comment>', $disk->path($basePath)));
 
             try {
-                $importFilePath = $this->protector->getRemoteDump();
-
+                $filePath = $this->protector->getRemoteDump();
+                $importFilePath = $this->protector->createTempFilePath($filePath);
             } catch (Exception $exception) {
                 $this->error(sprintf('Error retrieving dump from remote server: %s', $exception->getMessage()));
 
                 return;
             }
 
-            if (!$disk->size($importFilePath)) {
+            if (!$disk->size($filePath)) {
                 $this->error(sprintf('Retrieved empty response from %s', $this->protector->getServerUrl()));
-                $disk->delete($importFilePath);
+                $disk->delete($filePath);
 
                 return;
             }
 
             if ($this->option('flush')) {
-                $this->protector->flush($importFilePath);
+                $this->protector->flush($filePath);
                 $this->warn(sprintf('Deleted all old files in %s', $disk->path($basePath)));
             }
 
@@ -230,8 +233,9 @@ class ImportDump extends Command
             }
 
             if ($connectionFiles->count() === 1) {
-                $importFilePath = $connectionFiles->first()['path'];
-                $this->info(sprintf('Using file "%s" because there are no other dumps.', $importFilePath));
+                $filePath = $connectionFiles->first()['path'];
+                $importFilePath   = $this->protector->createTempFilePath($filePath);
+                $this->info(sprintf('Using file "%s" because there are no other dumps.', $filePath));
             } else {
                 try {
                     $importFile = $this->choice('Which file do you want to import?',
@@ -244,12 +248,13 @@ class ImportDump extends Command
                     return;
                 }
 
-                $importFilePath = $connectionFiles->firstWhere('file', $importFile)['path'];
+                $filePath = $connectionFiles->firstWhere('file', $importFile)['path'];
+                $importFilePath = $this->protector->createTempFilePath($filePath);
             }
         }
 
         if ($importFilePath && ($optionForce || $this->confirm(sprintf('Are you sure that you want to import the dump into the database: %s?', $this->protector->getDatabaseName())))) {
-            $this->info(sprintf('Importing %s. Running migrations: %s', $importFilePath, $optionMigrate ? 'yes' : 'no'));
+            $this->info(sprintf('Importing %s. Running migrations: %s', $filePath, $optionMigrate ? 'yes' : 'no'));
 
             try {
                 $this->protector->importDump($importFilePath, $this->options());
