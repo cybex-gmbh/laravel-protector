@@ -124,9 +124,9 @@ class Protector
             throw new InvalidConnectionException('Connection is not configured properly');
         }
 
-       /* if (!$this->getDisk()->exists($sourceFilePath)) {
+        if (!file_exists($sourceFilePath)) {
             throw new FileNotFoundException($sourceFilePath);
-        }*/
+        }
 
         $success = true;
 
@@ -159,8 +159,6 @@ class Protector
         } catch (Exception) {
             $success = false;
         }
-
-        unlink($sourceFilePath);
 
         return $success;
     }
@@ -506,6 +504,16 @@ class Protector
     }
 
     /**
+     * Returns the config value for the baseDirectory key.
+     *
+     * @return mixed
+     */
+    public function getBaseDirectory(): mixed
+    {
+        return $this->getConfigValueForKey('baseDirectory');
+    }
+
+    /**
      * Prepares the file download response.
      * Prevents the exposure of the connectionName parameter to routing.
      *
@@ -794,19 +802,30 @@ class Protector
     }
 
     /**
-     * @param string $sourceFilePath
+     * @param string $diskFilePath
      * @return false|string
      */
-    public function createTempFilePath(string $sourceFilePath): string|false
+    public function createTempFilePath(string $diskFilePath): string|false
     {
         $tempFilePath = tempnam('', 'protector');
         $handle = fopen($tempFilePath, 'w');
-        $stream = $this->getDisk()->readStream($sourceFilePath);
+        $stream = $this->getDisk()->readStream($diskFilePath);
 
         stream_copy_to_stream($stream, $handle);
 
         fclose($handle);
         return $tempFilePath;
+    }
+
+    /**
+     * Removes the specified temp file.
+     *
+     * @param string $sourceFilePath
+     * @return void
+     */
+    public function deleteTempFile(string $sourceFilePath): void
+    {
+        unlink($sourceFilePath);
     }
 
     /**
