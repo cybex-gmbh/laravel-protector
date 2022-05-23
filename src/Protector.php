@@ -532,7 +532,7 @@ class Protector
                     $serverFilePath = $this->createDump();
                     $publicKey = $this->getPublicKey($request);
                 } catch (InvalidConnectionException|FailedDumpGenerationException|InvalidConfigurationException $exception) {
-                    return response('', 500, ['message' => $exception->getMessage()]);
+                    return response($exception->getMessage(), 500, ['message' => $exception->getMessage()]);
                 }
 
                 $chunkSize = $this->getConfigValueForKey('chunkSize');
