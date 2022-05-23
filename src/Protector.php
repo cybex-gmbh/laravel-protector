@@ -164,20 +164,6 @@ class Protector
     }
 
     /**
-     * Public function to create the relative file path for the dump.
-     *
-     * @param string $fileName
-     * @return string
-     */
-    public function getDumpFilePath(string $fileName): string
-    {
-        return implode(DIRECTORY_SEPARATOR, array_filter([
-            $this->getConfigValueForKey('baseDirectory'),
-            $fileName,
-        ]));
-    }
-
-    /**
      * Public function to create a dump for the given configuration.
      *
      * @param array $options
@@ -903,7 +889,7 @@ class Protector
      *
      * @return int
      */
-    private function determineEncryptionOverhead(int $chunkSize, string $publicKey): int
+    protected function determineEncryptionOverhead(int $chunkSize, string $publicKey): int
     {
         $chunk          = str_repeat('0', $chunkSize);
         $encryptedChunk = sodium_crypto_box_seal($chunk, $publicKey);

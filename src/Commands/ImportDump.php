@@ -163,7 +163,7 @@ class ImportDump extends Command
      *
      * @return string|void
      */
-    private function getRemoteDump()
+    protected function getRemoteDump()
     {
         $disk = $this->protector->getDisk();
         $basePath = $this->protector->getBaseDirectory();
@@ -202,10 +202,9 @@ class ImportDump extends Command
      * @return string|null
      * @throws FileNotFoundException
      */
-    private function checkIfDumpExists($filePath): ?string
+    protected function checkIfDumpExists($filePath): ?string
     {
         if (file_exists($filePath)) {
-
             return $filePath;
         } else {
             throw new FileNotFoundException($filePath);
@@ -216,17 +215,15 @@ class ImportDump extends Command
      * Checks if a Dump with the specified Name exists and return the file path.
      *
      * @param string $dumpName
-     * @return string|null
+     * @return string
      * @throws FileNotFoundException
      */
-    private function checkIfDumpExistsByName(string $dumpName): ?string
+    protected function checkIfDumpExistsByName(string $dumpName): string
     {
-        $filePath = $this->protector->getDumpFilePath($dumpName);
-
-        $disk = $this->protector->getDisk();
+        $filePath = implode(DIRECTORY_SEPARATOR, array_filter([$this->protector->getBaseDirectory(), $dumpName]));
+        $disk     = $this->protector->getDisk();
 
         if ($disk->exists($filePath)) {
-
             return $filePath;
         } else {
             throw new FileNotFoundException($filePath);
@@ -239,7 +236,7 @@ class ImportDump extends Command
      * @param string|null $connectionName
      * @return string
      */
-    private function getSelectedDumpFilePath(?string $connectionName): string
+    protected function getSelectedDumpFilePath(?string $connectionName): string
     {
         $disk            = $this->protector->getDisk();
         $basePath        = $this->protector->getBaseDirectory();

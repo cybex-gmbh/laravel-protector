@@ -44,8 +44,7 @@ class GetLatestDumpNameTest extends BaseTest
 
         $this->disk->put($path, '');
 
-        $file = $this->protector->getLatestDumpName();
-        $this->assertIsString($file);
+        $this->assertEquals($path, $this->protector->getLatestDumpName());
     }
 
     /**

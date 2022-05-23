@@ -47,6 +47,7 @@ class ExportDump extends Command
     {
         $protector = app('protector');
         $fileName  = $this->option('file') ?: $protector->createFilename();
+        $directory = $protector->getConfigValueForKey('baseDirectory');
 
         if ($this->option('connection')) {
             $connectionName = $this->option('connection');
@@ -57,12 +58,11 @@ class ExportDump extends Command
 
         if ($protector->configure($connectionName ?? null)) {
             $tempFilePath     = $protector->createDump($options);
-            $relativeFilePath = $protector->getDumpFilePath($fileName);
 
-            $protector->getDisk()->putFileAs(dirname($relativeFilePath), new File($tempFilePath), basename($relativeFilePath));
+            $protector->getDisk()->putFileAs($directory, new File($tempFilePath), $fileName);
             unlink($tempFilePath);
 
-            $this->info(sprintf('Dump was created at %s', $protector->getDisk()->path($relativeFilePath)));
+            $this->info(sprintf('Dump %s was created in %s', $fileName, $directory));
         } else {
             $this->error('Configuration is invalid.');
         }
