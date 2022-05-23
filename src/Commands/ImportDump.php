@@ -84,10 +84,10 @@ class ImportDump extends Command
 
         if ($optionRemote) {
             $importFilePath = $this->getRemoteDump();
-        } elseif ($optionFile) {
-            $localFilePath = $this->checkIfDumpExists($optionFile);
+        } elseif ($optionFile && $this->doesFileExist($optionFile)) {
+            $localFilePath = $optionFile;
         } elseif ($optionDump) {
-            $importFilePath = $this->checkIfDumpExistsByName($optionDump);
+            $importFilePath = $this->getPathForDump($optionDump);
         } elseif ($optionLatest) {
             $importFilePath = $this->protector->getLatestDumpName();
             $this->info(sprintf('Using %s.', $importFilePath));
@@ -196,16 +196,16 @@ class ImportDump extends Command
     }
 
     /**
-     * Checks if the specified Dump exists and returns the file path.
+     * Checks if the specified File from an absolute path exists.
      *
      * @param $filePath
-     * @return string|null
+     * @return bool
      * @throws FileNotFoundException
      */
-    protected function checkIfDumpExists($filePath): ?string
+    protected function doesFileExist($filePath): bool
     {
         if (file_exists($filePath)) {
-            return $filePath;
+            return true;
         } else {
             throw new FileNotFoundException($filePath);
         }
@@ -218,7 +218,7 @@ class ImportDump extends Command
      * @return string
      * @throws FileNotFoundException
      */
-    protected function checkIfDumpExistsByName(string $dumpName): string
+    protected function getPathForDump(string $dumpName): string
     {
         $filePath = implode(DIRECTORY_SEPARATOR, array_filter([$this->protector->getBaseDirectory(), $dumpName]));
         $disk     = $this->protector->getDisk();
@@ -356,9 +356,9 @@ class ImportDump extends Command
      *
      * @param Collection $matchingFiles
      * @param string|null $connectionName
-     * @return Collection|mixed
+     * @return Collection
      */
-    public function getConnectionFiles(Collection $matchingFiles, ?string $connectionName = null): mixed
+    public function getConnectionFiles(Collection $matchingFiles, ?string $connectionName = null): Collection
     {
         $sortedFiles = $matchingFiles->sortByDesc('dateTime')->groupBy('connection');
 
