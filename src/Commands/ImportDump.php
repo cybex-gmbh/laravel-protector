@@ -237,9 +237,9 @@ class ImportDump extends Command
      * Returns the file path to a selected dump.
      *
      * @param string|null $connectionName
-     * @return string|null
+     * @return string
      */
-    private function getSelectedDumpFilePath(?string $connectionName): ?string
+    private function getSelectedDumpFilePath(?string $connectionName): string
     {
         $disk            = $this->protector->getDisk();
         $basePath        = $this->protector->getBaseDirectory();
@@ -257,9 +257,7 @@ class ImportDump extends Command
                         return $item['file'];
                     })->toArray());
             } catch (LogicException) {
-                $this->error('There are no dumps in the dump folder.');
-
-                return null;
+                throw new LogicException('There are no dumps in the dump folder');
             }
 
             $importFilePath = $connectionFiles->firstWhere('file', $importFile)['path'];#
@@ -339,10 +337,10 @@ class ImportDump extends Command
      * Imports the selected SQL dump.
      *
      * @param string $importFilePath
-     * @param bool|array|string|null $optionForce
+     * @param bool|null $optionForce
      * @return void
      */
-    public function importDump(string $importFilePath, bool|null $optionForce): void
+    public function importDump(string $importFilePath, ?bool $optionForce): void
     {
         if ($importFilePath && ($optionForce || $this->confirm(sprintf('Are you sure that you want to import the dump into the database: %s?', $this->protector->getDatabaseName())))) {
             try {
