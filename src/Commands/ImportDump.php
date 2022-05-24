@@ -80,7 +80,7 @@ class ImportDump extends Command
         $this->protector = app('protector');
 
         $connectionName = $this->verifyConfiguration();
-        $optionRemote   = $optionRemote || $this->remoteOrExistingDump($optionFile, $optionDump, $optionLatest);
+        $optionRemote   = $optionRemote || $this->shouldDownloadDump();
 
         if ($optionRemote) {
             $importFilePath = $this->getRemoteDump();
@@ -135,14 +135,11 @@ class ImportDump extends Command
     /**
      * Public function to ask if an existing dump or a remote dump should be imported.
      *
-     * @param string|null $optionFile
-     * @param string|null $optionDump
-     * @param bool|string|null $optionLatest
      * @return bool
      */
-    public function remoteOrExistingDump(?string $optionFile, ?string $optionDump, bool $optionLatest): bool
+    public function shouldDownloadDump(): bool
     {
-        if (!($optionFile || $optionDump || $optionLatest)) {
+        if (!($this->option('file') || $this->option('dump') || $this->option('latest'))) {
             if ($this->choice(
                     'Do you want to download and import a fresh dump from the server or an existing local dump?',
                     [
