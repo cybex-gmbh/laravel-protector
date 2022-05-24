@@ -84,8 +84,8 @@ class ImportDump extends Command
 
         if ($optionRemote) {
             $importFilePath = $this->getRemoteDump();
-        } elseif ($optionFile && $this->doesFileExist($optionFile)) {
-            $localFilePath = $optionFile;
+        } elseif ($optionFile) {
+            $localFilePath  = $optionFile;
         } elseif ($optionDump) {
             $importFilePath = $this->getPathForDump($optionDump);
         } elseif ($optionLatest) {
@@ -193,22 +193,6 @@ class ImportDump extends Command
         $this->line(sprintf('>>> Successfully retrieved remote dump from %s', $this->protector->getServerUrl()));
 
         return $importFilePath;
-    }
-
-    /**
-     * Checks if the specified File from an absolute path exists.
-     *
-     * @param $filePath
-     * @return bool
-     * @throws FileNotFoundException
-     */
-    protected function doesFileExist($filePath): bool
-    {
-        if (file_exists($filePath)) {
-            return true;
-        } else {
-            throw new FileNotFoundException($filePath);
-        }
     }
 
     /**
