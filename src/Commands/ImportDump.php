@@ -46,7 +46,7 @@ class ImportDump extends Command
 
     protected const DOWNLOAD_REMOTE_DUMP       = 'Download remote dump';
     protected const IMPORT_EXISTING_LOCAL_DUMP = 'Import existing local dump';
-    protected ?Protector $protector = null;
+    protected ?Protector $protector            = null;
 
     /**
      * Create a new command instance.
