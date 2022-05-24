@@ -92,7 +92,7 @@ class ImportDump extends Command
             $importFilePath = $this->protector->getLatestDumpName();
             $this->info(sprintf('Using %s.', $importFilePath));
         } else {
-            $importFilePath = $this->getSelectedDumpFilePath($connectionName);
+            $importFilePath = $this->chooseImportDump($connectionName);
         }
 
         if (empty($localFilePath)) {
@@ -220,7 +220,7 @@ class ImportDump extends Command
      * @param string|null $connectionName
      * @return string
      */
-    protected function getSelectedDumpFilePath(?string $connectionName): string
+    protected function chooseImportDump(?string $connectionName): string
     {
         $disk            = $this->protector->getDisk();
         $basePath        = $this->protector->getBaseDirectory();
@@ -228,20 +228,22 @@ class ImportDump extends Command
         $matchingFiles   = $this->getDumpMetadata($directoryFiles);
         $connectionFiles = $this->getConnectionFiles($matchingFiles, $connectionName);
 
-        if ($connectionFiles->count() === 1) {
-            $importFilePath = $connectionFiles->first()['path'];
-            $this->info(sprintf('Using file "%s" because there are no other dumps.', $importFilePath));
-        } else {
-            try {
-                $importFile = $this->choice('Which file do you want to import?',
+        switch ($connectionFiles->count()) {
+            case 0:
+                throw new LogicException('There are no dumps in the dump folder');
+            case 1:
+                $importFilePath = $connectionFiles->first()['path'];
+                $this->info(sprintf('Using file "%s" because there are no other dumps.', $importFilePath));
+                break;
+            default:
+                $importFile = $this->choice(
+                    'Which file do you want to import?',
                     $connectionFiles->map(function ($item) {
                         return $item['file'];
-                    })->toArray());
-            } catch (LogicException) {
-                throw new LogicException('There are no dumps in the dump folder');
-            }
+                    })->toArray()
+                );
 
-            $importFilePath = $connectionFiles->firstWhere('file', $importFile)['path'];#
+                $importFilePath = $connectionFiles->firstWhere('file', $importFile)['path'];
         }
 
         return $importFilePath;
