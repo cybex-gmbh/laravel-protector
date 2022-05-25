@@ -33,12 +33,28 @@ This package allows you to download, export and import your application's databa
 
 ## Usage
 
+### Export to file
+
+To save a copy of your local database, run
+```bash
+php artisan protector:export
+```
+
+By default, dumps are stored in `storage/app/protector` on your default project disk. 
+You can configure the target disk, filename, etc. by publishing the protector config file to your project
+
+```bash
+artisan vendor:publish --tag=protector.config
+```
+
 ### Import
 
 Run the following command for an interactive shell
 ```bash
 php artisan protector:import
 ```
+
+#### Importing a specific source
 
 To download and import the server database in one go, run
 ```bash
@@ -48,13 +64,20 @@ When used with other options, remote will serve as fallback behavior.
 
 To import a specific database file that you downloaded earlier, run
 ```bash
-php artisan protector:import --file=<your backup file>
+php artisan protector:import --file=<absolute path to database file>
+```
+
+Or just reference the database file name in the protector folder (default folder is storage/app/protector).
+```bash
+php artisan protector:import --file=<name of database file>
 ```
 
 To import the latest existing database file, run
 ```bash
 php artisan protector:import --latest
 ```
+
+#### Options
 
 If you want to run migrations after the import of the database file, run
 ```bash
@@ -69,15 +92,6 @@ php artisan protector:import --remote --migrate --flush --force
 To learn more about import options run
 ```bash
 php artisan protector:import --help
-```
-
->By default dumps are stored in `storage/app/protector`
-
-### Export to file
-
-To save a copy of your local database to your local disk, run
-```bash
-php artisan protector:export
 ```
 
 ## Setup instructions
