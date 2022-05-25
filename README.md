@@ -69,7 +69,7 @@ php artisan protector:import --file=<absolute path to database file>
 
 Or just reference the database file name in the protector folder (default folder is storage/app/protector).
 ```bash
-php artisan protector:import --file=<name of database file>
+php artisan protector:import --dump=<name of database file>
 ```
 
 To import the latest existing database file, run
