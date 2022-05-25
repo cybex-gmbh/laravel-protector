@@ -329,7 +329,7 @@ class ImportDump extends Command
     }
 
     /**
-     * Returns a list from either all or from the specified connection name dumps.
+     * Returns a list of either all dumps, or those for the specified connection name.
      *
      * @param Collection $matchingFiles
      * @param string|null $connectionName
