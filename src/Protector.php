@@ -360,6 +360,12 @@ class Protector
                 $dumpOptions->implode(' '),
                 escapeshellarg($tempFile)));
 
+            if (!filesize($tempFile)) {
+                unlink($tempFile);
+
+                return null;
+            };
+
             // Append some import/export-meta-data to the end.
             $metaData = sprintf("\n-- options:%s\n-- meta:%s", json_encode($options, JSON_UNESCAPED_UNICODE), json_encode($this->createMetaData(), JSON_UNESCAPED_UNICODE));
 
