@@ -62,14 +62,20 @@ class ImportDump extends Command
      * Execute the console command.
      *
      * @return void
+     * @throws InvalidEnvironmentException
      */
-    public function handle()
+    public function handle(): void
     {
-        $optionDump    = $this->option('dump');
-        $optionFile    = $this->option('file');
-        $optionRemote  = $this->option('remote');
-        $optionForce   = $this->option('force');
-        $optionLatest  = $this->option('latest');
+        $optionDump       = $this->option('dump');
+        $optionFile       = $this->option('file');
+        $optionRemote     = $this->option('remote');
+        $optionForce      = $this->option('force');
+        $optionLatest     = $this->option('latest');
+        $optionConnection = $this->option('connection');
+
+        if (App::environment('production') && !$this->option('allow-production')) {
+            throw new InvalidEnvironmentException('Import is not allowed on production systems! Use --allow-production');
+        }
 
         if ($optionForce && !($optionRemote || $optionFile || $optionDump)) {
             $this->error('The force option requires either the file, dump or remote option to be set.');
@@ -79,7 +85,7 @@ class ImportDump extends Command
 
         $this->protector = app('protector');
 
-        $connectionName = $this->verifyConfiguration();
+        $this->setConnection($optionConnection);
         $optionRemote   = $optionRemote || $this->shouldDownloadDump();
 
         if ($optionRemote) {
@@ -92,7 +98,7 @@ class ImportDump extends Command
             $importFilePath = $this->protector->getLatestDumpName();
             $this->info(sprintf('Using %s.', $importFilePath));
         } else {
-            $importFilePath = $this->chooseImportDump($connectionName);
+            $importFilePath = $this->chooseImportDump($optionConnection);
         }
 
         if (empty($localFilePath)) {
@@ -107,29 +113,17 @@ class ImportDump extends Command
     }
 
     /**
-     * Public function to verify the users' configuration.
+     * Returns the valid connection
      *
-     * @return string|null
+     * @param string|null $connectionName
+     * @return void
      * @throws InvalidConfigurationException
-     * @throws InvalidEnvironmentException
      */
-    public function verifyConfiguration(): string|null
+    public function setConnection(?string $connectionName): void
     {
-        $connectionName = null;
-
-        if ($this->option('connection')) {
-            $connectionName = $this->option('connection');
-        }
-
-        if (App::environment('production') && !$this->option('allow-production')) {
-            throw new InvalidEnvironmentException('Import is not allowed on production systems! Use --allow-production');
-        }
-
         if (!$this->protector->configure($connectionName)) {
             throw new InvalidConfigurationException('Configuration is invalid');
         }
-
-        return $connectionName;
     }
 
     /**
