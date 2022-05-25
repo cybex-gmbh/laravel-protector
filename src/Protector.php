@@ -231,17 +231,18 @@ class Protector
     }
 
     /**
-     * Deletes either all dumps or all old dumps on the client disk.
      *
-     * @param string|null $sourceFilePath
+     * Deletes all dumps except an optional given file.
+     *
+     * @param string|null $excludedFile
      * @return void
      */
-    public function flush(?string $sourceFilePath = null): void
+    public function flush(?string $excludedFile = null): void
     {
         $disk  = $this->getDisk();
         $files = $disk->files(config('protector.baseDirectory'));
 
-        $sourceFilePath && $files = array_diff($files, [$sourceFilePath]);
+        $excludedFile && $files = array_diff($files, [$excludedFile]);
 
         $disk->delete($files);
     }
@@ -362,7 +363,7 @@ class Protector
                 escapeshellarg($tempFile)));
 
             // Append some import/export-meta-data to the end.
-            $metaData = sprintf("\n-- options:%s\n-- meta:%s", json_encode($options, JSON_UNESCAPED_UNICODE), json_encode($this->getMetaData(), JSON_UNESCAPED_UNICODE));
+            $metaData = sprintf("\n-- options:%s\n-- meta:%s", json_encode($options, JSON_UNESCAPED_UNICODE), json_encode($this->createMetaData(), JSON_UNESCAPED_UNICODE));
 
             file_put_contents($tempFile, $metaData, FILE_APPEND);
 
@@ -399,7 +400,7 @@ class Protector
      */
     public function createFilename(): string
     {
-        $metadata = $this->getMetaData();
+        $metadata = $this->createMetaData();
         [$appUrl, $database, $connection, $date] = [
             parse_url(env('APP_URL'), PHP_URL_HOST),
             $metadata['database'] ?? '',
@@ -417,7 +418,7 @@ class Protector
      *
      * @return array
      */
-    protected function getMetaData(bool $refresh = false): array
+    protected function createMetaData(bool $refresh = false): array
     {
         if (!$refresh && $this->cacheMetaData) {
             return $this->cacheMetaData;
