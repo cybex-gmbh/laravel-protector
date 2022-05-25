@@ -108,7 +108,7 @@ class ImportDump extends Command
         $this->importDump($localFilePath, $optionForce);
 
         if (!$optionFile) {
-            $this->protector->deleteTempFile($localFilePath);
+            unlink($localFilePath);
         }
     }
 

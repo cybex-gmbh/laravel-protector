@@ -801,17 +801,6 @@ class Protector
     }
 
     /**
-     * Removes the specified temp file.
-     *
-     * @param string $sourceFilePath
-     * @return void
-     */
-    public function deleteTempFile(string $sourceFilePath): void
-    {
-        unlink($sourceFilePath);
-    }
-
-    /**
      * @return bool
      */
     protected function shouldEncrypt(): bool
