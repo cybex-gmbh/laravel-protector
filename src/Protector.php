@@ -587,16 +587,8 @@ class Protector
      */
     public function getDisk(?string $diskName = null): FilesystemAdapter
     {
-        return Storage::disk($this->getDiskName($diskName));
-    }
-
-    /**
-     * @param string|null $diskName
-     * @return string
-     */
-    public function getDiskName(?string $diskName = null): string
-    {
-        return $diskName ?? $this->getConfigValueForKey('diskName', config('filesystems.default'));
+        $diskName ??= $this->getConfigValueForKey('diskName', config('filesystems.default'));
+        return Storage::disk($diskName);
     }
 
     /**
@@ -611,7 +603,7 @@ class Protector
     {
         if ($disk->missing($destinationPath)) {
             if ($disk->makeDirectory($destinationPath) === false) {
-                throw new FailedCreatingDestinationPathException(sprintf('Could not create the non-existing destination path %s on disk %s.', $destinationPath, $this->getDiskName()));
+                throw new FailedCreatingDestinationPathException(sprintf('Could not create the non-existing destination path %s on given disk.', $destinationPath));
             }
         }
     }
