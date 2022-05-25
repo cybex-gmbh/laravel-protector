@@ -2,6 +2,7 @@
 
 namespace Cybex\Protector\Commands;
 
+use Cybex\Protector\Protector;
 use Illuminate\Console\Command;
 use Illuminate\Http\File;
 
@@ -28,6 +29,8 @@ class ExportDump extends Command
      */
     protected $description = 'Exports a dump of the current database including data as backup.';
 
+    protected ?Protector $protector = null;
+
     /**
      * Create a new command instance.
      *
@@ -45,9 +48,9 @@ class ExportDump extends Command
      */
     public function handle(): void
     {
-        $protector = app('protector');
-        $fileName  = $this->option('file') ?: $protector->createFilename();
-        $directory = $protector->getConfigValueForKey('baseDirectory');
+        $this->protector = app('protector');
+        $fileName  = $this->option('file') ?: $this->protector->createFilename();
+        $directory = $this->protector->getBaseDirectory();
 
         if ($this->option('connection')) {
             $connectionName = $this->option('connection');
@@ -56,10 +59,10 @@ class ExportDump extends Command
         $options            = [];
         $options['no-data'] = $this->option('no-data') ?: false;
 
-        if ($protector->configure($connectionName ?? null)) {
-            $tempFilePath = $protector->createDump($options);
+        if ($this->protector->configure($connectionName ?? null)) {
+            $tempFilePath = $this->protector->createDump($options);
 
-            $protector->getDisk()->putFileAs($directory, new File($tempFilePath), $fileName);
+            $this->protector->getDisk()->putFileAs($directory, new File($tempFilePath), $fileName);
             unlink($tempFilePath);
 
             $this->info(sprintf('Dump %s was created in %s', $fileName, $directory));
