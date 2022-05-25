@@ -49,8 +49,8 @@ class ExportDump extends Command
     public function handle(): void
     {
         $this->protector = app('protector');
-        $fileName  = $this->option('file') ?: $this->protector->createFilename();
-        $directory = $this->protector->getBaseDirectory();
+        $fileName        = $this->option('file') ?: $this->protector->createFilename();
+        $directory       = $this->protector->getBaseDirectory();
 
         if ($this->option('connection')) {
             $connectionName = $this->option('connection');
