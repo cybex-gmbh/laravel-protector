@@ -187,7 +187,7 @@ class ImportDump extends Command
     }
 
     /**
-     * Checks if a Dump with the specified Name exists and return the file path.
+     * Checks if a dump with the specified name exists and return the file path.
      *
      * @param string $dumpName
      * @return string
