@@ -11,8 +11,6 @@ use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Exception;
 use GuzzleHttp\Psr7\StreamWrapper;
-use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Contracts\Routing\ResponseFactory;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Request;
@@ -495,7 +493,7 @@ class Protector
      *
      * @return mixed
      */
-    public function getBaseDirectory(): mixed
+    public function getBaseDirectory(): string
     {
         return $this->getConfigValueForKey('baseDirectory');
     }
@@ -506,9 +504,9 @@ class Protector
      *
      * @param Request $request
      *
-     * @return Response|StreamedResponse|Application|ResponseFactory
+     * @return Response|StreamedResponse
      */
-    public function prepareFileDownloadResponse(Request $request): Response|StreamedResponse|Application|ResponseFactory
+    public function prepareFileDownloadResponse(Request $request): Response|StreamedResponse
     {
         return $this->generateFileDownloadResponse($request);
     }
@@ -519,9 +517,9 @@ class Protector
      * @param Request $request
      * @param string|null $connectionName
      *
-     * @return Application|ResponseFactory|Response|StreamedResponse
+     * @return Response|StreamedResponse
      */
-    public function generateFileDownloadResponse(Request $request, string $connectionName = null): Response|StreamedResponse|Application|ResponseFactory
+    public function generateFileDownloadResponse(Request $request, string $connectionName = null): Response|StreamedResponse
     {
         $sanctumIsActive = $this->isSanctumActive();
 
