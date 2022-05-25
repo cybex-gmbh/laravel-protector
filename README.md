@@ -19,6 +19,8 @@ This package allows you to download, export and import your application's databa
 - User authentication through Laravel Sanctum tokens
 - Transport encryption using Sodium
 
+## Notes
+- Enabling Laravel Telescope will prevent remote files from being downloaded, as it opens and discards the HTTP stream!
 
 ## Table of contents
 
@@ -44,7 +46,7 @@ php artisan protector:import --remote
 ```
 When used with other options, remote will serve as fallback behavior.
 
-To import a database you downloaded earlier, run
+To import a specific database file that you downloaded earlier, run
 ```bash
 php artisan protector:import --file=<your backup file>
 ```
@@ -52,6 +54,16 @@ php artisan protector:import --file=<your backup file>
 To import the latest existing database file, run
 ```bash
 php artisan protector:import --latest
+```
+
+If you want to run migrations after the import of the database file, run
+```bash
+php artisan protector:import --migrate
+```
+
+For automation, also consider the flush option to clean up older database files, and the force option to bypass user interaction.
+```bash
+php artisan protector:import --remote --migrate --flush --force
 ```
 
 To learn more about import options run
