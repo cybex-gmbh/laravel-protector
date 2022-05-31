@@ -797,6 +797,7 @@ class Protector
         stream_copy_to_stream($stream, $handle);
 
         fclose($handle);
+
         return $tempFilePath;
     }
 
