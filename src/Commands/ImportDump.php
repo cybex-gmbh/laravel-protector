@@ -86,7 +86,8 @@ class ImportDump extends Command
         $this->protector = app('protector');
 
         $this->setConnection($optionConnection);
-        $optionRemote   = $optionRemote || $this->shouldDownloadDump();
+
+        $optionRemote = $optionRemote || $this->shouldDownloadDump();
 
         if ($optionRemote) {
             $importFilePath = $this->getRemoteDump();
