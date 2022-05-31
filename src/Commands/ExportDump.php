@@ -68,10 +68,10 @@ class ExportDump extends Command
             $this->info(sprintf('Dump %s was created in %s', $fileName, $directory));
 
             return self::SUCCESS;
-        } else {
-            $this->error('Configuration is invalid.');
-
-            return self::FAILURE;
         }
+
+        $this->error('Configuration is invalid.');
+
+        return self::FAILURE;
     }
 }
