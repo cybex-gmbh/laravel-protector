@@ -240,7 +240,9 @@ class Protector
         $disk  = $this->getDisk();
         $files = $disk->files(config('protector.baseDirectory'));
 
-        $excludedFile && $files = array_diff($files, [$excludedFile]);
+        if ($excludedFile) {
+            $files = array_diff($files, [$excludedFile]);
+        }
 
         $disk->delete($files);
     }
