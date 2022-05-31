@@ -172,7 +172,7 @@ class ImportDump extends Command
             return;
         }
 
-        if (!$disk->size($importFilePath)) {
+        if ($disk->fileSize($importFilePath) === 0) {
             $this->error(sprintf('Retrieved empty response from %s', $this->protector->getServerUrl()));
             $disk->delete($importFilePath);
 
