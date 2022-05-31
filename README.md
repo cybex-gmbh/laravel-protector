@@ -89,7 +89,7 @@ For automation, also consider the flush option to clean up older database files,
 php artisan protector:import --remote --migrate --flush --force
 ```
 
-To learn more about import options run
+To learn more about import options, run
 ```bash
 php artisan protector:import --help
 ```
