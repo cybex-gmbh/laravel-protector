@@ -44,9 +44,9 @@ class ExportDump extends Command
     /**
      * Execute the console command.
      *
-     * @return void
+     * @return int
      */
-    public function handle(): void
+    public function handle(): int
     {
         $this->protector = app('protector');
         $fileName        = $this->option('file') ?: $this->protector->createFilename();
@@ -66,8 +66,12 @@ class ExportDump extends Command
             unlink($tempFilePath);
 
             $this->info(sprintf('Dump %s was created in %s', $fileName, $directory));
+
+            return self::SUCCESS;
         } else {
             $this->error('Configuration is invalid.');
+
+            return self::FAILURE;
         }
     }
 }
