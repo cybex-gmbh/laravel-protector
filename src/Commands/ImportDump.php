@@ -134,20 +134,22 @@ class ImportDump extends Command
      */
     public function shouldDownloadDump(): bool
     {
-        if (!($this->option('file') || $this->option('dump') || $this->option('latest'))) {
-            if ($this->choice(
-                    'Do you want to download and import a fresh dump from the server or an existing local dump?',
-                    [
-                        1 => static::DOWNLOAD_REMOTE_DUMP,
-                        2 => static::IMPORT_EXISTING_LOCAL_DUMP,
-                    ],
-                    1
-                ) === static::DOWNLOAD_REMOTE_DUMP) {
-                $optionRemote = true;
-            }
+        if ($this->option('file') || $this->option('dump') || $this->option('latest')) {
+            return false;
         }
 
-        return $optionRemote ?? false;
+        if ($this->choice(
+                'Do you want to download and import a fresh dump from the server or an existing local dump?',
+                [
+                    1 => static::DOWNLOAD_REMOTE_DUMP,
+                    2 => static::IMPORT_EXISTING_LOCAL_DUMP,
+                ],
+                1
+            ) === static::DOWNLOAD_REMOTE_DUMP) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
