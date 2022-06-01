@@ -61,10 +61,10 @@ class ImportDump extends Command
     /**
      * Execute the console command.
      *
-     * @return void
+     * @return int
      * @throws InvalidEnvironmentException
      */
-    public function handle(): void
+    public function handle(): int
     {
         $optionDump       = $this->option('dump');
         $optionFile       = $this->option('file');
@@ -80,7 +80,7 @@ class ImportDump extends Command
         if ($optionForce && !($optionRemote || $optionFile || $optionDump)) {
             $this->error('The force option requires either the file, dump or remote option to be set.');
 
-            return;
+            return self::FAILURE;
         }
 
         $this->protector = app('protector');
@@ -111,6 +111,8 @@ class ImportDump extends Command
         if (!$optionFile) {
             unlink($localFilePath);
         }
+
+        return self::SUCCESS;
     }
 
     /**
