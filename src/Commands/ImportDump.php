@@ -223,22 +223,22 @@ class ImportDump extends Command
         $matchingFiles   = $this->getDumpMetadata($directoryFiles);
         $connectionFiles = $this->getConnectionFiles($matchingFiles, $connectionName);
 
-        switch ($connectionFiles->count()) {
-            case 0:
-                throw new LogicException('There are no dumps in the dump folder');
-            case 1:
-                $importFilePath = $connectionFiles->first()['path'];
-                $this->info(sprintf('Using file "%s" because there are no other dumps.', $importFilePath));
-                break;
-            default:
-                $importFile = $this->choice(
-                    'Which file do you want to import?',
-                    $connectionFiles->map(function ($item) {
-                        return $item['file'];
-                    })->toArray()
-                );
+        if ($connectionFiles->isEmpty()) {
+            throw new LogicException('There are no dumps in the dump folder');
+        }
 
-                $importFilePath = $connectionFiles->firstWhere('file', $importFile)['path'];
+        if ($connectionFiles->count() === 1) {
+            $importFilePath = $connectionFiles->first()['path'];
+            $this->info(sprintf('Using file "%s" because there are no other dumps.', $importFilePath));
+        } else {
+            $importFile = $this->choice(
+                'Which file do you want to import?',
+                $connectionFiles->map(function ($item) {
+                    return $item['file'];
+                })->toArray()
+            );
+
+            $importFilePath = $connectionFiles->firstWhere('file', $importFile)['path'];
         }
 
         return $importFilePath;
@@ -257,8 +257,21 @@ class ImportDump extends Command
         foreach ($directoryFiles as $directoryFile) {
             $metaData = $this->protector->getDumpMetaData($directoryFile);
 
-            if (is_array($metaData) && !empty($metaData) && array_key_exists($metaData['meta']['connection'], config('database.connections'))) {
+            if ($this->option('ignore-connection-filter') || (!is_array($metaData) || empty($metaData))) {
+                $matchingFiles->push([
+                    'path'        => $directoryFile,
+                    'file'        => $directoryFile,
+                    'database'    => '',
+                    'connection'  => 'external_dump',
+                    'date'        => '',
+                    'time'        => '',
+                    'gitRevision' => '',
+                    'gitBranch'   => '',
+                    'dateTime'    => '',
+                ]);
+            }
 
+            if (($metaData['meta']['connection'] ?? false) && Arr::exists(config('database.connections'), $metaData['meta']['connection'])) {
                 $fileInformation = [
                     'path'        => $directoryFile,
                     'file'        => $directoryFile,
@@ -287,25 +300,13 @@ class ImportDump extends Command
                     'gitRevision' => Arr::get($metaData, 'meta.gitRevision', null),
                     'gitBranch'   => Arr::get($metaData, 'meta.gitBranch', null),
                 ];
-
-                $fileInformation['dateTime'] = trim(
-                    sprintf('%s %s', $fileInformation['date'], $fileInformation['time'])
-                );
-
-                $matchingFiles->push($fileInformation);
-            } elseif ($this->option('ignore-connection-filter') || (!is_array($metaData) || empty($metaData))) {
-                $matchingFiles->push([
-                    'path'        => $directoryFile,
-                    'file'        => $directoryFile,
-                    'database'    => '',
-                    'connection'  => 'external_dump',
-                    'date'        => '',
-                    'time'        => '',
-                    'gitRevision' => '',
-                    'gitBranch'   => '',
-                    'dateTime'    => '',
-                ]);
             }
+
+            $fileInformation['dateTime'] = trim(
+                sprintf('%s %s', $fileInformation['date'], $fileInformation['time'])
+            );
+
+            $matchingFiles->push($fileInformation);
         }
 
         return $matchingFiles;
@@ -341,10 +342,11 @@ class ImportDump extends Command
      */
     public function getConnectionFiles(Collection $matchingFiles, ?string $connectionName = null): Collection
     {
-        $sortedFiles = $matchingFiles->sortByDesc('dateTime')->groupBy('connection');
+        $sortedFiles       = $matchingFiles->sortByDesc('dateTime');
+        $filesByConnection = $sortedFiles->groupBy('connection');
 
-        if ($sortedFiles->count() == 1) {
-            $connectionName = Arr::first($sortedFiles->keys()->sort()->toArray());
+        if ($filesByConnection->count() == 1) {
+            $connectionName = Arr::first($filesByConnection->keys()->sort()->toArray());
             $this->info(
                 sprintf(
                     'Using connection "%s" because there are no dumps created through other connections.',
@@ -354,14 +356,14 @@ class ImportDump extends Command
         } elseif (!$this->option('ignore-connection-filter')) {
             // In this case don't limit the files to the connection, no code required.
         } elseif ($connectionName) {
-            $connectionName = $this->choice('Import dump for which connection?', $sortedFiles->keys()->toArray());
+            $connectionName = $this->choice('Import dump for which connection?', $filesByConnection->keys()->toArray());
             $this->info(sprintf('Using connection "%s".', $connectionName));
         }
 
         if ($connectionName) {
-            $connectionFiles = $sortedFiles->get($connectionName);
+            $connectionFiles = $filesByConnection->get($connectionName);
         } else {
-            $connectionFiles = $matchingFiles->sortByDesc('dateTime');
+            $connectionFiles = $sortedFiles;
         }
 
         return $connectionFiles;
