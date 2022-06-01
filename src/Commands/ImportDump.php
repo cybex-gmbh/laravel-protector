@@ -87,9 +87,10 @@ class ImportDump extends Command
 
         $this->setConnection($optionConnection);
 
-        $optionRemote = $optionRemote || $this->shouldDownloadDump();
+        $shouldImportLocalDump = $optionFile || $optionDump || $optionLatest;
+        $shouldDownloadDump = $optionRemote || (!$shouldImportLocalDump && $this->userWantsRemoteDump());
 
-        if ($optionRemote) {
+        if ($shouldDownloadDump) {
             $importFilePath = $this->getRemoteDump();
         } elseif ($optionFile) {
             $localFilePath  = $optionFile;
@@ -103,6 +104,12 @@ class ImportDump extends Command
         }
 
         if (empty($localFilePath)) {
+            if (!$importFilePath) {
+                $this->error("Found no file to import.");
+
+                return self::FAILURE;
+            }
+
             $localFilePath = $this->protector->createTempFilePath($importFilePath);
         }
 
@@ -130,36 +137,11 @@ class ImportDump extends Command
     }
 
     /**
-     * Public function to ask if an existing dump or a remote dump should be imported.
-     *
-     * @return bool
-     */
-    public function shouldDownloadDump(): bool
-    {
-        if ($this->option('file') || $this->option('dump') || $this->option('latest')) {
-            return false;
-        }
-
-        if ($this->choice(
-                'Do you want to download and import a fresh dump from the server or an existing local dump?',
-                [
-                    1 => static::DOWNLOAD_REMOTE_DUMP,
-                    2 => static::IMPORT_EXISTING_LOCAL_DUMP,
-                ],
-                1
-            ) === static::DOWNLOAD_REMOTE_DUMP) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
      * Reads the remote dump file and deletes all old dumps if the flush option is set.
      *
-     * @return string|void
+     * @return string|null
      */
-    protected function getRemoteDump()
+    protected function getRemoteDump(): ?string
     {
         $disk = $this->protector->getDisk();
         $basePath = $this->protector->getBaseDirectory();
@@ -171,14 +153,14 @@ class ImportDump extends Command
         } catch (Exception $exception) {
             $this->error(sprintf('Error retrieving dump from remote server: %s', $exception->getMessage()));
 
-            return;
+            return null;
         }
 
         if ($disk->fileSize($importFilePath) === 0) {
             $this->error(sprintf('Retrieved empty response from %s', $this->protector->getServerUrl()));
             $disk->delete($importFilePath);
 
-            return;
+            return null;
         }
 
         if ($this->option('flush')) {
@@ -369,5 +351,25 @@ class ImportDump extends Command
         }
 
         return $connectionFiles;
+    }
+
+    /**
+     * Asks if an existing dump or a remote dump should be imported.
+     *
+     * @return bool
+     */
+    protected function userWantsRemoteDump(): bool
+    {
+        return match ($this->choice(
+            'Do you want to download and import a fresh dump from the server or an existing local dump?',
+            [
+                1 => static::DOWNLOAD_REMOTE_DUMP,
+                2 => static::IMPORT_EXISTING_LOCAL_DUMP,
+            ],
+            1
+        )) {
+            static::DOWNLOAD_REMOTE_DUMP => true,
+            default => false,
+        };
     }
 }
