@@ -114,7 +114,7 @@ class ImportDump extends Command
     }
 
     /**
-     * Returns the valid connection
+     * Sets the given connection.
      *
      * @param string|null $connectionName
      * @return void
@@ -195,13 +195,14 @@ class ImportDump extends Command
      * @param string $dumpName
      * @return string
      * @throws FileNotFoundException
+     * @throws InvalidConfigurationException
      */
     protected function getPathForDump(string $dumpName): string
     {
-        $filePath = implode(DIRECTORY_SEPARATOR, array_filter([$this->protector->getBaseDirectory(), $dumpName]));
+        $filePath = implode(DIRECTORY_SEPARATOR, [$this->protector->getBaseDirectory(), $dumpName]);
         $disk     = $this->protector->getDisk();
 
-        if ($disk->exists($filePath)) {
+        if ($disk->fileExists($filePath)) {
             return $filePath;
         } else {
             throw new FileNotFoundException($filePath);
