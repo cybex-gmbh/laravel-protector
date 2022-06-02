@@ -781,7 +781,7 @@ class Protector
      * @return string
      * @throws InvalidConfigurationException
      */
-    function getPublicKey(Request $request): string
+    protected function getPublicKey(Request $request): string
     {
         try {
             $publicKey = sodium_hex2bin($request->user()->protector_public_key);
