@@ -6,6 +6,7 @@ use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Protector;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Storage;
 
 class GetLatestDumpNameTest extends BaseTest
 {
@@ -28,11 +29,14 @@ class GetLatestDumpNameTest extends BaseTest
     {
         parent::setUp();
 
-        Config::set('baseDirectory', 'protector');
+        $fakeDiskName = uniqid('protector');
+
+        Config::set('protector.baseDirectory', 'protector');
+        Config::set('protector.diskName', $fakeDiskName);
 
         $this->protector     = app('protector');
-        $this->disk          = $this->protector->getDisk();
-        $this->baseDirectory = Config::get('baseDirectory');
+        $this->disk          = Storage::fake($fakeDiskName);
+        $this->baseDirectory = Config::get('protector.baseDirectory');
     }
 
     /**
