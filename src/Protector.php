@@ -502,7 +502,7 @@ class Protector
      */
     public function getBaseDirectory(): string
     {
-        return $this->getConfigValueForKey('baseDirectory');
+        return $this->getConfigValueForKey('baseDirectory') ?? '';
     }
 
     /**
