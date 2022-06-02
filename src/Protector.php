@@ -176,11 +176,7 @@ class Protector
             throw new InvalidConnectionException('Connection is not configured properly.');
         }
 
-        if (!$serverFilePath = $this->generateDump($options)) {
-            throw new FailedDumpGenerationException('Dump could not be created.');
-        }
-
-        return $serverFilePath;
+        return $this->generateDump($options) ?: throw new FailedDumpGenerationException('Dump could not be created.');
     }
 
     /**
@@ -365,7 +361,7 @@ class Protector
             if (!filesize($tempFile)) {
                 unlink($tempFile);
 
-                return null;
+                $tempFile = null;
             };
 
             // Append some import/export-meta-data to the end.
@@ -373,10 +369,11 @@ class Protector
 
             file_put_contents($tempFile, $metaData, FILE_APPEND);
 
-            return $tempFile;
         } catch (Exception) {
-            return null;
+            $tempFile = null;
         }
+
+        return $tempFile;
     }
 
     /**
