@@ -25,16 +25,13 @@ class RemoteDumpTest extends BaseTest
      */
     public function canCreateDestinationDumpPath()
     {
+        $method      = $this->getAccessibleReflectionMethod('createDirectory');
         $fakeStorage = Storage::fake('test');
         $path        = 'dumps';
 
-        $fakeStorage->deleteDirectory($path);
-
-        $method = $this->getAccessibleReflectionMethod('createDirectory');
-
         $method->invokeArgs(app('protector'), [$path, $fakeStorage]);
 
-        $this->assertDirectoryExists($fakeStorage->path($path));
+        $fakeStorage->assertExists($path);
     }
 
     /**
