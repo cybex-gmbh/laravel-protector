@@ -27,16 +27,6 @@ class CreateToken extends Command
     protected $description = 'Creates a token for a specified user id and optionally sets the public key.';
 
     /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
-    /**
      * Execute the console command.
      *
      * @return void
