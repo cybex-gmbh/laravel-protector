@@ -589,6 +589,7 @@ class Protector
     public function getDisk(?string $diskName = null): FilesystemAdapter
     {
         $diskName ??= $this->getConfigValueForKey('diskName', config('filesystems.default'));
+
         return Storage::disk($diskName);
     }
 
