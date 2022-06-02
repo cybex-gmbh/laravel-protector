@@ -536,7 +536,7 @@ class Protector
 
                 try {
                     $serverFilePath = $this->createDump();
-                    $publicKey = $this->getPublicKey($request);
+                    $publicKey      = $this->getPublicKey($request);
                 } catch (InvalidConnectionException|FailedDumpGenerationException|InvalidConfigurationException $exception) {
                     return response($exception->getMessage(), 500, ['message' => $exception->getMessage()]);
                 }
