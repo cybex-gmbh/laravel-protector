@@ -603,7 +603,7 @@ class Protector
      */
     protected function createDirectory(?string $destinationPath, FilesystemAdapter $disk): void
     {
-        if ($disk->missing($destinationPath)) {
+        if ($disk->directoryMissing($destinationPath)) {
             if ($disk->makeDirectory($destinationPath) === false) {
                 throw new FailedCreatingDestinationPathException(sprintf('Could not create the non-existing destination path %s on given disk.', $destinationPath));
             }
