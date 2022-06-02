@@ -498,7 +498,7 @@ class Protector
     /**
      * Returns the config value for the baseDirectory key.
      *
-     * @return mixed
+     * @return string
      */
     public function getBaseDirectory(): string
     {
