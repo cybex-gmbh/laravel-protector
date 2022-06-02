@@ -243,6 +243,8 @@ class ImportDump extends Command
                     'gitBranch'   => '',
                     'dateTime'    => '',
                 ]);
+
+                continue;
             }
 
             if (($metaData['meta']['connection'] ?? false) && Arr::exists(config('database.connections'), $metaData['meta']['connection'])) {
