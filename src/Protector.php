@@ -565,7 +565,7 @@ class Protector
                     [
                         'Content-Type'    => 'text/plain',
                         'Pragma'          => 'no-cache',
-                        'Expires'         => gmdate('D, d M Y H:i:s', time() - 3600) . ' GMT',
+                        'Expires'         => gmdate(DATE_RFC7231, time() - 3600),
                         // Encryption adds some overhead to the chunk, which has to be considered when decrypting it.
                         'Chunk-Size'      => $sanctumIsActive ? $chunkSize + $this->determineEncryptionOverhead(
                                 $chunkSize,
