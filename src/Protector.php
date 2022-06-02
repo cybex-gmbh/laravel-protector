@@ -370,6 +370,8 @@ class Protector
             file_put_contents($tempFile, $metaData, FILE_APPEND);
 
         } catch (Exception) {
+            unlink($tempFile);
+
             $tempFile = null;
         }
 
