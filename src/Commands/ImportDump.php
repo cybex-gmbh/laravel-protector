@@ -330,7 +330,7 @@ class ImportDump extends Command
         $filesByConnection = $sortedFiles->groupBy('connection');
 
         if ($filesByConnection->count() == 1) {
-            $connectionName = Arr::first($filesByConnection->keys()->sort()->toArray());
+            $connectionName = array_key_first($sortedFiles->all());
             $this->info(
                 sprintf(
                     'Using connection "%s" because there are no dumps created through other connections.',
