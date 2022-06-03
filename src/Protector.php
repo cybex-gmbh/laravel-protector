@@ -228,19 +228,14 @@ class Protector
      *
      * Deletes all dumps except an optional given file.
      *
-     * @param string|null $excludedFile
+     * @param string|null $excludeFile
      * @return void
      */
-    public function flush(?string $excludedFile = null): void
+    public function flush(?string $excludeFile = null): void
     {
-        $disk  = $this->getDisk();
-        $files = $disk->files(config('protector.baseDirectory'));
+        $files = $this->getDumpFiles($excludeFile);
 
-        if ($excludedFile) {
-            $files = array_diff($files, [$excludedFile]);
-        }
-
-        $disk->delete($files);
+        $this->getDisk()->delete($files);
     }
 
     /**
@@ -254,11 +249,13 @@ class Protector
      */
     public function getRemoteDump(): string
     {
+        $disk = $this->getDisk();
+
         if (App::environment('production')) {
             throw new InvalidEnvironmentException('Retrieving a dump is not allowed on production systems.');
         }
 
-        if ($this->isSanctumActive() && !$this->getPrivateKey()) {
+        if ($this->shouldEncrypt() && !$this->getPrivateKey()) {
             throw new InvalidConfigurationException('For using Laravel Sanctum a crypto keypair is required. There was none found in your .env file.');
         }
 
@@ -266,7 +263,7 @@ class Protector
             throw new InvalidConfigurationException('Server url is not set or invalid.');
         }
 
-        $this->createDirectory($this->getConfigValueForKey('baseDirectory'), $this->getDisk());
+        $this->createDirectory($this->getConfigValueForKey('baseDirectory'), $disk);
 
         $request = $this->getConfiguredHttpRequest();
 
@@ -294,6 +291,12 @@ class Protector
         $this->writeDumpFile($stream, $destinationFilePath, $response->header('Chunk-Size'), $response->header('Sanctum-Enabled'));
 
         $stream->close();
+
+        if ($disk->size($destinationFilePath) === 0) {
+            $disk->delete($destinationFilePath);
+
+            throw new FailedRemoteDatabaseFetchingException(sprintf('Retrieved empty response from %s', $serverUrl));
+        }
 
         return $destinationFilePath;
     }
@@ -362,7 +365,7 @@ class Protector
                 unlink($tempFile);
 
                 $tempFile = null;
-            };
+            }
 
             // Append some import/export-meta-data to the end.
             $metaData = sprintf("\n-- options:%s\n-- meta:%s", json_encode($options, JSON_UNESCAPED_UNICODE), json_encode($this->createMetaData(), JSON_UNESCAPED_UNICODE));
@@ -528,10 +531,10 @@ class Protector
      */
     public function generateFileDownloadResponse(Request $request, string $connectionName = null): Response|StreamedResponse
     {
-        $sanctumIsActive = $this->isSanctumActive();
+        $shouldEncrypt = $this->shouldEncrypt();
 
         // Only proceed when either Laravel Sanctum is turned off or the user's token is valid.
-        if (!$sanctumIsActive || $request->user()->tokenCan('protector:import')) {
+        if (!$shouldEncrypt || $request->user()->tokenCan('protector:import')) {
             if ($this->configure($connectionName)) {
 
                 try {
@@ -544,14 +547,14 @@ class Protector
                 $chunkSize = $this->getConfigValueForKey('chunkSize');
 
                 return response()->streamDownload(
-                    function () use ($publicKey, $request, $serverFilePath, $chunkSize, $sanctumIsActive) {
+                    function () use ($publicKey, $request, $serverFilePath, $chunkSize, $shouldEncrypt) {
                         $inputHandle = fopen($serverFilePath, 'rb');
 
                         while (!feof($inputHandle)) {
                             $chunk = fread($inputHandle, $chunkSize);
 
                             // Encrypt the data when Laravel Sanctum is active.
-                            if ($sanctumIsActive) {
+                            if ($shouldEncrypt) {
                                 $chunk = sodium_crypto_box_seal($chunk, $publicKey);
                             }
 
@@ -567,11 +570,11 @@ class Protector
                         'Pragma'          => 'no-cache',
                         'Expires'         => gmdate(DATE_RFC7231, time() - 3600),
                         // Encryption adds some overhead to the chunk, which has to be considered when decrypting it.
-                        'Chunk-Size'      => $sanctumIsActive ? $chunkSize + $this->determineEncryptionOverhead(
+                        'Chunk-Size'      => $shouldEncrypt ? $chunkSize + $this->determineEncryptionOverhead(
                                 $chunkSize,
                                 $publicKey
                             ) : $chunkSize,
-                        'Sanctum-Enabled' => $sanctumIsActive,
+                        'Sanctum-Enabled' => $shouldEncrypt,
                     ]
                 );
             }
@@ -626,7 +629,7 @@ class Protector
     {
         $htaccessLogin = $this->getConfigValueForKey('remoteEndpoint.htaccessLogin');
 
-        if ($this->isSanctumActive()) {
+        if ($this->shouldEncrypt()) {
             // Laravel Sanctum and htaccess cannot be used simultaneously since they use the same header.
             if ($htaccessLogin) {
                 throw new InvalidConfigurationException('Laravel Sanctum and Htaccess can not be used simultaneously');
@@ -809,12 +812,15 @@ class Protector
         return $tempFilePath;
     }
 
-    /**
-     * @return bool
-     */
-    protected function shouldEncrypt(): bool
+    public function getDumpFiles(?string $excludeFile = null): array
     {
-        return $this->isSanctumActive();
+        $files = $this->getDisk()->files($this->getBaseDirectory());
+
+        if ($excludeFile) {
+            $files = array_diff($files, [$excludeFile]);
+        }
+
+        return $files;
     }
 
     /**
@@ -822,7 +828,7 @@ class Protector
      *
      * @return bool
      */
-    protected function isSanctumActive(): bool
+    protected function shouldEncrypt(): bool
     {
         return in_array('auth:sanctum', config('protector.routeMiddleware'));
     }

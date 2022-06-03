@@ -4,6 +4,7 @@ namespace Cybex\Protector\Commands;
 
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
+use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Cybex\Protector\Protector;
 use Exception;
@@ -133,10 +134,12 @@ class ImportDump extends Command
      */
     protected function getRemoteDump(): ?string
     {
-        $disk = $this->protector->getDisk();
-        $basePath = $this->protector->getBaseDirectory();
+        $disk         = $this->protector->getDisk();
+        $basePath     = $this->protector->getBaseDirectory();
+        $serverUrl    = $this->protector->getServerUrl();
+        $absolutePath = $disk->path($basePath);
 
-        $this->line(sprintf('<<< Downloading dump from remote server to directory: <comment>%s</comment>', $disk->path($basePath)));
+        $this->line(sprintf('<<< Downloading dump from remote server to directory: <comment>%s</comment>', $absolutePath));
 
         try {
             $importFilePath = $this->protector->getRemoteDump();
@@ -146,19 +149,12 @@ class ImportDump extends Command
             return null;
         }
 
-        if ($disk->fileSize($importFilePath) === 0) {
-            $this->error(sprintf('Retrieved empty response from %s', $this->protector->getServerUrl()));
-            $disk->delete($importFilePath);
-
-            return null;
-        }
-
         if ($this->option('flush')) {
             $this->protector->flush($importFilePath);
-            $this->warn(sprintf('Deleted all old files in %s', $disk->path($basePath)));
+            $this->warn(sprintf('Deleted all old files in %s', $absolutePath));
         }
 
-        $this->line(sprintf('>>> Successfully retrieved remote dump from %s', $this->protector->getServerUrl()));
+        $this->line(sprintf('>>> Successfully retrieved remote dump from %s', $serverUrl));
 
         return $importFilePath;
     }
@@ -191,11 +187,7 @@ class ImportDump extends Command
      */
     protected function chooseImportDump(?string $connectionName): string
     {
-        $disk            = $this->protector->getDisk();
-        $basePath        = $this->protector->getBaseDirectory();
-        $directoryFiles  = $disk->files($basePath);
-        $matchingFiles   = $this->getDumpMetadata($directoryFiles);
-        $connectionFiles = $this->getConnectionFiles($matchingFiles, $connectionName);
+        $connectionFiles = $this->getConnectionFiles($connectionName);
 
         if ($connectionFiles->isEmpty()) {
             throw new LogicException('There are no dumps in the dump folder');
@@ -224,7 +216,7 @@ class ImportDump extends Command
      * @param array $directoryFiles
      * @return Collection
      */
-    public function getDumpMetadata(array $directoryFiles): Collection
+    public function getMetaDataForFiles(array $directoryFiles): Collection
     {
         $matchingFiles = collect();
 
@@ -234,7 +226,7 @@ class ImportDump extends Command
             if ($this->option('ignore-connection-filter') || (!is_array($metaData) || empty($metaData))) {
                 $matchingFiles->push([
                     'path'        => $directoryFile,
-                    'file'        => $directoryFile,
+                    'file'        => basename($directoryFile),
                     'database'    => '',
                     'connection'  => 'external_dump',
                     'date'        => '',
@@ -250,7 +242,7 @@ class ImportDump extends Command
             if (($metaData['meta']['connection'] ?? false) && Arr::exists(config('database.connections'), $metaData['meta']['connection'])) {
                 $fileInformation = [
                     'path'        => $directoryFile,
-                    'file'        => $directoryFile,
+                    'file'        => basename($directoryFile),
                     'database'    => Arr::get($metaData, 'meta.database', null),
                     'connection'  => Arr::get($metaData, 'meta.connection', null),
                     'date'        => Arr::get(
@@ -312,37 +304,27 @@ class ImportDump extends Command
     /**
      * Returns a list of either all dumps, or those for the specified connection name.
      *
-     * @param Collection $matchingFiles
-     * @param string|null $connectionName
-     * @return Collection
+     * @throws InvalidConnectionException
      */
-    public function getConnectionFiles(Collection $matchingFiles, ?string $connectionName = null): Collection
+    public function getConnectionFiles(?string $connectionName = null): Collection
     {
-        $sortedFiles       = $matchingFiles->sortByDesc('dateTime');
+        $sortedFiles = $this->getMetaDataForFiles($this->protector->getDumpFiles())->sortByDesc('dateTime');
+
+        if ($this->option('ignore-connection-filter')) {
+            return $sortedFiles;
+        }
+
         $filesByConnection = $sortedFiles->groupBy('connection');
 
-        if ($filesByConnection->count() == 1) {
-            $connectionName = array_key_first($sortedFiles->all());
-            $this->info(
-                sprintf(
-                    'Using connection "%s" because there are no dumps created through other connections.',
-                    $connectionName
-                )
-            );
-        } elseif (!$this->option('ignore-connection-filter')) {
-            // In this case don't limit the files to the connection, no code required.
-        } elseif ($connectionName) {
-            $connectionName = $this->choice('Import dump for which connection?', $filesByConnection->keys()->toArray());
-            $this->info(sprintf('Using connection "%s".', $connectionName));
+        if ($connectionName && !$filesByConnection->has($connectionName)) {
+            throw new InvalidConnectionException();
         }
 
-        if ($connectionName) {
-            $connectionFiles = $filesByConnection->get($connectionName);
-        } else {
-            $connectionFiles = $sortedFiles;
+        if (!$connectionName) {
+            $connectionName = $this->chooseConnectionName($filesByConnection->keys());
         }
 
-        return $connectionFiles;
+        return $filesByConnection->get($connectionName);
     }
 
     /**
@@ -363,5 +345,25 @@ class ImportDump extends Command
             static::DOWNLOAD_REMOTE_DUMP => true,
             default => false,
         };
+    }
+
+    /**
+     * Returns the connection name for dump imports.
+     * Asks the user if there are multiple possibilities.
+     *
+     * @param Collection $connectionNames
+     * @return string
+     */
+    protected function chooseConnectionName(Collection $connectionNames): string
+    {
+        if ($connectionNames->count() === 1) {
+            $connectionName = $connectionNames->first();
+
+            $this->info(sprintf('Using connection "%s" because there are no dumps created through other connections.', $connectionName));
+
+            return $connectionName;
+        }
+
+        return $this->choice('Import dump for which connection?', $connectionNames->toArray());
     }
 }
