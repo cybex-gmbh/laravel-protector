@@ -285,11 +285,9 @@ class Protector
         }
 
         $destinationFilePath = $this->getDumpDestinationFilePath($response->header('Content-Disposition'));
-
-        $stream = $response->toPsrResponse()->getBody();
+        $stream              = $response->toPsrResponse()->getBody();
 
         $this->writeDumpFile($stream, $destinationFilePath, $response->header('Chunk-Size'), $response->header('Sanctum-Enabled'));
-
         $stream->close();
 
         if ($disk->size($destinationFilePath) === 0) {
