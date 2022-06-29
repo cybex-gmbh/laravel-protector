@@ -34,9 +34,4 @@ abstract class BaseTest extends Orchestra
     {
         Storage::disk('local')->put('protector/dump.sql', '');
     }
-
-    protected function usesMultipleDumps()
-    {
-        Storage::disk('local')->put('protector/secondDump.sql', '');
-    }
 }

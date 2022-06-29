@@ -2,6 +2,7 @@
 
 namespace Cybex\Protector\Tests;
 
+use BaseTest;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Protector;
 use Illuminate\Filesystem\FilesystemAdapter;
@@ -28,11 +29,12 @@ class GetLatestDumpNameTest extends BaseTest
     {
         parent::setUp();
 
-        Config::set('baseDirectory', 'protector');
+        Config::set('protector.baseDirectory', 'protector');
 
         $this->protector     = app('protector');
         $this->disk          = $this->protector->getDisk();
-        $this->baseDirectory = Config::get('baseDirectory');
+        $this->baseDirectory = Config::get('protector.baseDirectory');
+        $this->filePath      = sprintf('%s/dump.sql', $this->baseDirectory);
     }
 
     /**
@@ -40,12 +42,26 @@ class GetLatestDumpNameTest extends BaseTest
      */
     public function returnsFileNameIfExists()
     {
-        $path = sprintf('%s%s%s', $this->baseDirectory, DIRECTORY_SEPARATOR, 'test.txt');
-
-        $this->disk->put($path, '');
+        $this->disk->put($this->filePath, '');
 
         $file = $this->protector->getLatestDumpName();
         $this->assertIsString($file);
+    }
+
+    /**
+     * @test
+     */
+    public function returnsFileNameIfMultipleDumpsExist()
+    {
+        sleep(1);
+        $secondDumpFilePath = sprintf('%s/secondDump.sql', $this->baseDirectory);
+
+        $this->disk->put($secondDumpFilePath, '');
+
+        $fileName = $this->protector->getLatestDumpName();
+
+        $this->assertEquals($secondDumpFilePath, $fileName);
+        $this->assertIsString($fileName);
     }
 
     /**
