@@ -33,5 +33,6 @@
         <env name="PROTECTOR_PUBLIC_KEY" value="2c1d0ea6e0f8e207b38bef11bfcd5c0615c3cf4695876631b1da523a552b6022" />
         <env name="PROTECTOR_ENCRYPTED_MESSAGE" value="c93e1c30857b0a5a36dddd11237ff65ef153144e0c400304cc80501da7e9b41a99c568fb34491629577ba4b5c0ec632e50067d61cf1ece27e1eabc" />
         <env name="PROTECTOR_DECRYPTED_MESSAGE" value="hello world" />
+        <env name="PROTECTOR_AUTH_TOKEN" value="1|bxa5BBNo7lXxgtRY4DN775JdAtQSAlN4UfgRnFhz" />
     </php>
 </phpunit>
