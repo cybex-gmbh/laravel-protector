@@ -11,15 +11,15 @@ use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Exception;
 use GuzzleHttp\Psr7\StreamWrapper;
-use Illuminate\Filesystem\FilesystemAdapter;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Psr\Http\Message\StreamInterface;
-use Storage;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -570,9 +570,9 @@ class Protector
     /**
      * Returns the disk which is stated in the config. If no disk is stated the default filesystem disk will be returned.
      *
-     * @return FilesystemAdapter
+     * @return Filesystem
      */
-    public function getDisk(): FilesystemAdapter
+    public function getDisk(): Filesystem
     {
         return Storage::disk($this->getConfigValueForKey('diskName', config('filesystems.default')));
     }
