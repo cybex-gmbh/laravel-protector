@@ -182,6 +182,8 @@ class CreateDumpTest extends BaseTest
 
         $this->assertEquals(sprintf('%s/%s', $this->baseDirectory, __FUNCTION__), $destinationFilePath);
         $this->assertIsString($destinationFilePath);
+
+        $this->disk->delete($destinationFilePath);
     }
 
     /**
