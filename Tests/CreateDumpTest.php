@@ -156,18 +156,6 @@ class CreateDumpTest extends BaseTest
     /**
      * @test
      */
-    public function failGeneratingDumpOnInvalidPath()
-    {
-        $path   = 'https://protector.invalid';
-        $method = $this->getAccessibleReflectionMethod('generateDump');
-
-        $this->expectException(ErrorException::class);
-        $method->invoke($this->protector, $path, []);
-    }
-
-    /**
-     * @test
-     */
     public function failOnDumpHasNoConnectionConfigured()
     {
         Config::set('database.connections', null);

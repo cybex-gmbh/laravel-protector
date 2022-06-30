@@ -24,7 +24,7 @@ class RemoteDumpTest extends BaseTest
     {
         parent::setUp();
 
-        Config::set('protector.remoteEndpoint.serverUrl', 'example.com/protector/exportDump');
+        Config::set('protector.remoteEndpoint.serverUrl', 'protector.invalid/protector/exportDump');
         Config::set('protector.routeMiddleware', []);
         Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
 
