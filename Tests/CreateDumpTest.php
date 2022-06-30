@@ -158,7 +158,7 @@ class CreateDumpTest extends BaseTest
      */
     public function failGeneratingDumpOnInvalidPath()
     {
-        $path   = 'https://www.example.com';
+        $path   = 'https://www.1.com';
         $method = $this->getAccessibleReflectionMethod('generateDump');
 
         $this->expectException(ErrorException::class);
