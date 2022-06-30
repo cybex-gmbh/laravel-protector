@@ -25,6 +25,7 @@ class CreateDumpTest extends BaseTest
         $this->disk          = Storage::disk('local');
         $this->baseDirectory = Config::get('protector.baseDirectory');
         $this->filePath      = sprintf('%s/dump.sql', $this->baseDirectory);
+        $this->emptyDumpPath = 'dynamic-protector-dumps/dump.sql';
     }
 
     /**
@@ -32,14 +33,16 @@ class CreateDumpTest extends BaseTest
      */
     public function createDestinationFilePath()
     {
-        $this->disk->deleteDirectory($this->baseDirectory);
+        Config::set('protector.baseDirectory', 'noDumps');
+        $this->disk->deleteDirectory(Config::get('protector.baseDirectory'));
 
-        $filePath = $this->protector->createDestinationFilePath(__FUNCTION__);
-        $method   = $this->getAccessibleReflectionMethod('createDirectory');
+        $filePath            = $this->protector->createDestinationFilePath(__FUNCTION__);
+        $method              = $this->getAccessibleReflectionMethod('createDirectory');
+        $destinationFilePath = $this->disk->path($filePath);
 
-        $method->invoke($this->protector, $this->disk->path($filePath));
+        $method->invoke($this->protector, $destinationFilePath);
 
-        $this->assertDirectoryExists($filePath);
+        $this->assertDirectoryExists($destinationFilePath);
     }
 
     /**
@@ -47,14 +50,17 @@ class CreateDumpTest extends BaseTest
      */
     public function createDestinationFilePathWithSubFolder()
     {
-        $this->disk->deleteDirectory($this->baseDirectory);
+        Config::set('protector.baseDirectory', 'noDumps');
 
-        $filePath = $this->protector->createDestinationFilePath(__FUNCTION__, __FUNCTION__);
-        $method   = $this->getAccessibleReflectionMethod('createDirectory');
+        $this->disk->deleteDirectory(Config::get('protector.baseDirectory'));
 
-        $method->invoke($this->protector, $this->disk->path($filePath));
+        $filePath            = $this->protector->createDestinationFilePath(__FUNCTION__, __FUNCTION__);
+        $method              = $this->getAccessibleReflectionMethod('createDirectory');
+        $destinationFilePath = $this->disk->path($filePath);
 
-        $this->assertDirectoryExists($filePath);
+        $method->invoke($this->protector, $destinationFilePath);
+
+        $this->assertDirectoryExists($destinationFilePath);
     }
 
     /**
@@ -85,16 +91,13 @@ class CreateDumpTest extends BaseTest
 
     /**
      * @test
+     * @define-env usesEmptyDump
      */
     public function verifyDumpDateMetaData()
     {
-        $method = $this->getAccessibleReflectionMethod('generateDump');
-
-        $method->invoke($this->protector, $this->filePath, []);
-
         $dumpMetaData = $this->protector->getDumpMetaData($this->filePath);
 
-        $date = $dumpMetaData['meta']['dumpedAtDate'];
+        $date   = $dumpMetaData['meta']['dumpedAtDate'];
         $result = checkDate($date['mon'], $date['wday'], $date['year']);
 
         foreach (array_keys($date) as $key)
@@ -111,38 +114,41 @@ class CreateDumpTest extends BaseTest
 
     /**
      * @test
+     * @define-env usesEmptyDump
      */
     public function failOnDumpHasNoMetaData()
     {
-        $metaData = $this->protector->getDumpMetaData($this->filePath);
+        $metaData = $this->protector->getDumpMetaData($this->emptyDumpPath);
 
         $this->assertFalse($metaData);
     }
 
     /**
      * @test
+     * @define-env usesEmptyDump
      */
     public function failOnDumpHasIncorrectMetaData()
     {
-        $this->disk->put($this->filePath, sprintf("%s\n%s", __FUNCTION__, __FUNCTION__));
+        $this->disk->put($this->emptyDumpPath, sprintf("%s\n%s", __FUNCTION__, __FUNCTION__));
 
         $metaData = sprintf("-- options:%s\n-- meta:%s", __FUNCTION__, __FUNCTION__);
-        $this->disk->append($this->filePath, $metaData);
+        $this->disk->append($this->emptyDumpPath, $metaData);
 
-        $result = $this->protector->getDumpMetaData($this->filePath);
+        $result = $this->protector->getDumpMetaData($this->emptyDumpPath);
 
         $this->assertFalse($result);
     }
 
     /**
      * @test
+     * @define-env usesEmptyDump
      */
     public function canGenerateDump()
     {
-        $this->disk->put($this->filePath, __FUNCTION__);
+        $this->disk->put($this->emptyDumpPath, __FUNCTION__);
 
         $method = $this->getAccessibleReflectionMethod('generateDump');
-        $result = $method->invoke($this->protector, $this->filePath, ['no-data' => true]);
+        $result = $method->invoke($this->protector, $this->emptyDumpPath, ['no-data' => true]);
 
         $this->assertTrue($result);
     }

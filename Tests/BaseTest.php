@@ -1,6 +1,5 @@
 <?php
 
-
 use Cybex\Protector\ProtectorServiceProvider;
 use Illuminate\Support\Facades\Storage;
 use Orchestra\Testbench\TestCase as Orchestra;
@@ -27,11 +26,22 @@ abstract class BaseTest extends Orchestra
     }
 
     /**
-     * @param $app
      * @return void
      */
-    protected function defineEnvironment($app): void
+    protected function usesEmptyDump(): void
     {
-        Storage::disk('local')->put('protector/dump.sql', '');
+        $baseDirectory = config('protector.baseDirectory');
+        $directoryName = sprintf('dynamic-%s-dumps', $baseDirectory);
+
+        Storage::disk('local')->makeDirectory($directoryName);
+        Storage::disk('local')->put(sprintf('%s%sdump.sql', $directoryName, DIRECTORY_SEPARATOR), '');
+    }
+
+    /**
+     * @return void
+     */
+    protected function usesEmptyFolder(): void
+    {
+        Storage::disk('local')->makeDirectory('noDumps');
     }
 }

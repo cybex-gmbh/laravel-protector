@@ -187,7 +187,7 @@ class RemoteDumpTest extends BaseTest
         Http::fake([
             $this->serverUrl => Http::response($encryptedMessage, 200, [
                 'Sanctum-Enabled'     => true,
-                'Content-Disposition' => 'attachment; filename="dump.sql"',
+                'Content-Disposition' => sprintf('attachment; filename="%s.txt"', __FUNCTION__),
                 'Chunk-Size'          => strlen($message) + $encryptionOverhead,
             ]),
         ]);
@@ -196,6 +196,8 @@ class RemoteDumpTest extends BaseTest
 
         $this->assertFileExists($this->disk->path($destinationFilepath));
         $this->assertEquals($message, $this->disk->get($destinationFilepath));
+
+        $this->disk->delete($destinationFilepath);
     }
 
     public function responseCodes()

@@ -39,13 +39,15 @@ class GetLatestDumpNameTest extends BaseTest
 
     /**
      * @test
+     * @define-env usesEmptyDump
      */
     public function returnsFileNameIfExists()
     {
-        $this->disk->put($this->filePath, '');
+        $this->disk->put('dynamic-protector-dumps/dump.sql', '');
 
-        $file = $this->protector->getLatestDumpName();
-        $this->assertIsString($file);
+        $fileName = $this->protector->getLatestDumpName();
+
+        $this->assertIsString($fileName);
     }
 
     /**
@@ -66,10 +68,12 @@ class GetLatestDumpNameTest extends BaseTest
 
     /**
      * @test
+     * @define-env usesEmptyFolder
      */
     public function throwsExceptionIfNoFileExists()
     {
-        $this->disk->deleteDirectory($this->baseDirectory);
+        Config::set('protector.baseDirectory', 'noDumps');
+        $this->disk->deleteDirectory(Config::get('protector.baseDirectory'));
 
         $this->expectException(FileNotFoundException::class);
         $this->protector->getLatestDumpName();
