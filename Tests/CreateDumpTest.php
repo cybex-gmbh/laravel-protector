@@ -162,9 +162,7 @@ class CreateDumpTest extends BaseTest
         $method = $this->getAccessibleReflectionMethod('generateDump');
 
         $this->expectException(ErrorException::class);
-        $result = $method->invoke($this->protector, $path, []);
-
-        $this->assertFalse($result);
+        $method->invoke($this->protector, $path, []);
     }
 
     /**
