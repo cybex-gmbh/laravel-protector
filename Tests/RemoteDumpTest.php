@@ -34,6 +34,16 @@ class RemoteDumpTest extends BaseTest
         $this->baseDirectory = Config::get('protector.baseDirectory');
     }
 
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        $files = $this->disk->files($this->baseDirectory);
+        $files = array_diff($files, [sprintf('%s%sdump.sql', $this->baseDirectory, DIRECTORY_SEPARATOR)]);
+
+        $this->disk->delete($files);
+    }
+
     /**
      * @test
      */
@@ -196,8 +206,6 @@ class RemoteDumpTest extends BaseTest
 
         $this->assertFileExists($this->disk->path($destinationFilepath));
         $this->assertEquals($message, $this->disk->get($destinationFilepath));
-
-        $this->disk->delete($destinationFilepath);
     }
 
     public function responseCodes()
@@ -275,7 +283,7 @@ class RemoteDumpTest extends BaseTest
     /**
      * @test
      */
-    public function checkGetConfigValueForKey()
+    public function canGetConfigValueForKey()
     {
         Config::set('protector.baseDirectory', __FUNCTION__);
 

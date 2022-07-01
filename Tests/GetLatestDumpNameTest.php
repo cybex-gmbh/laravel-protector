@@ -29,12 +29,19 @@ class GetLatestDumpNameTest extends BaseTest
     {
         parent::setUp();
 
-        Config::set('protector.baseDirectory', 'protector');
+        Config::set('protector.baseDirectory', 'dynamicDumps');
 
         $this->protector     = app('protector');
         $this->disk          = $this->protector->getDisk();
         $this->baseDirectory = Config::get('protector.baseDirectory');
-        $this->filePath      = sprintf('%s/dump.sql', $this->baseDirectory);
+        $this->filePath      = sprintf('%s%sdump.sql', $this->baseDirectory, DIRECTORY_SEPARATOR);
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        $this->disk->deleteDirectory($this->baseDirectory);
     }
 
     /**
@@ -43,22 +50,24 @@ class GetLatestDumpNameTest extends BaseTest
      */
     public function returnsFileNameIfExists()
     {
-        $this->disk->put('dynamic-protector-dumps/dump.sql', '');
+        touch($this->disk->path($this->filePath), time() + 60);
 
         $fileName = $this->protector->getLatestDumpName();
 
+        $this->assertEquals($this->filePath, $fileName);
         $this->assertIsString($fileName);
     }
 
     /**
      * @test
+     * @define-env usesEmptyDump
      */
     public function returnsFileNameIfMultipleDumpsExist()
     {
-        sleep(1);
-        $secondDumpFilePath = sprintf('%s/secondDump.sql', $this->baseDirectory);
+        $secondDumpFilePath = sprintf('%s%ssecondDump.sql', $this->baseDirectory, DIRECTORY_SEPARATOR);
 
         $this->disk->put($secondDumpFilePath, '');
+        touch($this->disk->path($secondDumpFilePath), time() + 60);
 
         $fileName = $this->protector->getLatestDumpName();
 

@@ -30,8 +30,7 @@ abstract class BaseTest extends Orchestra
      */
     protected function usesEmptyDump(): void
     {
-        $baseDirectory = config('protector.baseDirectory');
-        $directoryName = sprintf('dynamic-%s-dumps', $baseDirectory);
+        $directoryName = 'dynamicDumps';
 
         Storage::disk('local')->makeDirectory($directoryName);
         Storage::disk('local')->put(sprintf('%s%sdump.sql', $directoryName, DIRECTORY_SEPARATOR), '');

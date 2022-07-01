@@ -25,7 +25,7 @@ class CreateDumpTest extends BaseTest
         $this->disk          = Storage::disk('local');
         $this->baseDirectory = Config::get('protector.baseDirectory');
         $this->filePath      = sprintf('%s/dump.sql', $this->baseDirectory);
-        $this->emptyDumpPath = 'dynamic-protector-dumps/dump.sql';
+        $this->emptyDumpPath = 'dynamicDumps/dump.sql';
     }
 
     /**
@@ -91,7 +91,6 @@ class CreateDumpTest extends BaseTest
 
     /**
      * @test
-     * @define-env usesEmptyDump
      */
     public function verifyDumpDateMetaData()
     {
