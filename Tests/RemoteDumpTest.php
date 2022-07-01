@@ -350,6 +350,20 @@ class RemoteDumpTest extends BaseTest
     /**
      * @test
      */
+    public function setAuthToken()
+    {
+        $methodSet = $this->getAccessibleReflectionMethod('setAuthToken');
+        $methodGet = $this->getAccessibleReflectionMethod('getAuthToken');
+
+        $methodSet->invoke($this->protector, __FUNCTION__);
+        $authToken = $methodGet->invoke($this->protector);
+
+        $this->assertEquals(__FUNCTION__, $authToken);
+    }
+
+    /**
+     * @test
+     */
     public function setAuthTokenKeyName()
     {
         $methodSet = $this->getAccessibleReflectionMethod('setAuthTokenKeyName');
