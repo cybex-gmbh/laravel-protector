@@ -388,7 +388,7 @@ class RemoteDumpTest extends BaseTest
      */
     public function setServerUrl()
     {
-        $this->protector->setServerUrl(__FUNCTION__);
+        Config::set('protector.remoteEndpoint.serverUrl', __FUNCTION__);
         $this->assertEquals(__FUNCTION__, $this->protector->getServerUrl());
     }
 
