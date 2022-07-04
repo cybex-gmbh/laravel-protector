@@ -68,7 +68,7 @@ class ImportDumpTest extends BaseTest
     public function canImportDump()
     {
         $result = $this->protector->importDump($this->filePath, ['migrate' => false]);
-        $this->assertEquals(true, $result);
+        $this->assertTrue($result);
     }
 
     /**
@@ -77,7 +77,7 @@ class ImportDumpTest extends BaseTest
     public function failOnOptionMigrate()
     {
         $result = $this->protector->importDump($this->filePath, ['migrate' => true]);
-        $this->assertEquals(false, $result);
+        $this->assertFalse($result);
     }
 
 }

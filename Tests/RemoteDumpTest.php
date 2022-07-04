@@ -54,7 +54,7 @@ class RemoteDumpTest extends BaseTest
         $method        = $this->getAccessibleReflectionMethod('shouldEncrypt');
         $shouldEncrypt = $method->invoke($this->protector);
 
-        $this->assertEquals(true, $shouldEncrypt);
+        $this->assertTrue($shouldEncrypt);
     }
 
     /**
@@ -67,7 +67,7 @@ class RemoteDumpTest extends BaseTest
         $method        = $this->getAccessibleReflectionMethod('shouldEncrypt');
         $shouldEncrypt = $method->invoke($this->protector);
 
-        $this->assertEquals(false, $shouldEncrypt);
+        $this->assertFalse($shouldEncrypt);
     }
 
     /**
@@ -277,7 +277,7 @@ class RemoteDumpTest extends BaseTest
 
         $result = $this->protector->configure();
 
-        $this->assertEquals(false, $result);
+        $this->assertFalse($result);
     }
 
     /**
