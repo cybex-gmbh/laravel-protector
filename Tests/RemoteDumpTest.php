@@ -73,7 +73,7 @@ class RemoteDumpTest extends BaseTest
     /**
      * @test
      */
-    public function failsOnMissingServerUrl()
+    public function failOnMissingServerUrl()
     {
         Config::set('protector.remoteEndpoint.serverUrl', '');
 
