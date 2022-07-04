@@ -7,6 +7,7 @@ use Cybex\Protector\Exceptions\FailedDumpGenerationException;
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
+use Cybex\Protector\Exceptions\FailedShellCommandException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Exception;
@@ -110,8 +111,8 @@ class Protector
      *
      * @throws InvalidEnvironmentException
      * @throws InvalidConnectionException
+     * @throws FailedShellCommandException
      * @throws FileNotFoundException
-     * @throws Exception
      */
     public function importDump(string $sourceFilePath, array $options): void
     {
@@ -146,7 +147,7 @@ class Protector
             escapeshellarg($filePath));
 
         if (!exec($shellCommandDropCreateDatabase) || !exec($shellCommandImport)) {
-            throw new Exception('Shell call to mysql client failed.');
+            throw new FailedShellCommandException('Shell call to mysql client failed.');
         }
 
         if ($options['migrate']) {

@@ -1,5 +1,6 @@
 <?php
 
+use Cybex\Protector\Exceptions\FailedShellCommandException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
@@ -65,19 +66,9 @@ class ImportDumpTest extends BaseTest
     /**
      * @test
      */
-    public function canImportDump()
+    public function throwsExceptionOnMysqlFailedShellCommand()
     {
-        $result = $this->protector->importDump($this->filePath, ['migrate' => false]);
-        $this->assertTrue($result);
+        $this->expectException(FailedShellCommandException::class);
+        $this->protector->importDump($this->filePath, ['migrate' => false]);
     }
-
-    /**
-     * @test
-     */
-    public function failOnOptionMigrate()
-    {
-        $result = $this->protector->importDump($this->filePath, ['migrate' => true]);
-        $this->assertFalse($result);
-    }
-
 }
