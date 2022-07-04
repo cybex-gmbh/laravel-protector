@@ -106,14 +106,14 @@ class Protector
      * @param string $sourceFilePath
      * @param array  $options
      *
-     * @return bool
+     * @return void
      *
      * @throws InvalidEnvironmentException
      * @throws InvalidConnectionException
      * @throws FileNotFoundException
      * @throws Exception
      */
-    public function importDump(string $sourceFilePath, array $options): bool
+    public function importDump(string $sourceFilePath, array $options): void
     {
         // Production environment is not allowed unless set in options.
         if (App::environment('production') && !($options['allow-production'])) {
@@ -132,36 +132,31 @@ class Protector
         Storage::disk('local')->put($sourceFilePath, $this->getDisk()->get($sourceFilePath));
         $filePath = Storage::disk('local')->path($sourceFilePath);
 
-        try {
-            $shellCommandDropCreateDatabase = sprintf('mysql -h%s -u%s -p%s -e %s 2> /dev/null',
-                escapeshellarg($this->connectionConfig['host']),
-                escapeshellarg($this->connectionConfig['username']),
-                escapeshellarg($this->connectionConfig['password']),
-                escapeshellarg(sprintf('drop database %1$s; create database %1$s;', $this->connectionConfig['database'])));
+        $shellCommandDropCreateDatabase = sprintf('mysql -h%s -u%s -p%s -e %s 2> /dev/null',
+            escapeshellarg($this->connectionConfig['host']),
+            escapeshellarg($this->connectionConfig['username']),
+            escapeshellarg($this->connectionConfig['password']),
+            escapeshellarg(sprintf('drop database %1$s; create database %1$s;', $this->connectionConfig['database'])));
 
-            $shellCommandImport = sprintf('mysql -h%s -u%s -p%s -D%s < %s 2> /dev/null',
-                escapeshellarg($this->connectionConfig['host']),
-                escapeshellarg($this->connectionConfig['username']),
-                escapeshellarg($this->connectionConfig['password']),
-                escapeshellarg($this->connectionConfig['database']),
-                escapeshellarg($filePath));
+        $shellCommandImport = sprintf('mysql -h%s -u%s -p%s -D%s < %s 2> /dev/null',
+            escapeshellarg($this->connectionConfig['host']),
+            escapeshellarg($this->connectionConfig['username']),
+            escapeshellarg($this->connectionConfig['password']),
+            escapeshellarg($this->connectionConfig['database']),
+            escapeshellarg($filePath));
 
-            exec($shellCommandDropCreateDatabase);
-            exec($shellCommandImport);
+        if (!exec($shellCommandDropCreateDatabase) || !exec($shellCommandImport)) {
+            throw new Exception('Shell call to mysql client failed.');
+        }
 
-            if ($options['migrate']) {
-                $output = new BufferedOutput;
+        if ($options['migrate']) {
+            $output = new BufferedOutput;
 
-                Artisan::call('migrate', [], $output);
+            Artisan::call('migrate', [], $output);
 
-                if (app()->runningInConsole()) {
-                    echo $output->fetch();
-                }
+            if (app()->runningInConsole()) {
+                echo $output->fetch();
             }
-
-            return true;
-        } catch (Exception) {
-            return false;
         }
     }
 
