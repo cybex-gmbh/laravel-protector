@@ -105,7 +105,7 @@ class Protector
      * Imports a specific SQL dump.
      *
      * @param string $sourceFilePath
-     * @param array  $options
+     * @param array $options
      *
      * @return void
      *
@@ -113,6 +113,7 @@ class Protector
      * @throws InvalidConnectionException
      * @throws FailedShellCommandException
      * @throws FileNotFoundException
+     * @throws InvalidConfigurationException
      */
     public function importDump(string $sourceFilePath, array $options): void
     {
@@ -146,8 +147,20 @@ class Protector
             escapeshellarg($this->connectionConfig['database']),
             escapeshellarg($filePath));
 
-        if (!exec($shellCommandDropCreateDatabase) || !exec($shellCommandImport)) {
+        if (!function_exists('exec')) {
+            throw new InvalidConfigurationException('Shell commands are disabled on your server, exec() must be enabled to import your dump.');
+        }
+
+        exec($shellCommandDropCreateDatabase, result_code: $resultCode);
+
+        if ($resultCode != 0) {
             throw new FailedShellCommandException('Shell call to mysql client failed.');
+        } else {
+            exec($shellCommandImport, result_code: $resultCode);
+
+            if ($resultCode != 0) {
+                throw new FailedShellCommandException('Shell call to mysql client failed.');
+            }
         }
 
         if ($options['migrate']) {
