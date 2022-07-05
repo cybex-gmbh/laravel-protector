@@ -233,7 +233,7 @@ class RemoteDumpTest extends BaseTest
     /**
      * @test
      */
-    public function failIfLaravelSanctumIsActiveAndHtaccessIsDefined()
+    public function failOnLaravelSanctumIsActiveAndHtaccessIsDefined()
     {
         Config::set('protector.routeMiddleware', ['auth:sanctum']);
 
@@ -271,7 +271,7 @@ class RemoteDumpTest extends BaseTest
     /**
      * @test
      */
-    public function failIfNoDatabaseConnectionIsSet()
+    public function failOnNoDatabaseConnectionIsSet()
     {
         Config::set('database.connections', null);
 
