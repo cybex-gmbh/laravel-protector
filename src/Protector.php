@@ -372,12 +372,20 @@ class Protector
 
         $this->createDirectory(Storage::disk('local')->path(dirname($destinationFilePath)));
 
-        try {
-            // Write dump using specific options.
-            exec(sprintf('mysqldump %s > %s 2> /dev/null',
-                $dumpOptions->implode(' '),
-                escapeshellarg(Storage::disk('local')->path($destinationFilePath))));
+        if (!function_exists('exec')) {
+            return false;
+        }
 
+        // Write dump using specific options.
+        exec(sprintf('mysqldump %s > %s 2> /dev/null',
+            $dumpOptions->implode(' '),
+            escapeshellarg(Storage::disk('local')->path($destinationFilePath))), result_code: $resultCode);
+
+        if ($resultCode != 0) {
+            return false;
+        }
+
+        try {
             $this->getDisk()->put($destinationFilePath, Storage::disk('local')->get($destinationFilePath));
             // Append some import/export-meta-data to the end.
             $metaData = sprintf("-- options:%s\n-- meta:%s", json_encode($options, JSON_UNESCAPED_UNICODE), json_encode($this->getMetaData(), JSON_UNESCAPED_UNICODE));
