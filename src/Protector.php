@@ -115,10 +115,10 @@ class Protector
      * @throws FileNotFoundException
      * @throws InvalidConfigurationException
      */
-    public function importDump(string $sourceFilePath, array $options): void
+    public function importDump(string $sourceFilePath, array $options = []): void
     {
         // Production environment is not allowed unless set in options.
-        if (App::environment('production') && !($options['allow-production'])) {
+        if (App::environment('production') && !Arr::get($options, 'allow-production')) {
             throw new InvalidEnvironmentException('Production environment is not allowed and option was not set.');
         }
 
@@ -163,7 +163,7 @@ class Protector
             }
         }
 
-        if ($options['migrate']) {
+        if (Arr::get($options, 'migrate')) {
             $output = new BufferedOutput;
 
             Artisan::call('migrate', [], $output);

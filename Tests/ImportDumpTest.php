@@ -37,7 +37,7 @@ class ImportDumpTest extends BaseTest
         $this->app->detectEnvironment(fn() => 'production');
 
         $this->expectException(InvalidEnvironmentException::class);
-        $this->protector->importDump($this->filePath, ['allow-production' => false]);
+        $this->protector->importDump($this->filePath);
     }
 
     /**
@@ -49,7 +49,7 @@ class ImportDumpTest extends BaseTest
         $this->protector->configure();
 
         $this->expectException(InvalidConnectionException::class);
-        $this->protector->importDump($this->filePath, []);
+        $this->protector->importDump($this->filePath);
     }
 
     /**
@@ -57,10 +57,10 @@ class ImportDumpTest extends BaseTest
      */
     public function throwsExceptionOnFileNotFound()
     {
-        $path = tempnam('', 'protector');
+        $path = 'thisFileDoesNotExist';
 
         $this->expectException(FileNotFoundException::class);
-        $this->protector->importDump($path, []);
+        $this->protector->importDump($path);
     }
 
     /**
