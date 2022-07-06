@@ -4,6 +4,7 @@ use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Cybex\Protector\Protector;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -246,15 +247,61 @@ class RemoteDumpTest extends BaseTest
     /**
      * @test
      */
+    public function addAdditionalOptionsToRequest()
+    {
+        $method  = $this->getAccessibleReflectionMethod('getConfiguredHttpRequest');
+        $request = $method->invoke($this->protector);
+        $options = $request->getOptions();
+
+        if (empty($options['stream']) || empty($options['headers']['Accept'])) {
+            $result = false;
+        } else {
+            $result = true;
+        }
+
+        $this->assertTrue($result);
+        $this->assertInstanceOf(PendingRequest::class, $request);
+    }
+
+    /**
+     * @test
+     */
     public function addTokenToRequestWhenSanctumIsActive()
     {
         Config::set('protector.routeMiddleware', ['auth:sanctum']);
         Config::set('protector.remoteEndpoint.htaccessLogin', null);
 
-        $method = $this->getAccessibleReflectionMethod('getConfiguredHttpRequest');
-        $result = $method->invoke($this->protector);
+        $method  = $this->getAccessibleReflectionMethod('getConfiguredHttpRequest');
+        $request = $method->invoke($this->protector);
+        $options = $request->getOptions();
 
-        $this->assertIsObject($result, 'Not readable');
+        if (empty($options['headers']['Authorization'])) {
+            $result = false;
+        } else {
+            $result = true;
+        }
+
+        $this->assertTrue($result);
+        $this->assertInstanceOf(PendingRequest::class, $request);
+    }
+
+    /**
+     * @test
+     */
+    public function addBasicAuthToRequestWhenHtaccessIsUsed()
+    {
+        $method  = $this->getAccessibleReflectionMethod('getConfiguredHttpRequest');
+        $request = $method->invoke($this->protector);
+        $options = $request->getOptions();
+
+        if (empty($options['auth'])) {
+            $result = false;
+        } else {
+            $result = true;
+        }
+
+        $this->assertTrue($result);
+        $this->assertInstanceOf(PendingRequest::class, $request);
     }
 
     /**
