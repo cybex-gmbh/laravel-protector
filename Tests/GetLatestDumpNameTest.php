@@ -50,7 +50,7 @@ class GetLatestDumpNameTest extends BaseTest
      */
     public function returnsFileNameIfExists()
     {
-        touch($this->disk->path($this->filePath), time() + 60);
+        touch($this->disk->path($this->filePath));
 
         $fileName = $this->protector->getLatestDumpName();
 
