@@ -1,6 +1,7 @@
 <?php
 
 use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
+use Cybex\Protector\Exceptions\FailedDumpGenerationException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Protector;
 use Illuminate\Support\Facades\Config;
@@ -142,14 +143,14 @@ class CreateDumpTest extends BaseTest
      * @test
      * @define-env usesEmptyDump
      */
-    public function canGenerateDump()
+    public function failGeneratingDumpOnFailedShellCommand()
     {
         $this->disk->put($this->emptyDumpPath, __FUNCTION__);
 
         $method = $this->getAccessibleReflectionMethod('generateDump');
-        $result = $method->invoke($this->protector, $this->emptyDumpPath, ['no-data' => true]);
+        $result = $method->invoke($this->protector, $this->emptyDumpPath);
 
-        $this->assertTrue($result);
+        $this->assertFalse($result);
     }
 
     /**
@@ -167,14 +168,10 @@ class CreateDumpTest extends BaseTest
     /**
      * @test
      */
-    public function canReturnDestinationFilePath()
+    public function failGetDestinationFilePathWhenGeneratingDump()
     {
-        $destinationFilePath = $this->protector->createDump(__FUNCTION__, []);
-
-        $this->assertEquals(sprintf('%s/%s', $this->baseDirectory, __FUNCTION__), $destinationFilePath);
-        $this->assertIsString($destinationFilePath);
-
-        $this->disk->delete($destinationFilePath);
+        $this->expectException(FailedDumpGenerationException::class);
+        $this->protector->createDump(__FUNCTION__, []);
     }
 
     /**
