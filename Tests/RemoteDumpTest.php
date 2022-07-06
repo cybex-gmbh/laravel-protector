@@ -298,12 +298,13 @@ class RemoteDumpTest extends BaseTest
      */
     public function canResolveBaseDirectoryFromClosure()
     {
-        $method = $this->getAccessibleReflectionMethod('getConfigValueForKey');
+        $method       = $this->getAccessibleReflectionMethod('getConfigValueForKey');
+        $functionName = __FUNCTION__;
 
-        Config::set('protector.baseDirectory', fn() => 'null');
+        Config::set('protector.baseDirectory', fn() => $functionName);
         $result = $method->invoke($this->protector, 'baseDirectory');
 
-        $this->assertEquals('null', $result);
+        $this->assertEquals($functionName, $result);
     }
 
     /**
