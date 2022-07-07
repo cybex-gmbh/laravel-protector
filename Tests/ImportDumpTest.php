@@ -68,7 +68,12 @@ class ImportDumpTest extends BaseTest
      */
     public function throwsExceptionOnMysqlFailedShellCommand()
     {
+        Config::set('database.default', 'mysql');
+        Config::set('database.connections.mysql.host', 'protector.invalid');
+
+        $this->protector->configure();
+
         $this->expectException(FailedShellCommandException::class);
-        $this->protector->importDump($this->filePath, ['migrate' => false]);
+        $this->protector->importDump($this->filePath);
     }
 }
