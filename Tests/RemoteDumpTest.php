@@ -52,8 +52,7 @@ class RemoteDumpTest extends BaseTest
     {
         Config::set('protector.routeMiddleware', ['auth:sanctum']);
 
-        $method        = $this->getAccessibleReflectionMethod('shouldEncrypt');
-        $shouldEncrypt = $method->invoke($this->protector);
+        $shouldEncrypt = $this->runProtectedMethod('shouldEncrypt', []);
 
         $this->assertTrue($shouldEncrypt);
     }
@@ -65,8 +64,7 @@ class RemoteDumpTest extends BaseTest
     {
         Config::set('protector.routeMiddleware', []);
 
-        $method        = $this->getAccessibleReflectionMethod('shouldEncrypt');
-        $shouldEncrypt = $method->invoke($this->protector);
+        $shouldEncrypt = $this->runProtectedMethod('shouldEncrypt', []);
 
         $this->assertFalse($shouldEncrypt);
     }
@@ -190,10 +188,8 @@ class RemoteDumpTest extends BaseTest
         $encryptedMessage = sodium_hex2bin(env('PROTECTOR_ENCRYPTED_MESSAGE'));
         $publicKey        = env('PROTECTOR_PUBLIC_KEY');
 
-        $determineEncryptionOverhead = $this->getAccessibleReflectionMethod('determineEncryptionOverhead');
-
         $chunkSize = strlen($message);
-        $encryptionOverhead = $determineEncryptionOverhead->invoke($this->protector, $chunkSize, $publicKey);
+        $encryptionOverhead = $this->runProtectedMethod('determineEncryptionOverhead', [$chunkSize, $publicKey]);
 
         Http::fake([
             $this->serverUrl => Http::response($encryptedMessage, 200, [
@@ -225,10 +221,8 @@ class RemoteDumpTest extends BaseTest
         Config::set('protector.routeMiddleware', []);
         Config::set('protector.remoteEndpoint.htaccessLogin', '');
 
-        $method = $this->getAccessibleReflectionMethod('getConfiguredHttpRequest');
-
         $this->expectException(InvalidConfigurationException::class);
-        $method->invoke($this->protector);
+        $this->runProtectedMethod('getConfiguredHttpRequest', []);
     }
 
     /**
@@ -238,10 +232,8 @@ class RemoteDumpTest extends BaseTest
     {
         Config::set('protector.routeMiddleware', ['auth:sanctum']);
 
-        $method = $this->getAccessibleReflectionMethod('getConfiguredHttpRequest');
-
         $this->expectException(InvalidConfigurationException::class);
-        $method->invoke($this->protector);
+        $this->runProtectedMethod('getConfiguredHttpRequest', []);
     }
 
     /**
@@ -249,8 +241,7 @@ class RemoteDumpTest extends BaseTest
      */
     public function addAdditionalOptionsToRequest()
     {
-        $method  = $this->getAccessibleReflectionMethod('getConfiguredHttpRequest');
-        $request = $method->invoke($this->protector);
+        $request = $this->runProtectedMethod('getConfiguredHttpRequest', []);
         $options = $request->getOptions();
 
         if (empty($options['stream']) || empty($options['headers']['Accept'])) {
@@ -271,8 +262,7 @@ class RemoteDumpTest extends BaseTest
         Config::set('protector.routeMiddleware', ['auth:sanctum']);
         Config::set('protector.remoteEndpoint.htaccessLogin', null);
 
-        $method  = $this->getAccessibleReflectionMethod('getConfiguredHttpRequest');
-        $request = $method->invoke($this->protector);
+        $request = $this->runProtectedMethod('getConfiguredHttpRequest', []);
         $options = $request->getOptions();
 
         if (empty($options['headers']['Authorization'])) {
@@ -290,8 +280,7 @@ class RemoteDumpTest extends BaseTest
      */
     public function addBasicAuthToRequestWhenHtaccessIsUsed()
     {
-        $method  = $this->getAccessibleReflectionMethod('getConfiguredHttpRequest');
-        $request = $method->invoke($this->protector);
+        $request = $this->runProtectedMethod('getConfiguredHttpRequest', []);
         $options = $request->getOptions();
 
         if (empty($options['auth'])) {
@@ -334,8 +323,7 @@ class RemoteDumpTest extends BaseTest
     {
         Config::set('protector.baseDirectory', __FUNCTION__);
 
-        $method = $this->getAccessibleReflectionMethod('getConfigValueForKey');
-        $result = $method->invoke($this->protector, 'baseDirectory');
+        $result = $this->runProtectedMethod('getConfigValueForKey', ['baseDirectory']);
 
         $this->assertEquals(__FUNCTION__, $result);
     }
@@ -345,11 +333,11 @@ class RemoteDumpTest extends BaseTest
      */
     public function canResolveBaseDirectoryFromClosure()
     {
-        $method       = $this->getAccessibleReflectionMethod('getConfigValueForKey');
         $functionName = __FUNCTION__;
 
         Config::set('protector.baseDirectory', fn() => $functionName);
-        $result = $method->invoke($this->protector, 'baseDirectory');
+
+        $result = $this->runProtectedMethod('getConfigValueForKey', ['baseDirectory']);
 
         $this->assertEquals($functionName, $result);
     }
@@ -392,8 +380,7 @@ class RemoteDumpTest extends BaseTest
      */
     public function canGetAuthToken()
     {
-        $methodGet = $this->getAccessibleReflectionMethod('getAuthToken');
-        $authToken = $methodGet->invoke($this->protector);
+        $authToken = $this->runProtectedMethod('getAuthToken', []);
 
         $this->assertEquals(env('PROTECTOR_AUTH_TOKEN'), $authToken);
     }
@@ -403,11 +390,8 @@ class RemoteDumpTest extends BaseTest
      */
     public function setAuthToken()
     {
-        $methodSet = $this->getAccessibleReflectionMethod('setAuthToken');
-        $methodGet = $this->getAccessibleReflectionMethod('getAuthToken');
-
-        $methodSet->invoke($this->protector, __FUNCTION__);
-        $authToken = $methodGet->invoke($this->protector);
+        $this->runProtectedMethod('setAuthToken', [__FUNCTION__]);
+        $authToken = $this->runProtectedMethod('getAuthToken', []);
 
         $this->assertEquals(__FUNCTION__, $authToken);
     }
@@ -417,11 +401,8 @@ class RemoteDumpTest extends BaseTest
      */
     public function setAuthTokenKeyName()
     {
-        $methodSet = $this->getAccessibleReflectionMethod('setAuthTokenKeyName');
-        $methodGet = $this->getAccessibleReflectionMethod('getAuthTokenKeyName');
-
-        $methodSet->invoke($this->protector, __FUNCTION__);
-        $authTokenKeyName = $methodGet->invoke($this->protector);
+        $this->runProtectedMethod('setAuthTokenKeyName', [__FUNCTION__]);
+        $authTokenKeyName = $this->runProtectedMethod('getAuthTokenKeyName', []);
 
         $this->assertEquals(__FUNCTION__, $authTokenKeyName);
     }
@@ -447,5 +428,18 @@ class RemoteDumpTest extends BaseTest
         $method->setAccessible(true);
 
         return $method;
+    }
+
+    /**
+     * Allows a test to call a protected method.
+     *
+     * @param string $methodName
+     * @param array $params
+     * @return mixed
+     */
+    protected function runProtectedMethod(string $methodName, array $params): mixed
+    {
+        $method = $this->getAccessibleReflectionMethod($methodName);
+        return $method->invoke($this->protector, ...$params);
     }
 }

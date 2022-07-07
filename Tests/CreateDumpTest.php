@@ -38,11 +38,9 @@ class CreateDumpTest extends BaseTest
         $this->disk->deleteDirectory(Config::get('protector.baseDirectory'));
 
         $filePath            = $this->protector->createDestinationFilePath(__FUNCTION__);
-        $method              = $this->getAccessibleReflectionMethod('createDirectory');
         $destinationFilePath = $this->disk->path($filePath);
 
-        $method->invoke($this->protector, $destinationFilePath);
-
+        $this->runProtectedMethod('createDirectory', [$destinationFilePath]);
         $this->assertDirectoryExists($destinationFilePath);
     }
 
@@ -56,11 +54,9 @@ class CreateDumpTest extends BaseTest
         $this->disk->deleteDirectory(Config::get('protector.baseDirectory'));
 
         $filePath            = $this->protector->createDestinationFilePath(__FUNCTION__, __FUNCTION__);
-        $method              = $this->getAccessibleReflectionMethod('createDirectory');
         $destinationFilePath = $this->disk->path($filePath);
 
-        $method->invoke($this->protector, $destinationFilePath);
-
+        $this->runProtectedMethod('createDirectory', [$destinationFilePath]);
         $this->assertDirectoryExists($destinationFilePath);
     }
 
@@ -69,11 +65,10 @@ class CreateDumpTest extends BaseTest
      */
     public function failDirectoryCreationOnInvalidPath()
     {
-        $method = $this->getAccessibleReflectionMethod('createDirectory');
-        $path   = 'https://example.com/protector/exportDump';
+        $path = 'https://example.com/protector/exportDump';
 
         $this->expectException(FailedCreatingDestinationPathException::class);
-        $method->invoke($this->protector, $path);
+        $this->runProtectedMethod('createDirectory', [$path]);
     }
 
 
@@ -82,10 +77,7 @@ class CreateDumpTest extends BaseTest
      */
     public function createMetaData()
     {
-        $method = $this->getAccessibleReflectionMethod('getMetaData');
-
-        $method->invoke($this->protector);
-        $metaData = $method->invoke($this->protector, false);
+        $metaData = $this->runProtectedMethod('getMetaData', [false]);
 
         $this->assertIsArray($metaData);
     }
@@ -147,8 +139,7 @@ class CreateDumpTest extends BaseTest
     {
         $this->disk->put($this->emptyDumpPath, __FUNCTION__);
 
-        $method = $this->getAccessibleReflectionMethod('generateDump');
-        $result = $method->invoke($this->protector, $this->emptyDumpPath);
+        $result = $this->runProtectedMethod('generateDump', [$this->emptyDumpPath]);
 
         $this->assertFalse($result);
     }
@@ -187,6 +178,19 @@ class CreateDumpTest extends BaseTest
         $method->setAccessible(true);
 
         return $method;
+    }
+
+    /**
+     * Allows a test to call a protected method.
+     *
+     * @param string $methodName
+     * @param array $params
+     * @return mixed
+     */
+    protected function runProtectedMethod(string $methodName, array $params): mixed
+    {
+        $method = $this->getAccessibleReflectionMethod($methodName);
+        return $method->invoke($this->protector, ...$params);
     }
 
 }
