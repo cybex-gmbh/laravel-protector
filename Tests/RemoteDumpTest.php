@@ -355,6 +355,7 @@ class RemoteDumpTest extends BaseTest
     }
 
     /**
+     * Sets the env key name for the private key.
      * @test
      */
     public function validateUsersPrivateKeyName()
@@ -429,15 +430,6 @@ class RemoteDumpTest extends BaseTest
     public function canGetServerUrl()
     {
         $this->assertEquals(config('protector.remoteEndpoint.serverUrl'), $this->protector->getServerUrl());
-    }
-
-    /**
-     * @test
-     */
-    public function setServerUrl()
-    {
-        Config::set('protector.remoteEndpoint.serverUrl', __FUNCTION__);
-        $this->assertEquals(__FUNCTION__, $this->protector->getServerUrl());
     }
 
     /**
