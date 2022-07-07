@@ -35,5 +35,6 @@
         <env name="PROTECTOR_DECRYPTED_MESSAGE" value="hello world" />
         <env name="PROTECTOR_AUTH_TOKEN" value="1|bxa5BBNo7lXxgtRY4DN775JdAtQSAlN4UfgRnFhz" />
         <env name="DB_PASSWORD" value="example" />
+        <env name="APP_URL" value="http://protector.invalid" />
     </php>
 </phpunit>
