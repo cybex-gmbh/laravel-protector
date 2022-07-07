@@ -26,6 +26,34 @@ abstract class BaseTest extends Orchestra
     }
 
     /**
+     * @param $method
+     *
+     * @return ReflectionMethod
+     */
+    protected function getAccessibleReflectionMethod($method): ReflectionMethod
+    {
+        $reflectionProtector = new ReflectionClass($this->protector);
+        $method              = $reflectionProtector->getMethod($method);
+
+        $method->setAccessible(true);
+
+        return $method;
+    }
+
+    /**
+     * Allows a test to call a protected method.
+     *
+     * @param string $methodName
+     * @param array $params
+     * @return mixed
+     */
+    protected function runProtectedMethod(string $methodName, array $params): mixed
+    {
+        $method = $this->getAccessibleReflectionMethod($methodName);
+        return $method->invoke($this->protector, ...$params);
+    }
+
+    /**
      * @return void
      */
     protected function usesEmptyDump(): void
