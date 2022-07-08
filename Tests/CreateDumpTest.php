@@ -110,9 +110,7 @@ class CreateDumpTest extends BaseTest
      */
     public function failOnDumpHasNoMetaData()
     {
-        $metaData = $this->protector->getDumpMetaData($this->emptyDumpPath);
-
-        $this->assertFalse($metaData);
+        $this->assertFalse($this->protector->getDumpMetaData($this->emptyDumpPath));
     }
 
     /**
@@ -126,9 +124,7 @@ class CreateDumpTest extends BaseTest
         $metaData = sprintf("-- options:%s\n-- meta:%s", __FUNCTION__, __FUNCTION__);
         $this->disk->append($this->emptyDumpPath, $metaData);
 
-        $result = $this->protector->getDumpMetaData($this->emptyDumpPath);
-
-        $this->assertFalse($result);
+        $this->assertFalse($this->protector->getDumpMetaData($this->emptyDumpPath));
     }
 
     /**
