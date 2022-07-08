@@ -88,16 +88,14 @@ class CreateDumpTest extends BaseTest
     public function verifyDumpDateMetaData()
     {
         $dumpMetaData = $this->protector->getDumpMetaData($this->filePath);
+        $date         = $dumpMetaData['meta']['dumpedAtDate'];
+        $result       = checkDate($date['mon'], $date['wday'], $date['year']);
 
-        $date   = $dumpMetaData['meta']['dumpedAtDate'];
-        $result = checkDate($date['mon'], $date['wday'], $date['year']);
+        $dateKeys     = ['seconds', 'minutes', 'hours', 'mday', 'wday', 'mon', 'year', 'yday', 'weekday', 'month'];
 
-        foreach (array_keys($date) as $key)
+        foreach ($dateKeys as $key)
         {
-            if (!isset($date[$key]))
-            {
-                $result = false;
-            }
+            $this->assertTrue(isset($date[$key]));
         }
 
         $this->assertTrue($result);
