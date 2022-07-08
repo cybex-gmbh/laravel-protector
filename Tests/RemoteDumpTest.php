@@ -244,13 +244,8 @@ class RemoteDumpTest extends BaseTest
         $request = $this->runProtectedMethod('getConfiguredHttpRequest', []);
         $options = $request->getOptions();
 
-        if (empty($options['stream']) || empty($options['headers']['Accept'])) {
-            $result = false;
-        } else {
-            $result = true;
-        }
-
-        $this->assertTrue($result);
+        $this->assertTrue(isset($options['stream']));
+        $this->assertTrue(isset($options['headers']['Accept']));
         $this->assertInstanceOf(PendingRequest::class, $request);
     }
 
@@ -265,13 +260,7 @@ class RemoteDumpTest extends BaseTest
         $request = $this->runProtectedMethod('getConfiguredHttpRequest', []);
         $options = $request->getOptions();
 
-        if (empty($options['headers']['Authorization'])) {
-            $result = false;
-        } else {
-            $result = true;
-        }
-
-        $this->assertTrue($result);
+        $this->assertTrue(isset($options['headers']['Authorization']));
         $this->assertInstanceOf(PendingRequest::class, $request);
     }
 
@@ -283,13 +272,7 @@ class RemoteDumpTest extends BaseTest
         $request = $this->runProtectedMethod('getConfiguredHttpRequest', []);
         $options = $request->getOptions();
 
-        if (empty($options['auth'])) {
-            $result = false;
-        } else {
-            $result = true;
-        }
-
-        $this->assertTrue($result);
+        $this->assertTrue(isset($options['auth']));
         $this->assertInstanceOf(PendingRequest::class, $request);
     }
 
