@@ -244,8 +244,8 @@ class RemoteDumpTest extends BaseTest
         $request = $this->runProtectedMethod('getConfiguredHttpRequest', []);
         $options = $request->getOptions();
 
-        $this->assertTrue(isset($options['stream']));
-        $this->assertTrue(isset($options['headers']['Accept']));
+        $this->assertEquals(true, $options['stream']);
+        $this->assertEquals('application/json', $options['headers']['Accept']);
         $this->assertInstanceOf(PendingRequest::class, $request);
     }
 
