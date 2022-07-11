@@ -7,7 +7,7 @@ use Cybex\Protector\Protector;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 
-class CreateDumpTest extends BaseTest
+class FileOperationsTest extends BaseTest
 {
     /**
      *  Protector instance.
