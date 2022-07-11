@@ -2,9 +2,9 @@
 
 use Cybex\Protector\ProtectorServiceProvider;
 use Illuminate\Support\Facades\Storage;
-use Orchestra\Testbench\TestCase as Orchestra;
+use Orchestra\Testbench\TestCase;
 
-abstract class BaseTest extends Orchestra
+abstract class BaseTest extends TestCase
 {
     /**
      * @return string
