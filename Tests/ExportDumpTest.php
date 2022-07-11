@@ -7,7 +7,7 @@ use Cybex\Protector\Protector;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 
-class FileOperationsTest extends BaseTest
+class ExportDumpTest extends BaseTest
 {
     /**
      *  Protector instance.
@@ -80,49 +80,6 @@ class FileOperationsTest extends BaseTest
         $metaData = $this->runProtectedMethod('getMetaData', [false]);
 
         $this->assertIsArray($metaData);
-    }
-
-    /**
-     * @test
-     */
-    public function verifyDumpDateMetaData()
-    {
-        $dumpMetaData = $this->protector->getDumpMetaData($this->filePath);
-        $date         = $dumpMetaData['meta']['dumpedAtDate'];
-        $result       = checkDate($date['mon'], $date['wday'], $date['year']);
-
-        $dateKeys     = ['seconds', 'minutes', 'hours', 'mday', 'wday', 'mon', 'year', 'yday', 'weekday', 'month'];
-
-        foreach ($dateKeys as $key)
-        {
-            $this->assertTrue(isset($date[$key]));
-        }
-
-        $this->assertTrue($result);
-        $this->assertIsArray($dumpMetaData);
-    }
-
-    /**
-     * @test
-     * @define-env usesEmptyDump
-     */
-    public function failOnDumpHasNoMetaData()
-    {
-        $this->assertFalse($this->protector->getDumpMetaData($this->emptyDumpPath));
-    }
-
-    /**
-     * @test
-     * @define-env usesEmptyDump
-     */
-    public function failOnDumpHasIncorrectMetaData()
-    {
-        $this->disk->put($this->emptyDumpPath, sprintf("%s\n%s", __FUNCTION__, __FUNCTION__));
-
-        $metaData = sprintf("-- options:%s\n-- meta:%s", __FUNCTION__, __FUNCTION__);
-        $this->disk->append($this->emptyDumpPath, $metaData);
-
-        $this->assertFalse($this->protector->getDumpMetaData($this->emptyDumpPath));
     }
 
     /**
