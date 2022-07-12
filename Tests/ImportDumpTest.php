@@ -141,18 +141,32 @@ class ImportDumpTest extends BaseTest
      */
     public function verifyDumpDateMetaData()
     {
+        $expectedMetaData = [
+            'meta' => [
+                'database'        => 'protector-tests',
+                'connection'      => 'mysql',
+                'gitRevision'     => '',
+                'gitBranch'       => '',
+                'gitRevisionDate' => '',
+                'dumpedAtDate'    => [
+                    'seconds' => 24,
+                    'minutes' => 43,
+                    'hours'   => 12,
+                    'mday'    => 29,
+                    'wday'    => 3,
+                    'mon'     => 6,
+                    'year'    => 2022,
+                    'yday'    => 179,
+                    'weekday' => 'Wednesday',
+                    'month'   => 'June',
+                    0         => 1656506604
+                ]
+            ]
+        ];
+
         $dumpMetaData = $this->protector->getDumpMetaData($this->filePath);
-        $date         = $dumpMetaData['meta']['dumpedAtDate'];
-        $result       = checkDate($date['mon'], $date['wday'], $date['year']);
 
-        $dateKeys     = ['seconds', 'minutes', 'hours', 'mday', 'wday', 'mon', 'year', 'yday', 'weekday', 'month'];
-
-        foreach ($dateKeys as $key)
-        {
-            $this->assertTrue(isset($date[$key]));
-        }
-
-        $this->assertTrue($result);
+        $this->assertEquals($dumpMetaData, $expectedMetaData);
         $this->assertIsArray($dumpMetaData);
     }
 
