@@ -7,8 +7,10 @@ use Cybex\Protector\Exceptions\FailedDumpGenerationException;
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
+use Cybex\Protector\Exceptions\FailedShellCommandException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
+use Cybex\Protector\Exceptions\ShellAccessDeniedException;
 use Exception;
 use GuzzleHttp\Psr7\StreamWrapper;
 use Illuminate\Filesystem\FilesystemAdapter;
@@ -18,8 +20,8 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Psr\Http\Message\StreamInterface;
-use Storage;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -104,16 +106,16 @@ class Protector
      * Imports a specific SQL dump.
      *
      * @param string $sourceFilePath
-     * @param array  $options
+     * @param array $options
      *
-     * @return bool
+     * @return void
      *
-     * @throws InvalidEnvironmentException
-     * @throws InvalidConnectionException
+     * @throws FailedShellCommandException
      * @throws FileNotFoundException
-     * @throws Exception
+     * @throws InvalidConnectionException
+     * @throws InvalidEnvironmentException
      */
-    public function importDump(string $sourceFilePath, array $options): bool
+    public function importDump(string $sourceFilePath, array $options): void
     {
         // Production environment is not allowed unless set in options.
         if (App::environment('production') && !($options['allow-production'])) {
@@ -132,36 +134,41 @@ class Protector
         Storage::disk('local')->put($sourceFilePath, $this->getDisk()->get($sourceFilePath));
         $filePath = Storage::disk('local')->path($sourceFilePath);
 
-        try {
-            $shellCommandDropCreateDatabase = sprintf('mysql -h%s -u%s -p%s -e %s 2> /dev/null',
-                escapeshellarg($this->connectionConfig['host']),
-                escapeshellarg($this->connectionConfig['username']),
-                escapeshellarg($this->connectionConfig['password']),
-                escapeshellarg(sprintf('drop database %1$s; create database %1$s;', $this->connectionConfig['database'])));
+        $shellCommandDropCreateDatabase = sprintf('mysql -h%s -u%s -p%s -e %s 2> /dev/null',
+            escapeshellarg($this->connectionConfig['host']),
+            escapeshellarg($this->connectionConfig['username']),
+            escapeshellarg($this->connectionConfig['password']),
+            escapeshellarg(sprintf('drop database %1$s; create database %1$s;', $this->connectionConfig['database'])));
 
-            $shellCommandImport = sprintf('mysql -h%s -u%s -p%s -D%s < %s 2> /dev/null',
-                escapeshellarg($this->connectionConfig['host']),
-                escapeshellarg($this->connectionConfig['username']),
-                escapeshellarg($this->connectionConfig['password']),
-                escapeshellarg($this->connectionConfig['database']),
-                escapeshellarg($filePath));
+        $shellCommandImport = sprintf('mysql -h%s -u%s -p%s -D%s < %s 2> /dev/null',
+            escapeshellarg($this->connectionConfig['host']),
+            escapeshellarg($this->connectionConfig['username']),
+            escapeshellarg($this->connectionConfig['password']),
+            escapeshellarg($this->connectionConfig['database']),
+            escapeshellarg($filePath));
 
-            exec($shellCommandDropCreateDatabase);
-            exec($shellCommandImport);
+        $this->isExecEnabled();
 
-            if ($options['migrate']) {
-                $output = new BufferedOutput;
+        exec($shellCommandDropCreateDatabase, result_code: $resultCode);
 
-                Artisan::call('migrate', [], $output);
+        if ($resultCode != 0) {
+            throw new FailedShellCommandException('Shell call to mysql client failed.');
+        } else {
+            exec($shellCommandImport, result_code: $resultCode);
 
-                if (app()->runningInConsole()) {
-                    echo $output->fetch();
-                }
+            if ($resultCode != 0) {
+                throw new FailedShellCommandException('Shell call to mysql client failed.');
             }
+        }
 
-            return true;
-        } catch (Exception) {
-            return false;
+        if ($options['migrate']) {
+            $output = new BufferedOutput;
+
+            Artisan::call('migrate', [], $output);
+
+            if (app()->runningInConsole()) {
+                echo $output->fetch();
+            }
         }
     }
 
@@ -201,9 +208,7 @@ class Protector
 
         $destinationFilePath = $this->createDestinationFilePath($fileName, $subFolder);
 
-        if (!$this->generateDump($destinationFilePath, $options)) {
-            throw new FailedDumpGenerationException('Error while creating the dump.');
-        }
+        $this->generateDump($destinationFilePath, $options);
 
         return $destinationFilePath;
     }
@@ -343,9 +348,11 @@ class Protector
      *
      * @param string $destinationFilePath
      * @param array $options
-     * @return bool
+     * @return void
+     * @throws FailedShellCommandException
+     * @throws FailedDumpGenerationException
      */
-    protected function generateDump(string $destinationFilePath, array $options = []): bool
+    protected function generateDump(string $destinationFilePath, array $options = []): void
     {
         $dumpOptions = collect();
         $dumpOptions->push(sprintf('-h%s', escapeshellarg($this->connectionConfig['host'])));
@@ -363,21 +370,30 @@ class Protector
 
         $this->createDirectory(Storage::disk('local')->path(dirname($destinationFilePath)));
 
-        try {
-            // Write dump using specific options.
-            exec(sprintf('mysqldump %s > %s 2> /dev/null',
+        $this->isExecEnabled();
+
+        // Write dump using specific options.
+        exec(sprintf('mysqldump %s > %s 2> /dev/null',
                 $dumpOptions->implode(' '),
-                escapeshellarg(Storage::disk('local')->path($destinationFilePath))));
+                escapeshellarg(Storage::disk('local')->path($destinationFilePath))), result_code: $resultCode);
 
-            $this->getDisk()->put($destinationFilePath, Storage::disk('local')->get($destinationFilePath));
-            // Append some import/export-meta-data to the end.
-            $metaData = sprintf("-- options:%s\n-- meta:%s", json_encode($options, JSON_UNESCAPED_UNICODE), json_encode($this->getMetaData(), JSON_UNESCAPED_UNICODE));
-            $this->getDisk()->append($destinationFilePath, $metaData);
-
-            return true;
-        } catch (Exception) {
-            return false;
+        if ($resultCode != 0) {
+            throw new FailedShellCommandException('Shell call to mysql client failed.');
         }
+
+        try {
+            $this->getDisk()->put($destinationFilePath, Storage::disk('local')->get($destinationFilePath));
+
+            // Append some import/export-meta-data to the end.
+            $metaData = sprintf("-- options:%s\n-- meta:%s",
+                json_encode($options, JSON_UNESCAPED_UNICODE),
+                json_encode($this->getMetaData(), JSON_UNESCAPED_UNICODE));
+
+            $this->getDisk()->append($destinationFilePath, $metaData);
+        } catch (Exception) {
+            throw new FailedDumpGenerationException('Error while creating the dump.');
+        }
+
     }
 
     /**
@@ -769,6 +785,20 @@ class Protector
     protected function isSanctumActive(): bool
     {
         return in_array('auth:sanctum', config('protector.routeMiddleware'));
+    }
+
+    /**
+     * Throws an exception if Exec is deactivated.
+     *
+     * @throws ShellAccessDeniedException
+     */
+    public function isExecEnabled(): void
+    {
+        if (!function_exists('exec')) {
+            throw new ShellAccessDeniedException(
+              'Shell commands are disabled on your server, '
+            );
+        }
     }
 
     /**
