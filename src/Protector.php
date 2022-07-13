@@ -134,6 +134,8 @@ class Protector
         Storage::disk('local')->put($sourceFilePath, $this->getDisk()->get($sourceFilePath));
         $filePath = Storage::disk('local')->path($sourceFilePath);
 
+        $this->isExecEnabled();
+
         $shellCommandDropCreateDatabase = sprintf('mysql -h%s -u%s -p%s -e %s 2> /dev/null',
             escapeshellarg($this->connectionConfig['host']),
             escapeshellarg($this->connectionConfig['username']),
@@ -146,8 +148,6 @@ class Protector
             escapeshellarg($this->connectionConfig['password']),
             escapeshellarg($this->connectionConfig['database']),
             escapeshellarg($filePath));
-
-        $this->isExecEnabled();
 
         exec($shellCommandDropCreateDatabase, result_code: $resultCode);
 
