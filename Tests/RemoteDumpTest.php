@@ -39,8 +39,15 @@ class RemoteDumpTest extends BaseTest
     {
         parent::tearDown();
 
+        $format = sprintf('%s%s%s.sql', $this->baseDirectory, DIRECTORY_SEPARATOR, '%s');
+
+        $path       = sprintf($format, 'dump');
+        $secondPath = sprintf($format, 'dumpWithGit');
+        $thirdPath  = sprintf($format, 'dumpWithoutMetadata');
+        $fourthPath = sprintf($format, 'dumpWithIncorrectMetadata');
+
         $files = $this->disk->files($this->baseDirectory);
-        $files = array_diff($files, [sprintf('%s%sdump.sql', $this->baseDirectory, DIRECTORY_SEPARATOR)]);
+        $files = array_diff($files, [$path, $secondPath, $thirdPath, $fourthPath]);
 
         $this->disk->delete($files);
     }

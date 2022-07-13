@@ -5,9 +5,9 @@ namespace Cybex\Protector\Exceptions;
 use Exception;
 
 /**
- * Class InvalidConnectionException
+ * Class FailedShellCommandException
  *
- * Thrown if the connection is not configured properly.
+ * Thrown if a shell command couldn't be executed properly.
  *
  * @package Cybex\Protector\Exceptions
  */

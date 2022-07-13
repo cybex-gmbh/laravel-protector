@@ -38,6 +38,70 @@ class ImportDumpTest extends BaseTest
         $this->disk->deleteDirectory(Config::get('protector.baseDirectory'));
     }
 
+    public function provideDumpMetadata(): array
+    {
+        return [
+            [
+                "protector/dump.sql",
+                [
+                    'meta' => [
+                        'database'        => 'protector-tests',
+                        'connection'      => 'mysql',
+                        'gitRevision'     => '',
+                        'gitBranch'       => '',
+                        'gitRevisionDate' => '',
+                        'dumpedAtDate'    => [
+                            'seconds' => 24,
+                            'minutes' => 43,
+                            'hours'   => 12,
+                            'mday'    => 29,
+                            'wday'    => 3,
+                            'mon'     => 6,
+                            'year'    => 2022,
+                            'yday'    => 179,
+                            'weekday' => 'Wednesday',
+                            'month'   => 'June',
+                            0         => 1656506604
+                        ]
+                    ]
+                ]
+            ],
+            [
+                "protector/dumpWithGit.sql",
+                [
+                    'meta' => [
+                        'database'        => 'protector-tests',
+                        'connection'      => 'mysql',
+                        'gitRevision'     => '2aae6c35c94fcfb415dbe95f408b9ce91ee846ed',
+                        'gitBranch'       => 'feature/tests',
+                        'gitRevisionDate' => '2022-07-12 08:00:00 +0200',
+                        'dumpedAtDate'    => [
+                            'seconds' => 24,
+                            'minutes' => 43,
+                            'hours'   => 12,
+                            'mday'    => 29,
+                            'wday'    => 3,
+                            'mon'     => 6,
+                            'year'    => 2022,
+                            'yday'    => 179,
+                            'weekday' => 'Wednesday',
+                            'month'   => 'June',
+                            0         => 1656506604
+                        ]
+                    ]
+                ]
+            ],
+            [
+                "protector/dumpWithoutMetadata.sql",
+                []
+            ],
+            [
+                "protector/dumpWithIncorrectMetadata.sql",
+                false
+            ],
+        ];
+    }
+
     /**
      * @test
      */
@@ -138,58 +202,10 @@ class ImportDumpTest extends BaseTest
 
     /**
      * @test
+     * @dataProvider provideDumpMetadata
      */
-    public function verifyDumpDateMetaData()
+    public function verifyDumpDateMetaData($filePath, $expectedMetaData)
     {
-        $expectedMetaData = [
-            'meta' => [
-                'database'        => 'protector-tests',
-                'connection'      => 'mysql',
-                'gitRevision'     => '',
-                'gitBranch'       => '',
-                'gitRevisionDate' => '',
-                'dumpedAtDate'    => [
-                    'seconds' => 24,
-                    'minutes' => 43,
-                    'hours'   => 12,
-                    'mday'    => 29,
-                    'wday'    => 3,
-                    'mon'     => 6,
-                    'year'    => 2022,
-                    'yday'    => 179,
-                    'weekday' => 'Wednesday',
-                    'month'   => 'June',
-                    0         => 1656506604
-                ]
-            ]
-        ];
-
-        $dumpMetaData = $this->protector->getDumpMetaData($this->filePath);
-
-        $this->assertEquals($dumpMetaData, $expectedMetaData);
-        $this->assertIsArray($dumpMetaData);
-    }
-
-    /**
-     * @test
-     * @define-env usesEmptyDump
-     */
-    public function failOnDumpHasNoMetaData()
-    {
-        $this->assertFalse($this->protector->getDumpMetaData($this->emptyDumpPath));
-    }
-
-    /**
-     * @test
-     * @define-env usesEmptyDump
-     */
-    public function failOnDumpHasIncorrectMetaData()
-    {
-        $this->disk->put($this->emptyDumpPath, sprintf("%s\n%s", __FUNCTION__, __FUNCTION__));
-
-        $metaData = sprintf("-- options:%s\n-- meta:%s", __FUNCTION__, __FUNCTION__);
-        $this->disk->append($this->emptyDumpPath, $metaData);
-
-        $this->assertFalse($this->protector->getDumpMetaData($this->emptyDumpPath));
+        $this->assertEquals($expectedMetaData, $this->protector->getDumpMetaData($filePath));
     }
 }
