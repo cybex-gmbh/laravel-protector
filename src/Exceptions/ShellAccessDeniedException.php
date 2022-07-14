@@ -3,6 +3,7 @@
 namespace Cybex\Protector\Exceptions;
 
 use Exception;
+use Throwable;
 
 /**
  * Class ShellAccessDeniedException
@@ -13,8 +14,8 @@ use Exception;
  */
 class ShellAccessDeniedException extends Exception
 {
-    public function __construct()
+    public function __construct($message = '', $code = 0, Throwable $previous = null)
     {
-        parent::__construct('Shell commands are disabled on your server, exec() must be enabled.');
+        parent::__construct($message ?: 'Shell commands are disabled on your server, exec() must be enabled.', $code, $previous);
     }
 }
