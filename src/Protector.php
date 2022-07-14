@@ -130,11 +130,11 @@ class Protector
             throw new FileNotFoundException($sourceFilePath);
         }
 
+        $this->isExecEnabled();
+
         // Getting a local copy because disk files might not be possible to import.
         Storage::disk('local')->put($sourceFilePath, $this->getDisk()->get($sourceFilePath));
         $filePath = Storage::disk('local')->path($sourceFilePath);
-
-        $this->isExecEnabled();
 
         $shellCommandDropCreateDatabase = sprintf('mysql -h%s -u%s -p%s -e %s 2> /dev/null',
             escapeshellarg($this->connectionConfig['host']),
