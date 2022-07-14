@@ -400,7 +400,6 @@ class Protector
         } catch (Exception) {
             throw new FailedDumpGenerationException('Error while creating the dump.');
         }
-
     }
 
     /**
