@@ -206,6 +206,8 @@ class Protector
             throw new InvalidConnectionException('Connection is not configured properly.');
         }
 
+        $this->isExecEnabled();
+
         $destinationFilePath = $this->createDestinationFilePath($fileName, $subFolder);
 
         $this->generateDump($destinationFilePath, $options);
@@ -376,8 +378,6 @@ class Protector
         $dumpOptions->push(sprintf('%s', escapeshellarg($this->connectionConfig['database'])));
 
         $this->createDirectory(Storage::disk('local')->path(dirname($destinationFilePath)));
-
-        $this->isExecEnabled();
 
         // Write dump using specific options.
         exec(sprintf('mysqldump %s > %s 2> /dev/null',
