@@ -117,6 +117,8 @@ class Protector
      */
     public function importDump(string $sourceFilePath, array $options): void
     {
+        $this->isExecEnabled();
+
         // Production environment is not allowed unless set in options.
         if (App::environment('production') && !($options['allow-production'])) {
             throw new InvalidEnvironmentException('Production environment is not allowed and option was not set.');
@@ -129,8 +131,6 @@ class Protector
         if (!$this->getDisk()->exists($sourceFilePath)) {
             throw new FileNotFoundException($sourceFilePath);
         }
-
-        $this->isExecEnabled();
 
         // Getting a local copy because disk files might not be possible to import.
         Storage::disk('local')->put($sourceFilePath, $this->getDisk()->get($sourceFilePath));
