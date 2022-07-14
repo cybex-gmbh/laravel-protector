@@ -317,10 +317,13 @@ class Protector
      * Returns the current git-revision.
      *
      * @return string
+     * @throws FailedShellCommandException
      */
     public function getGitRevision(): string
     {
-        return exec('git rev-parse HEAD');
+        $this->isExecEnabled();
+
+        return @exec('git rev-parse HEAD');
     }
 
     /**
@@ -330,7 +333,9 @@ class Protector
      */
     public function getGitHeadDate(): string
     {
-        return exec('git show -s --format=%ci HEAD');
+        $this->isExecEnabled();
+
+        return @exec('git show -s --format=%ci HEAD');
     }
 
     /**
@@ -340,7 +345,9 @@ class Protector
      */
     public function getGitBranch(): string
     {
-        return exec('git rev-parse --abbrev-ref HEAD');
+        $this->isExecEnabled();
+
+        return @exec('git rev-parse --abbrev-ref HEAD');
     }
 
     /**
@@ -796,7 +803,7 @@ class Protector
     {
         if (!function_exists('exec')) {
             throw new ShellAccessDeniedException(
-              'Shell commands are disabled on your server, '
+              'Shell commands are disabled on your server, exec() must be enabled.'
             );
         }
     }
