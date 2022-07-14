@@ -60,6 +60,10 @@ class ImportDump extends Command
      */
     public function handle()
     {
+        $protector = app('protector');
+
+        $protector->isExecEnabled();
+
         $optionDump    = $this->option('dump');
         $optionFile    = $this->option('file');
         $optionRemote  = $this->option('remote');
@@ -71,8 +75,6 @@ class ImportDump extends Command
             $this->error('The force option requires either the file, dump or remote option to be set.');
             return;
         }
-
-        $protector = app('protector');
 
         $disk                = $protector->getDisk();
         $basePath            = config('protector.baseDirectory');
