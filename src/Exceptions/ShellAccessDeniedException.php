@@ -13,5 +13,8 @@ use Exception;
  */
 class ShellAccessDeniedException extends Exception
 {
-    //
+    public function __construct()
+    {
+        parent::__construct('Shell commands are disabled on your server, exec() must be enabled.');
+    }
 }

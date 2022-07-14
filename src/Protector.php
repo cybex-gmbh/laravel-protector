@@ -801,9 +801,7 @@ class Protector
     public function isExecEnabled(): void
     {
         if (!function_exists('exec')) {
-            throw new ShellAccessDeniedException(
-              'Shell commands are disabled on your server, exec() must be enabled.'
-            );
+            throw new ShellAccessDeniedException();
         }
     }
 
