@@ -1,7 +1,7 @@
 <?php
 
 use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
-use Cybex\Protector\Exceptions\FailedDumpGenerationException;
+use Cybex\Protector\Exceptions\FailedMysqlCommandException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Protector;
 use Illuminate\Support\Facades\Config;
@@ -90,9 +90,8 @@ class ExportDumpTest extends BaseTest
     {
         $this->disk->put($this->emptyDumpPath, __FUNCTION__);
 
-        $result = $this->runProtectedMethod('generateDump', [$this->emptyDumpPath]);
-
-        $this->assertFalse($result);
+        $this->expectException(FailedMysqlCommandException::class);
+        $this->runProtectedMethod('generateDump', [$this->emptyDumpPath]);
     }
 
     /**
@@ -112,7 +111,7 @@ class ExportDumpTest extends BaseTest
      */
     public function failGetDestinationFilePathWhenGeneratingDump()
     {
-        $this->expectException(FailedDumpGenerationException::class);
+        $this->expectException(FailedMysqlCommandException::class);
         $this->protector->createDump(__FUNCTION__, []);
     }
 }

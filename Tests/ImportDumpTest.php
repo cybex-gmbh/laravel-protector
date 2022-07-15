@@ -1,6 +1,6 @@
 <?php
 
-use Cybex\Protector\Exceptions\FailedShellCommandException;
+use Cybex\Protector\Exceptions\FailedMysqlCommandException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
@@ -146,7 +146,7 @@ class ImportDumpTest extends BaseTest
 
         $this->protector->configure();
 
-        $this->expectException(FailedShellCommandException::class);
+        $this->expectException(FailedMysqlCommandException::class);
         $this->protector->importDump($this->filePath);
     }
 
