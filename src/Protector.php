@@ -7,7 +7,7 @@ use Cybex\Protector\Exceptions\FailedDumpGenerationException;
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
-use Cybex\Protector\Exceptions\FailedShellCommandException;
+use Cybex\Protector\Exceptions\FailedMysqlCommandException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Cybex\Protector\Exceptions\ShellAccessDeniedException;
@@ -110,7 +110,7 @@ class Protector
      *
      * @return void
      *
-     * @throws FailedShellCommandException
+     * @throws FailedMysqlCommandException
      * @throws FileNotFoundException
      * @throws InvalidConnectionException
      * @throws InvalidEnvironmentException
@@ -152,12 +152,12 @@ class Protector
         exec($shellCommandDropCreateDatabase, result_code: $resultCode);
 
         if ($resultCode != 0) {
-            throw new FailedShellCommandException('Shell call to mysql client failed.');
+            throw new FailedMysqlCommandException();
         } else {
             exec($shellCommandImport, result_code: $resultCode);
 
             if ($resultCode != 0) {
-                throw new FailedShellCommandException('Shell call to mysql client failed.');
+                throw new FailedMysqlCommandException();
             }
         }
 
@@ -319,7 +319,6 @@ class Protector
      * Returns the current git-revision.
      *
      * @return string
-     * @throws FailedShellCommandException
      */
     public function getGitRevision(): string
     {
@@ -358,7 +357,7 @@ class Protector
      * @param string $destinationFilePath
      * @param array $options
      * @return void
-     * @throws FailedShellCommandException
+     * @throws FailedMysqlCommandException
      * @throws FailedDumpGenerationException
      */
     protected function generateDump(string $destinationFilePath, array $options = []): void
@@ -385,7 +384,7 @@ class Protector
                 escapeshellarg(Storage::disk('local')->path($destinationFilePath))), result_code: $resultCode);
 
         if ($resultCode != 0) {
-            throw new FailedShellCommandException('Shell call to mysql client failed.');
+            throw new FailedMysqlCommandException();
         }
 
         try {
