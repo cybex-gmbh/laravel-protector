@@ -13,7 +13,7 @@ use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Cybex\Protector\Exceptions\ShellAccessDeniedException;
 use Exception;
 use GuzzleHttp\Psr7\StreamWrapper;
-use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -162,7 +162,7 @@ class Protector
             }
         }
 
-        if ($options['migrate']) {
+        if (Arr::get($options, 'migrate')) {
             $output = new BufferedOutput;
 
             Artisan::call('migrate', [], $output);
@@ -356,7 +356,7 @@ class Protector
      * Generates an SQL dump from the current app database and returns the path to the file.
      *
      * @param string $destinationFilePath
-     * @param array $options
+     * @param array  $options
      * @return void
      * @throws FailedMysqlCommandException
      * @throws FailedDumpGenerationException
