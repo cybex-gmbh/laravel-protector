@@ -7,8 +7,10 @@ use Cybex\Protector\Exceptions\FailedDumpGenerationException;
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
+use Cybex\Protector\Exceptions\FailedMysqlCommandException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
+use Cybex\Protector\Exceptions\ShellAccessDeniedException;
 use Exception;
 use GuzzleHttp\Psr7\StreamWrapper;
 use Illuminate\Filesystem\FilesystemAdapter;
@@ -106,15 +108,21 @@ class Protector
      *
      * @param string $sourceFilePath
      * @param array $options
-     * @return bool
      *
-     * @throws FileNotFoundException
-     * @throws InvalidConnectionException
+     * @return void
+     *
+     * @throws FailedMysqlCommandException
      * @throws InvalidEnvironmentException
+     * @throws InvalidConnectionException
+     * @throws FileNotFoundException
+     * @throws InvalidConfigurationException
      */
-    public function importDump(string $sourceFilePath, array $options): bool
+    public function importDump(string $sourceFilePath, array $options = []): void
     {
-        if (App::environment('production') && !($options['allow-production'])) {
+        $this->isExecEnabled();
+
+        // Production environment is not allowed unless set in options.
+        if (App::environment('production') && !Arr::get($options, 'allow-production')) {
             throw new InvalidEnvironmentException('Production environment is not allowed and option was not set.');
         }
 
@@ -126,39 +134,56 @@ class Protector
             throw new FileNotFoundException($sourceFilePath);
         }
 
-        $success = true;
+        $shellCommandDropCreateDatabase = sprintf('mysql -h%s -u%s -p%s -e %s 2> /dev/null',
+            escapeshellarg($this->connectionConfig['host']),
+            escapeshellarg($this->connectionConfig['username']),
+            escapeshellarg($this->connectionConfig['password']),
+            escapeshellarg(sprintf('drop database %1$s; create database %1$s;', $this->connectionConfig['database'])));
 
-        try {
-            $shellCommandDropCreateDatabase = sprintf('mysql -h%s -u%s -p%s -e %s 2> /dev/null',
-                escapeshellarg($this->connectionConfig['host']),
-                escapeshellarg($this->connectionConfig['username']),
-                escapeshellarg($this->connectionConfig['password']),
-                escapeshellarg(sprintf('drop database %1$s; create database %1$s;', $this->connectionConfig['database'])));
+        $shellCommandImport = sprintf('mysql -h%s -u%s -p%s -D%s < %s 2> /dev/null',
+            escapeshellarg($this->connectionConfig['host']),
+            escapeshellarg($this->connectionConfig['username']),
+            escapeshellarg($this->connectionConfig['password']),
+            escapeshellarg($this->connectionConfig['database']),
+            escapeshellarg($sourceFilePath));
 
-            $shellCommandImport = sprintf('mysql -h%s -u%s -p%s -D%s < %s 2> /dev/null',
-                escapeshellarg($this->connectionConfig['host']),
-                escapeshellarg($this->connectionConfig['username']),
-                escapeshellarg($this->connectionConfig['password']),
-                escapeshellarg($this->connectionConfig['database']),
-                escapeshellarg($sourceFilePath));
+        exec($shellCommandDropCreateDatabase, result_code: $resultCode);
 
-            exec($shellCommandDropCreateDatabase);
-            exec($shellCommandImport);
+        if ($resultCode != 0) {
+            throw new FailedMysqlCommandException();
+        } else {
+            exec($shellCommandImport, result_code: $resultCode);
 
-            if ($options['migrate']) {
-                $output = new BufferedOutput;
-
-                Artisan::call('migrate', [], $output);
-
-                if (app()->runningInConsole()) {
-                    echo $output->fetch();
-                }
+            if ($resultCode != 0) {
+                throw new FailedMysqlCommandException();
             }
-        } catch (Exception) {
-            $success = false;
         }
 
-        return $success;
+        if (Arr::get($options, 'migrate')) {
+            $output = new BufferedOutput;
+
+            Artisan::call('migrate', [], $output);
+
+            if (app()->runningInConsole()) {
+                echo $output->fetch();
+            }
+        }
+    }
+
+    /**
+     * Public function to create the Destination File Path for the dump.
+     *
+     * @param string $fileName
+     * @param string|null $subFolder
+     * @return string
+     */
+    public function createDestinationFilePath(string $fileName, ?string $subFolder = null): string
+    {
+        return implode(DIRECTORY_SEPARATOR, array_filter([
+            $this->getConfigValueForKey('baseDirectory'),
+            $subFolder,
+            $fileName,
+        ]));
     }
 
     /**
@@ -175,6 +200,8 @@ class Protector
         if (!$this->connectionConfig) {
             throw new InvalidConnectionException('Connection is not configured properly.');
         }
+
+        $this->isExecEnabled();
 
         return $this->generateDump($options) ?: throw new FailedDumpGenerationException('Dump could not be created.');
     }
@@ -306,7 +333,9 @@ class Protector
      */
     public function getGitRevision(): string
     {
-        return exec('git rev-parse HEAD');
+        $this->isExecEnabled();
+
+        return @exec('git rev-parse HEAD');
     }
 
     /**
@@ -316,7 +345,9 @@ class Protector
      */
     public function getGitHeadDate(): string
     {
-        return exec('git show -s --format=%ci HEAD');
+        $this->isExecEnabled();
+
+        return @exec('git show -s --format=%ci HEAD');
     }
 
     /**
@@ -326,12 +357,19 @@ class Protector
      */
     public function getGitBranch(): string
     {
-        return exec('git rev-parse --abbrev-ref HEAD');
+        $this->isExecEnabled();
+
+        return @exec('git rev-parse --abbrev-ref HEAD');
     }
 
     /**
      * Generates an SQL dump from the current app database and returns the path to the file.
      *
+     * @param string $destinationFilePath
+     * @param array  $options
+     * @return void
+     * @throws FailedMysqlCommandException
+     * @throws FailedDumpGenerationException
      * @param array $options
      * @return string|null
      */
@@ -353,11 +391,11 @@ class Protector
 
         $tempFile = tempnam('', 'protector');
 
-        try {
             // Write dump using specific options.
             exec(sprintf('mysqldump %s > %s 2> /dev/null',
                 $dumpOptions->implode(' '),
-                escapeshellarg($tempFile)));
+//                escapeshellarg(Storage::disk('local')->path($destinationFilePath))), result_code: $resultCode);
+                escapeshellarg($tempFile)), result_code: $resultCode);
 
             if (!filesize($tempFile)) {
                 unlink($tempFile);
@@ -365,6 +403,12 @@ class Protector
                 $tempFile = null;
             }
 
+            if ($resultCode != 0) {
+                throw new FailedMysqlCommandException();
+            }
+
+        try {
+//            $this->getDisk()->put($destinationFilePath, Storage::disk('local')->get($destinationFilePath));
             // Append some import/export-meta-data to the end.
             $metaData = sprintf("\n-- options:%s\n-- meta:%s", json_encode($options, JSON_UNESCAPED_UNICODE), json_encode($this->createMetaData(), JSON_UNESCAPED_UNICODE));
 
@@ -829,6 +873,18 @@ class Protector
     protected function shouldEncrypt(): bool
     {
         return in_array('auth:sanctum', config('protector.routeMiddleware'));
+    }
+
+    /**
+     * Throws an exception if Exec is deactivated.
+     *
+     * @throws ShellAccessDeniedException
+     */
+    public function isExecEnabled(): void
+    {
+        if (!function_exists('exec')) {
+            throw new ShellAccessDeniedException();
+        }
     }
 
     /**
