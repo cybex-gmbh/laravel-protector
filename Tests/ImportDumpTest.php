@@ -208,4 +208,14 @@ class ImportDumpTest extends BaseTest
     {
         $this->assertEquals($expectedMetaData, $this->protector->getDumpMetaData($filePath));
     }
+
+    /**
+     * @test
+     * @return void
+     * @define-env usesEmptyDump
+     */
+    public function failGetDumpMetaDataOnResponseHasNotEnoughLines(): void
+    {
+        $this->assertEquals(false, $this->protector->getDumpMetaData($this->emptyDumpPath));
+    }
 }

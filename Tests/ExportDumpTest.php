@@ -91,7 +91,7 @@ class ExportDumpTest extends BaseTest
         $this->disk->put($this->emptyDumpPath, __FUNCTION__);
 
         $this->expectException(FailedMysqlCommandException::class);
-        $this->runProtectedMethod('generateDump', [$this->emptyDumpPath]);
+        $this->runProtectedMethod('generateDump', [$this->emptyDumpPath, ['no-data' => true]]);
     }
 
     /**
