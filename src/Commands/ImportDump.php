@@ -57,6 +57,10 @@ class ImportDump extends Command
      */
     public function handle(): int
     {
+        $this->protector = app('protector');
+
+        $this->protector->isExecEnabled();
+
         $optionDump       = $this->option('dump');
         $optionFile       = $this->option('file');
         $optionRemote     = $this->option('remote');
@@ -73,8 +77,6 @@ class ImportDump extends Command
 
             return self::FAILURE;
         }
-
-        $this->protector = app('protector');
 
         $this->setConnection($optionConnection);
 

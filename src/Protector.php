@@ -17,6 +17,7 @@ use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
@@ -365,13 +366,9 @@ class Protector
     /**
      * Generates an SQL dump from the current app database and returns the path to the file.
      *
-     * @param string $destinationFilePath
-     * @param array  $options
-     * @return void
-     * @throws FailedMysqlCommandException
-     * @throws FailedDumpGenerationException
      * @param array $options
      * @return string|null
+     * @throws FailedMysqlCommandException
      */
     protected function generateDump(array $options = []): ?string
     {
@@ -394,7 +391,6 @@ class Protector
             // Write dump using specific options.
             exec(sprintf('mysqldump %s > %s 2> /dev/null',
                 $dumpOptions->implode(' '),
-//                escapeshellarg(Storage::disk('local')->path($destinationFilePath))), result_code: $resultCode);
                 escapeshellarg($tempFile)), result_code: $resultCode);
 
             if (!filesize($tempFile)) {
@@ -408,7 +404,6 @@ class Protector
             }
 
         try {
-//            $this->getDisk()->put($destinationFilePath, Storage::disk('local')->get($destinationFilePath));
             // Append some import/export-meta-data to the end.
             $metaData = sprintf("\n-- options:%s\n-- meta:%s", json_encode($options, JSON_UNESCAPED_UNICODE), json_encode($this->createMetaData(), JSON_UNESCAPED_UNICODE));
 
