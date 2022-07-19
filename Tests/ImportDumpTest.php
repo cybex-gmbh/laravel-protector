@@ -23,11 +23,11 @@ class ImportDumpTest extends BaseTest
 
         Config::set('protector.baseDirectory', 'protector');
 
-        $this->protector     = app('protector');
-        $this->disk          = Storage::disk('local');
-        $this->baseDirectory = Config::get('protector.baseDirectory');
-        $this->filePath      = sprintf('%s%sdump.sql', $this->baseDirectory, DIRECTORY_SEPARATOR);
-        $this->emptyDumpPath = 'dynamicDumps/dump.sql';
+        $this->protector      = app('protector');
+        $this->disk           = Storage::disk('local');
+        $this->baseDirectory  = Config::get('protector.baseDirectory');
+        $this->filePath       = $this->protector->createTempFilePath(sprintf('%s%sdump.sql', $this->baseDirectory, DIRECTORY_SEPARATOR));
+        $this->emptyDumpPath  = 'dynamicDumps/dump.sql';
     }
 
     protected function tearDown(): void

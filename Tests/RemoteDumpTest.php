@@ -212,7 +212,7 @@ class RemoteDumpTest extends BaseTest
     {
         $message          = env('PROTECTOR_DECRYPTED_MESSAGE');
         $encryptedMessage = sodium_hex2bin(env('PROTECTOR_ENCRYPTED_MESSAGE'));
-        $publicKey        = env('PROTECTOR_PUBLIC_KEY');
+        $publicKey        = sodium_hex2bin(env('PROTECTOR_PUBLIC_KEY'));
 
         $chunkSize = strlen($message);
         $encryptionOverhead = $this->runProtectedMethod('determineEncryptionOverhead', [$chunkSize, $publicKey]);

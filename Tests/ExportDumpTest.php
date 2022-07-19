@@ -40,7 +40,7 @@ class ExportDumpTest extends BaseTest
         $filePath            = $this->protector->createDestinationFilePath(__FUNCTION__);
         $destinationFilePath = $this->disk->path($filePath);
 
-        $this->runProtectedMethod('createDirectory', [$destinationFilePath]);
+        $this->runProtectedMethod('createDirectory', [$filePath, $this->disk]);
         $this->assertDirectoryExists($destinationFilePath);
     }
 
@@ -56,7 +56,7 @@ class ExportDumpTest extends BaseTest
         $filePath            = $this->protector->createDestinationFilePath(__FUNCTION__, __FUNCTION__);
         $destinationFilePath = $this->disk->path($filePath);
 
-        $this->runProtectedMethod('createDirectory', [$destinationFilePath]);
+        $this->runProtectedMethod('createDirectory', [$filePath, $this->disk]);
         $this->assertDirectoryExists($destinationFilePath);
     }
 
@@ -68,30 +68,28 @@ class ExportDumpTest extends BaseTest
         $path = 'https://example.com/protector/exportDump';
 
         $this->expectException(FailedCreatingDestinationPathException::class);
-        $this->runProtectedMethod('createDirectory', [$path]);
+        $this->runProtectedMethod('createDirectory', [$path, $this->disk]);
     }
-
 
     /**
      * @test
      */
     public function createMetaData()
     {
-        $metaData = $this->runProtectedMethod('getMetaData', [false]);
+        $metaData = $this->runProtectedMethod('createMetaData', [false]);
 
         $this->assertIsArray($metaData);
     }
 
     /**
      * @test
-     * @define-env usesEmptyDump
      */
     public function failGeneratingDumpOnFailedShellCommand()
     {
         $this->disk->put($this->emptyDumpPath, __FUNCTION__);
 
         $this->expectException(FailedMysqlCommandException::class);
-        $this->runProtectedMethod('generateDump', [$this->emptyDumpPath, ['no-data' => true]]);
+        $this->runProtectedMethod('generateDump', [['no-data' => true]]);
     }
 
     /**
@@ -103,7 +101,7 @@ class ExportDumpTest extends BaseTest
         $this->protector->configure();
 
         $this->expectException(InvalidConnectionException::class);
-        $this->protector->createDump(__FUNCTION__, []);
+        $this->protector->createDump();
     }
 
     /**
@@ -112,6 +110,6 @@ class ExportDumpTest extends BaseTest
     public function failGetDestinationFilePathWhenGeneratingDump()
     {
         $this->expectException(FailedMysqlCommandException::class);
-        $this->protector->createDump(__FUNCTION__, []);
+        $this->protector->createDump();
     }
 }
