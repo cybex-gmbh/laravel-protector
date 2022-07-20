@@ -651,7 +651,7 @@ class Protector
             return;
         }
 
-        if (in_array($destinationPath, $disk->files())) {
+        if (in_array($destinationPath, $disk->files($this->getBaseDirectory()))) {
             throw new FailedCreatingDestinationPathException(sprintf('Could not create directory %s, because a file with the same name exists.', $destinationPath));
         }
     }
