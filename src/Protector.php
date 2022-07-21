@@ -253,7 +253,6 @@ class Protector
     }
 
     /**
-     *
      * Deletes all dumps except an optional given file.
      *
      * @param string|null $excludeFile

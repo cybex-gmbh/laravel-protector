@@ -208,6 +208,20 @@ class RemoteDumpTest extends BaseTest
     /**
      * @test
      */
+    public function failOnFetchingRemoteDump()
+    {
+        $this->expectException(FailedRemoteDatabaseFetchingException::class);
+
+        Http::fake([
+            $this->serverUrl => Http::response([], 500),
+        ]);
+
+        $this->protector->getRemoteDump();
+    }
+
+    /**
+     * @test
+     */
     public function checkForSuccessfulDecryption()
     {
         $message          = env('PROTECTOR_DECRYPTED_MESSAGE');
