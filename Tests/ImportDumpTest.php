@@ -233,7 +233,7 @@ class ImportDumpTest extends BaseTest
 
     /**
      * @test
-     * @dataProvider provideMultipleEmptyDumps
+     * @dataProvider provideEmptyDumpsForFlushing
      */
     public function flushDumps($fileNames, $expected, $excludeDump)
     {
