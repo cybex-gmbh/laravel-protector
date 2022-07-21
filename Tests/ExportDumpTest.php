@@ -63,17 +63,6 @@ class ExportDumpTest extends BaseTest
     /**
      * @test
      */
-    public function failDirectoryCreationOnInvalidPath()
-    {
-        $path = 'http://protector.invalid';
-
-        $this->expectException(FailedCreatingDestinationPathException::class);
-        $this->runProtectedMethod('createDirectory', [$path, $this->disk]);
-    }
-
-    /**
-     * @test
-     */
     public function failDirectoryCreationOnExistingFile()
     {
         $path = 'protector/dump.sql';
