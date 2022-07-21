@@ -1,6 +1,7 @@
 <?php
 
 use Cybex\Protector\ProtectorServiceProvider;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use Orchestra\Testbench\TestCase;
 
@@ -54,14 +55,22 @@ abstract class BaseTest extends TestCase
     }
 
     /**
+     * @param $fileNames
      * @return void
      */
-    protected function usesEmptyDump(): void
+    protected function provideDynamicDumps($fileNames): void
     {
         $directoryName = 'dynamicDumps';
+        $disk          = Storage::disk('local');
 
-        Storage::disk('local')->makeDirectory($directoryName);
-        Storage::disk('local')->put(sprintf('%s%sdump.sql', $directoryName, DIRECTORY_SEPARATOR), '');
+        $disk->deleteDirectory($directoryName);
+
+        Config::set('protector.baseDirectory', 'dynamicDumps');
+        $disk->makeDirectory($directoryName);
+
+        foreach ($fileNames as $fileName) {
+            $disk->put(sprintf('%s%s%s', $directoryName, DIRECTORY_SEPARATOR, $fileName), '');
+        }
     }
 
     /**

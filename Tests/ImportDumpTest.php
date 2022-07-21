@@ -102,6 +102,22 @@ class ImportDumpTest extends BaseTest
         ];
     }
 
+    public function provideEmptyDumpsForLatestDumpName(): array
+    {
+        return [
+            [
+                ['dump.sql'],
+                'dynamicDumps/dump.sql',
+                false
+            ],
+            [
+                ['dump.sql', 'secondDump.sql', 'thirdDump.sql'],
+                'dynamicDumps/secondDump.sql',
+                true
+            ]
+        ];
+    }
+
     /**
      * @test
      */
@@ -152,38 +168,19 @@ class ImportDumpTest extends BaseTest
 
     /**
      * @test
-     * @define-env usesEmptyDump
+     * @dataProvider provideEmptyDumpsForLatestDumpName
      */
-    public function returnsFileNameIfExists()
+    public function canReturnLatestFileName(array $fileNames, string $expectedFileName, bool $shouldModify)
     {
-        Config::set('protector.baseDirectory', 'dynamicDumps');
+        $this->provideDynamicDumps($fileNames);
 
-        $filePath = sprintf('%s%sdump.sql', Config::get('protector.baseDirectory'), DIRECTORY_SEPARATOR);
-
-        touch($this->disk->path($filePath));
+        if ($shouldModify) {
+            touch($this->disk->path($expectedFileName), time() + 60);
+        }
 
         $fileName = $this->protector->getLatestDumpName();
 
-        $this->assertEquals($filePath, $fileName);
-        $this->assertIsString($fileName);
-    }
-
-    /**
-     * @test
-     * @define-env usesEmptyDump
-     */
-    public function returnsFileNameIfMultipleDumpsExist()
-    {
-        Config::set('protector.baseDirectory', 'dynamicDumps');
-
-        $secondDumpFilePath = sprintf('%s%ssecondDump.sql', Config::get('protector.baseDirectory'), DIRECTORY_SEPARATOR);
-
-        $this->disk->put($secondDumpFilePath, '');
-        touch($this->disk->path($secondDumpFilePath), time() + 60);
-
-        $fileName = $this->protector->getLatestDumpName();
-
-        $this->assertEquals($secondDumpFilePath, $fileName);
+        $this->assertEquals($expectedFileName, $fileName);
         $this->assertIsString($fileName);
     }
 
@@ -212,10 +209,10 @@ class ImportDumpTest extends BaseTest
     /**
      * @test
      * @return void
-     * @define-env usesEmptyDump
      */
     public function failGetDumpMetaDataOnResponseHasNotEnoughLines(): void
     {
+        $this->provideDynamicDumps(['dump.sql']);
         $this->assertEquals(false, $this->protector->getDumpMetaData($this->emptyDumpPath));
     }
 }
