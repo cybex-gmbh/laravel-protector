@@ -84,6 +84,18 @@ class ExportDumpTest extends BaseTest
     /**
      * @test
      */
+    public function returnExistingDumpMetaDataIfCacheIsNotEmpty()
+    {
+        $this->runProtectedMethod('getMetaData', []);
+
+        $metaData = $this->runProtectedMethod('getMetaData', [false]);
+
+        $this->assertIsArray($metaData);
+    }
+
+    /**
+     * @test
+     */
     public function failGeneratingDumpOnFailedShellCommand()
     {
         $this->disk->put($this->emptyDumpPath, __FUNCTION__);
