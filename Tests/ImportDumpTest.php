@@ -118,6 +118,22 @@ class ImportDumpTest extends BaseTest
         ];
     }
 
+    public function provideEmptyDumpsForFlushing(): array
+    {
+        return [
+            [
+                ['dump.sql'],
+                [],
+                null
+            ],
+            [
+                ['dump.sql', 'secondDump.sql'],
+                ['dynamicDumps/secondDump.sql'],
+                'dynamicDumps/secondDump.sql'
+            ]
+        ];
+    }
+
     /**
      * @test
      */
@@ -208,11 +224,26 @@ class ImportDumpTest extends BaseTest
 
     /**
      * @test
-     * @return void
      */
-    public function failGetDumpMetaDataOnResponseHasNotEnoughLines(): void
+    public function failGetDumpMetaDataOnResponseHasNotEnoughLines()
     {
         $this->provideDynamicDumps(['dump.sql']);
         $this->assertEquals(false, $this->protector->getDumpMetaData($this->emptyDumpPath));
+    }
+
+    /**
+     * @test
+     * @dataProvider provideMultipleEmptyDumps
+     */
+    public function flushDumps($fileNames, $expected, $excludeDump)
+    {
+        $this->provideDynamicDumps($fileNames);
+
+        $this->protector->flush($excludeDump);
+
+        $baseDirectory      = Config::get('protector.baseDirectory');
+        $dumpsAfterFlushing = $this->disk->files($baseDirectory);
+
+        $this->assertEquals($expected, $dumpsAfterFlushing);
     }
 }
