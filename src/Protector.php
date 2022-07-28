@@ -19,6 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Psr\Http\Message\StreamInterface;
@@ -368,7 +369,10 @@ class Protector
         $dumpOptions->push(sprintf('-p%s', escapeshellarg($this->connectionConfig['password'])));
         $dumpOptions->push(sprintf('--max-allowed-packet=%s', escapeshellarg(config('protector.maxPacketLength'))));
         $dumpOptions->push('--no-create-db');
-        $dumpOptions->push('--set-gtid-purged=off');
+
+        if (! DB::connection()->isMaria()) {
+            $dumpOptions->push('--set-gtid-purged=off');
+        }
 
         if ($options['no-data'] ?? false) {
             $dumpOptions->push('--no-data');
