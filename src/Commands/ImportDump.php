@@ -174,7 +174,7 @@ class ImportDump extends Command
         $filePath = implode(DIRECTORY_SEPARATOR, [$this->protector->getBaseDirectory(), $dumpName]);
         $disk     = $this->protector->getDisk();
 
-        if ($disk->fileExists($filePath)) {
+        if ($disk->exists($filePath)) {
             return $filePath;
         } else {
             throw new FileNotFoundException($filePath);
@@ -190,10 +190,6 @@ class ImportDump extends Command
     protected function chooseImportDump(?string $connectionName): string
     {
         $connectionFiles = $this->getConnectionFiles($connectionName);
-
-        if ($connectionFiles->isEmpty()) {
-            throw new LogicException('There are no dumps in the dump folder');
-        }
 
         if ($connectionFiles->count() === 1) {
             $importFilePath = $connectionFiles->first()['path'];
@@ -311,6 +307,10 @@ class ImportDump extends Command
     public function getConnectionFiles(?string $connectionName = null): Collection
     {
         $sortedFiles = $this->getMetaDataForFiles($this->protector->getDumpFiles())->sortByDesc('dateTime');
+
+        if ($sortedFiles->isEmpty()) {
+            throw new LogicException('There are no dumps in the dump folder');
+        }
 
         if ($this->option('ignore-connection-filter')) {
             return $sortedFiles;

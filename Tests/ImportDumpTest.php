@@ -111,7 +111,7 @@ class ImportDumpTest extends BaseTest
                 false
             ],
             [
-                ['dump.sql', 'secondDump.sql', 'thirdDump.sql'],
+                ['dump.sql', 'secondDump.sql' => 'dump.sql', 'thirdDump' => 'dump.sql'],
                 'dynamicDumps/secondDump.sql',
                 true
             ]
@@ -127,7 +127,7 @@ class ImportDumpTest extends BaseTest
                 null
             ],
             [
-                ['dump.sql', 'secondDump.sql'],
+                ['dump.sql', 'secondDump.sql' => 'dump.sql'],
                 ['dynamicDumps/secondDump.sql'],
                 'dynamicDumps/secondDump.sql'
             ]
@@ -202,12 +202,10 @@ class ImportDumpTest extends BaseTest
 
     /**
      * @test
-     * @define-env usesEmptyFolder
      */
     public function throwsExceptionIfNoFileExists()
     {
-        Config::set('protector.baseDirectory', 'noDumps');
-        $this->disk->deleteDirectory(Config::get('protector.baseDirectory'));
+        $this->provideDynamicDumps([]);
 
         $this->expectException(FileNotFoundException::class);
         $this->protector->getLatestDumpName();
@@ -227,8 +225,9 @@ class ImportDumpTest extends BaseTest
      */
     public function failGetDumpMetaDataOnResponseHasNotEnoughLines()
     {
-        $this->provideDynamicDumps(['dump.sql']);
-        $this->assertEquals(false, $this->protector->getDumpMetaData($this->emptyDumpPath));
+        $this->provideDynamicDumps(['emptyDump.sql']);
+
+        $this->assertEquals(false, $this->protector->getDumpMetaData('dynamicDumps/emptyDump.sql'));
     }
 
     /**

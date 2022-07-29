@@ -45,9 +45,11 @@ class RemoteDumpTest extends BaseTest
         $secondPath = sprintf($format, 'dumpWithGit');
         $thirdPath  = sprintf($format, 'dumpWithoutMetadata');
         $fourthPath = sprintf($format, 'dumpWithIncorrectMetadata');
+        $fifthPath  = sprintf($format, 'dumpWithDifferentConnection');
+        $sixthPath  = sprintf($format, 'emptyDump');
 
         $files = $this->disk->files($this->baseDirectory);
-        $files = array_diff($files, [$path, $secondPath, $thirdPath, $fourthPath]);
+        $files = array_diff($files, [$path, $secondPath, $thirdPath, $fourthPath, $fifthPath, $sixthPath]);
 
         $this->disk->delete($files);
     }
@@ -142,8 +144,6 @@ class RemoteDumpTest extends BaseTest
     {
         Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
         Config::set('protector.routeMiddleware', []);
-
-        $serverUrl = app('protector')->getServerUrl();
 
         Http::fake([
             $this->serverUrl => Http::response(__FUNCTION__, 200, ['Chunk-Size' => 100]),
