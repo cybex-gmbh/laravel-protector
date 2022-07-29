@@ -2,6 +2,7 @@
 
 use Cybex\Protector\Exceptions\FailedMysqlCommandException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
+use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Cybex\Protector\Protector;
@@ -28,6 +29,8 @@ class ImportDumpTest extends BaseTest
         $this->baseDirectory  = Config::get('protector.baseDirectory');
         $this->filePath       = $this->protector->createTempFilePath(sprintf('%s%sdump.sql', $this->baseDirectory, DIRECTORY_SEPARATOR));
         $this->emptyDumpPath  = 'dynamicDumps/dump.sql';
+
+        $this->shouldDownloadDump = 'Do you want to download and import a fresh dump from the server or an existing local dump?';
     }
 
     protected function tearDown(): void
@@ -244,5 +247,121 @@ class ImportDumpTest extends BaseTest
         $dumpsAfterFlushing = $this->disk->files($baseDirectory);
 
         $this->assertEquals($expected, $dumpsAfterFlushing);
+    }
+
+    /**
+     * @test
+     */
+    public function failArtisanCallOnProductionEnvironment()
+    {
+        $this->app->detectEnvironment(fn() => 'production');
+
+        $this->expectException(InvalidEnvironmentException::class);
+
+        $this->artisan('protector:import');
+    }
+
+    /**
+     * @test
+     */
+    public function failOnOptionForceIncorrectlySet()
+    {
+        $this->artisan('protector:import --force')->assertFailed();
+    }
+
+    /**
+     * @test
+     */
+    public function failOptionFileOnNonExistingDump()
+    {
+        $this->provideDynamicDumps(['dump.sql']);
+
+        $fileName = 'thisDumpDoesNotExist.sql';
+
+        $this->artisan(sprintf('protector:import --file=%s --ignore-connection-filter --force', $fileName))
+            ->expectsOutput(sprintf('The file "%s" was not found.', $fileName));
+    }
+
+    /**
+     * @test
+     */
+    public function failOptionDumpOnNonExistingDump()
+    {
+        $this->expectException(FileNotFoundException::class);
+
+        $this->artisan("protector:import --dump='thisFileDoesNotExist'");
+    }
+
+    /**
+     * @test
+     */
+    public function canImportDumpOnOptionLatest()
+    {
+        $this->provideDynamicDumps(['dump.sql']);
+
+        $this->artisan('protector:import --latest')->expectsConfirmation(
+            sprintf(
+                'Are you sure that you want to import the dump into the database: %s?',
+                $this->protector->getDatabaseName()
+            ));
+
+        $this->assertEquals(sprintf('%s%sdump.sql', $this->protector->getBaseDirectory(), DIRECTORY_SEPARATOR), $this->protector->getLatestDumpName());
+    }
+
+    /**
+     * @test
+     */
+    public function failChooseImportDumpOnNoFilesInBaseDirectory()
+    {
+        $this->provideDynamicDumps([]);
+
+        $this->expectException(LogicException::class);
+
+        $this->artisan('protector:import')
+            ->expectsChoice($this->shouldDownloadDump, 2, ['Download remote Dump']);
+    }
+
+    /**
+     * @test
+     */
+    public function chooseImportDumpWithOnlyOneFileInBaseDirectory()
+    {
+        $this->provideDynamicDumps(['dump.sql']);
+
+        $this->assertCount(1, $this->protector->getDumpFiles());
+
+        $this->artisan('protector:import')
+            ->expectsChoice($this->shouldDownloadDump, 2, ['Download remote dump', 'Import existing local dump'])
+            ->expectsOutput('Using file "dynamicDumps/dump.sql" because there are no other dumps.')
+            ->expectsConfirmation(
+                sprintf(
+                    'Are you sure that you want to import the dump into the database: %s?',
+                    $this->protector->getDatabaseName()
+                ));
+    }
+
+    /**
+     * @test
+     */
+    public function failArtisanCallOnNoDumpHasSpecifiedConnection()
+    {
+        $this->provideDynamicDumps(['dump.sql', 'secondDump.sql' => 'dump.sql']);
+
+        $this->expectException(InvalidConnectionException::class);
+
+        $this->artisan("protector:import --connection='sqlite'")
+            ->expectsChoice($this->shouldDownloadDump, 2, ['Download remote dump', 'Import existing local dump']);
+    }
+
+    /**
+     * @test
+     */
+    public function failSettingConnectionNameOnNoConnectionsAreConfigured()
+    {
+        Config::set('database.connections', null);
+
+        $this->expectException(InvalidConfigurationException::class);
+
+        $this->artisan('protector:import');
     }
 }
