@@ -105,7 +105,7 @@ class ImportDumpTest extends BaseTest
         ];
     }
 
-    public function provideEmptyDumpsForLatestDumpName(): array
+    public function provideEmptyDumpsWhenReceivingTheLatestDumpName(): array
     {
         return [
             [
@@ -121,7 +121,7 @@ class ImportDumpTest extends BaseTest
         ];
     }
 
-    public function provideEmptyDumpsForFlushing(): array
+    public function provideEmptyDumpsForFlushingDumps(): array
     {
         return [
             [
@@ -187,7 +187,7 @@ class ImportDumpTest extends BaseTest
 
     /**
      * @test
-     * @dataProvider provideEmptyDumpsForLatestDumpName
+     * @dataProvider provideEmptyDumpsWhenReceivingTheLatestDumpName
      */
     public function canReturnLatestFileName(array $fileNames, string $expectedFileName, bool $shouldModify)
     {
@@ -235,7 +235,7 @@ class ImportDumpTest extends BaseTest
 
     /**
      * @test
-     * @dataProvider provideEmptyDumpsForFlushing
+     * @dataProvider provideEmptyDumpsForFlushingDumps
      */
     public function flushDumps($fileNames, $expected, $excludeDump)
     {
@@ -289,7 +289,7 @@ class ImportDumpTest extends BaseTest
     {
         $this->expectException(FileNotFoundException::class);
 
-        $this->artisan("protector:import --dump='thisFileDoesNotExist'");
+        $this->artisan('protector:import --dump=thisFileDoesNotExist');
     }
 
     /**
@@ -349,7 +349,7 @@ class ImportDumpTest extends BaseTest
 
         $this->expectException(InvalidConnectionException::class);
 
-        $this->artisan("protector:import --connection='sqlite'")
+        $this->artisan('protector:import --connection=sqlite')
             ->expectsChoice($this->shouldDownloadDump, 2, ['Download remote dump', 'Import existing local dump']);
     }
 
