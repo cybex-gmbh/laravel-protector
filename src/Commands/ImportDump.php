@@ -289,7 +289,12 @@ class ImportDump extends Command
     {
         if ($importFilePath && ($optionForce || $this->confirm(sprintf('Are you sure that you want to import the dump into the database: %s?', $this->protector->getDatabaseName())))) {
             try {
-                $this->protector->importDump($importFilePath, $this->options());
+                $this->protector->importDump($importFilePath, Arr::except($this->options(), ['migrate']));
+
+                if ($this->option('migrate')) {
+                    $this->call('migrate');
+                }
+
                 $this->info('Import done!');
             } catch (Exception $exception) {
                 $this->error($exception->getMessage());
