@@ -2,6 +2,7 @@
 
 namespace Cybex\Protector\Commands;
 
+use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
@@ -304,14 +305,14 @@ class ImportDump extends Command
     /**
      * Returns a list of either all dumps, or those for the specified connection name.
      *
-     * @throws InvalidConnectionException
+     * @throws InvalidConnectionException|EmptyBaseDirectoryException
      */
     public function getConnectionFiles(?string $connectionName = null): Collection
     {
         $sortedFiles = $this->getMetaDataForFiles($this->protector->getDumpFiles())->sortByDesc('dateTime');
 
         if ($sortedFiles->isEmpty()) {
-            throw new LogicException('There are no dumps in the dump folder');
+            throw new EmptyBaseDirectoryException();
         }
 
         if ($this->option('ignore-connection-filter')) {
