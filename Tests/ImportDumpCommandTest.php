@@ -1,5 +1,6 @@
 <?php
 
+use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
@@ -181,7 +182,7 @@ class ImportDumpCommandTest extends BaseTest
     {
         $this->provideDynamicDumps([]);
 
-        $this->expectException(LogicException::class);
+        $this->expectException(EmptyBaseDirectoryException::class);
 
         $this->artisan('protector:import')
             ->expectsChoice($this->shouldDownloadDump, 2, ['Download remote Dump']);
