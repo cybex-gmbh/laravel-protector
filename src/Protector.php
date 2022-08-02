@@ -885,11 +885,11 @@ class Protector
     }
 
     /**
-     * Stops Telescope from recording when telescope is activated.
+     * Stops Telescope from recording when telescope is used.
      */
     public function stopTelescopeRecordingIfEnabled(): void
     {
-        if (class_exists('\Laravel\Telescope\Telescope')) {
+        if (class_exists(Telescope::class)) {
             Telescope::stopRecording();
         }
     }
