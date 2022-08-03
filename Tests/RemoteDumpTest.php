@@ -167,7 +167,7 @@ class RemoteDumpTest extends BaseTest
 
         $this->expectException(FailedRemoteDatabaseFetchingException::class);
 
-        app('protector')->getRemoteDump();
+        $this->protector->getRemoteDump();
     }
 
     /**
