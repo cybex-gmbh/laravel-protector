@@ -22,7 +22,6 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
-use Laravel\Telescope\Telescope;
 use Psr\Http\Message\StreamInterface;
 use SodiumException;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -889,8 +888,8 @@ class Protector
      */
     public function stopTelescopeRecordingIfEnabled(): void
     {
-        if (class_exists(Telescope::class)) {
-            Telescope::stopRecording();
+        if (class_exists(\Laravel\Telescope\Telescope::class)) {
+            \Laravel\Telescope\Telescope::stopRecording();
         }
     }
 
