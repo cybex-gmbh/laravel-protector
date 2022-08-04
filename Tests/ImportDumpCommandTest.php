@@ -132,10 +132,6 @@ class ImportDumpCommandTest extends BaseTest
      */
     public function failGetRemoteOnDumpWithNoResponse()
     {
-        Http::fake([
-            __FUNCTION__ => Http::response(),
-        ]);
-
         $this->artisan('protector:import --remote')
             ->expectsOutput("Error retrieving dump from remote server: Could not fetch database from remote server: The scheme '' is not supported.")
             ->assertFailed();
