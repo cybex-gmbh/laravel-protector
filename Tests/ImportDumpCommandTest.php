@@ -6,6 +6,7 @@ use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Cybex\Protector\Protector;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -17,7 +18,11 @@ class ImportDumpCommandTest extends BaseTest
      */
     protected Protector $protector;
 
-    protected string $baseDirectory;
+    protected Filesystem $disk;
+
+    protected string $serverUrl;
+    protected string $shouldDownloadDump;
+    protected string $shouldImportDump;
 
     protected function setUp(): void
     {
@@ -142,8 +147,6 @@ class ImportDumpCommandTest extends BaseTest
      */
     public function failOptionFileOnNonExistingDump()
     {
-        $this->provideDynamicDumps(['dump.sql']);
-
         $fileName = 'thisDumpDoesNotExist.sql';
 
         $this->artisan(sprintf('protector:import --file=%s --ignore-connection-filter --force', $fileName))
