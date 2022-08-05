@@ -4,6 +4,7 @@ use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Cybex\Protector\Protector;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
@@ -17,6 +18,8 @@ class RemoteDumpTest extends BaseTest
      *  Protector instance.
      */
     protected Protector $protector;
+
+    protected Filesystem $disk;
 
     protected string $serverUrl;
     protected string $baseDirectory;
