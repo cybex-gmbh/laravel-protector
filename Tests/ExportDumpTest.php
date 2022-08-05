@@ -4,6 +4,7 @@ use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
 use Cybex\Protector\Exceptions\FailedMysqlCommandException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Protector;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 
@@ -14,7 +15,11 @@ class ExportDumpTest extends BaseTest
      */
     protected Protector $protector;
 
+    protected Filesystem $disk;
+
     protected string $baseDirectory;
+    protected string $filePath;
+    protected string $emptyDumpPath;
 
     protected function setUp(): void
     {

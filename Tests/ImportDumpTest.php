@@ -5,6 +5,7 @@ use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Cybex\Protector\Protector;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 
@@ -15,7 +16,11 @@ class ImportDumpTest extends BaseTest
      */
     protected Protector $protector;
 
+    protected Filesystem $disk;
+
     protected string $baseDirectory;
+    protected string $filePath;
+    protected string $emptyDumpPath;
 
     protected function setUp(): void
     {
