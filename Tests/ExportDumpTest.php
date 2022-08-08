@@ -91,7 +91,7 @@ class ExportDumpTest extends BaseTest
      */
     public function returnExistingDumpMetaDataIfCacheIsNotEmpty()
     {
-        $this->runProtectedMethod('createMetaData', []);
+        $this->runProtectedMethod('createMetaData');
 
         $metaData = $this->runProtectedMethod('createMetaData', [false]);
 
