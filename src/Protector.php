@@ -111,16 +111,17 @@ class Protector
      * @return void
      *
      * @throws FailedMysqlCommandException
-     * @throws FileNotFoundException
-     * @throws InvalidConnectionException
      * @throws InvalidEnvironmentException
+     * @throws InvalidConnectionException
+     * @throws FileNotFoundException
+     * @throws InvalidConfigurationException
      */
-    public function importDump(string $sourceFilePath, array $options): void
+    public function importDump(string $sourceFilePath, array $options = []): void
     {
         $this->isExecEnabled();
 
         // Production environment is not allowed unless set in options.
-        if (App::environment('production') && !($options['allow-production'])) {
+        if (App::environment('production') && !Arr::get($options, 'allow-production')) {
             throw new InvalidEnvironmentException('Production environment is not allowed and option was not set.');
         }
 
@@ -161,7 +162,7 @@ class Protector
             }
         }
 
-        if ($options['migrate']) {
+        if (Arr::get($options, 'migrate')) {
             $output = new BufferedOutput;
 
             Artisan::call('migrate', [], $output);
@@ -355,7 +356,7 @@ class Protector
      * Generates an SQL dump from the current app database and returns the path to the file.
      *
      * @param string $destinationFilePath
-     * @param array $options
+     * @param array  $options
      * @return void
      * @throws FailedMysqlCommandException
      * @throws FailedDumpGenerationException
