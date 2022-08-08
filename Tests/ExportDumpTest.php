@@ -31,7 +31,7 @@ class ExportDumpTest extends BaseTest
         $this->disk          = Storage::disk('local');
         $this->baseDirectory = Config::get('protector.baseDirectory');
         $this->filePath      = sprintf('%s/dump.sql', $this->baseDirectory);
-        $this->emptyDumpPath = 'dynamicDumps/dump.sql';
+        $this->emptyDumpPath = 'testDumps/dump.sql';
     }
 
     /**
@@ -79,7 +79,7 @@ class ExportDumpTest extends BaseTest
     /**
      * @test
      */
-    public function createMetaData()
+    public function canCreateDumpMetaData()
     {
         $metaData = $this->runProtectedMethod('createMetaData', [false]);
 
@@ -89,9 +89,9 @@ class ExportDumpTest extends BaseTest
     /**
      * @test
      */
-    public function returnExistingDumpMetaDataIfCacheIsNotEmpty()
+    public function canCreateDumpMetaDataUsingCache()
     {
-        $this->runProtectedMethod('createMetaData', []);
+        $this->runProtectedMethod('createMetaData');
 
         $metaData = $this->runProtectedMethod('createMetaData', [false]);
 

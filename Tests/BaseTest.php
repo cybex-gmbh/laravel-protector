@@ -48,21 +48,21 @@ abstract class BaseTest extends TestCase
      * @param array $params
      * @return mixed
      */
-    protected function runProtectedMethod(string $methodName, array $params): mixed
+    protected function runProtectedMethod(string $methodName, array $params = []): mixed
     {
         $method = $this->getAccessibleReflectionMethod($methodName);
         return $method->invoke($this->protector, ...$params);
     }
 
     /**
-     * Provides a dynamic number of dumps, optionally a new filename can be specified
+     * Provides a dynamic number of dumps, optionally a new filename can be specified as the array key.
      *
      * @param array $fileNames
      * @return void
      */
-    protected function provideDynamicDumps(array $fileNames): void
+    protected function provideTestDumps(array $fileNames): void
     {
-        $directoryName = 'dynamicDumps';
+        $directoryName = 'testDumps';
         $disk          = Storage::disk('local');
 
         $disk->deleteDirectory($directoryName);
