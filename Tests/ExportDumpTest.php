@@ -79,7 +79,7 @@ class ExportDumpTest extends BaseTest
     /**
      * @test
      */
-    public function createMetaData()
+    public function canCreateDumpMetaData()
     {
         $metaData = $this->runProtectedMethod('createMetaData', [false]);
 
@@ -89,7 +89,7 @@ class ExportDumpTest extends BaseTest
     /**
      * @test
      */
-    public function returnExistingDumpMetaDataIfCacheIsNotEmpty()
+    public function canCreateDumpMetaDataUsingCache()
     {
         $this->runProtectedMethod('createMetaData');
 
