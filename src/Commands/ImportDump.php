@@ -13,7 +13,6 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
-use LogicException;
 
 /**
  * Class ImportDump
