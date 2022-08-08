@@ -31,7 +31,7 @@ class ExportDumpTest extends BaseTest
         $this->disk          = Storage::disk('local');
         $this->baseDirectory = Config::get('protector.baseDirectory');
         $this->filePath      = sprintf('%s/dump.sql', $this->baseDirectory);
-        $this->emptyDumpPath = 'dynamicDumps/dump.sql';
+        $this->emptyDumpPath = 'testDumps/dump.sql';
     }
 
     /**

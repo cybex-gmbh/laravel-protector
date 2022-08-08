@@ -43,7 +43,7 @@ class ImportDumpCommandTest extends BaseTest
     {
         parent::tearDown();
 
-        Config::set('protector.baseDirectory', 'dynamicDumps');
+        Config::set('protector.baseDirectory', 'testDumps');
         $this->disk->deleteDirectory(Config::get('protector.baseDirectory'));
     }
 
@@ -72,7 +72,7 @@ class ImportDumpCommandTest extends BaseTest
      */
     public function failOnNoDumpHasSpecifiedConnection()
     {
-        $this->provideDynamicDumps(['dump.sql', 'secondDump.sql' => 'dump.sql']);
+        $this->provideTestDumps(['dump.sql', 'secondDump.sql' => 'dump.sql']);
 
         $this->expectException(InvalidConnectionException::class);
 
@@ -117,7 +117,7 @@ class ImportDumpCommandTest extends BaseTest
      */
     public function canGetRemoteDumpWithFlushOptionEnabled()
     {
-        $this->provideDynamicDumps(['dump.sql', 'secondDump.sql' => 'dump.sql', 'thirdDump.sql' => 'dump.sql']);
+        $this->provideTestDumps(['dump.sql', 'secondDump.sql' => 'dump.sql', 'thirdDump.sql' => 'dump.sql']);
 
         Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
         Config::set('protector.routeMiddleware', []);
@@ -168,7 +168,7 @@ class ImportDumpCommandTest extends BaseTest
      */
     public function canImportDumpOnOptionLatest()
     {
-        $this->provideDynamicDumps(['dump.sql']);
+        $this->provideTestDumps(['dump.sql']);
 
         $this->artisan('protector:import --latest')->expectsConfirmation($this->shouldImportDump);
         $this->assertEquals(sprintf('%s%sdump.sql', $this->protector->getBaseDirectory(), DIRECTORY_SEPARATOR), $this->protector->getLatestDumpName());
@@ -179,7 +179,7 @@ class ImportDumpCommandTest extends BaseTest
      */
     public function failChooseImportDumpOnNoFilesInBaseDirectory()
     {
-        $this->provideDynamicDumps([]);
+        $this->provideTestDumps([]);
 
         $this->expectException(EmptyBaseDirectoryException::class);
 
@@ -192,13 +192,13 @@ class ImportDumpCommandTest extends BaseTest
      */
     public function chooseImportDumpWithOnlyOneFileInBaseDirectory()
     {
-        $this->provideDynamicDumps(['dump.sql']);
+        $this->provideTestDumps(['dump.sql']);
 
         $this->assertCount(1, $this->protector->getDumpFiles());
 
         $this->artisan('protector:import')
             ->expectsChoice($this->shouldDownloadDump, 2, ['Download remote dump', 'Import existing local dump'])
-            ->expectsOutput('Using file "dynamicDumps/dump.sql" because there are no other dumps.')
+            ->expectsOutput('Using file "testDumps/dump.sql" because there are no other dumps.')
             ->expectsConfirmation($this->shouldImportDump);
     }
 }

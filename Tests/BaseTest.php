@@ -55,14 +55,14 @@ abstract class BaseTest extends TestCase
     }
 
     /**
-     * Provides a dynamic number of dumps, optionally a new filename can be specified
+     * Provides a dynamic number of dumps, optionally a new filename can be specified as the array key.
      *
      * @param array $fileNames
      * @return void
      */
-    protected function provideDynamicDumps(array $fileNames): void
+    protected function provideTestDumps(array $fileNames): void
     {
-        $directoryName = 'dynamicDumps';
+        $directoryName = 'testDumps';
         $disk          = Storage::disk('local');
 
         $disk->deleteDirectory($directoryName);

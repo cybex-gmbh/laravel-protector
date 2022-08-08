@@ -33,7 +33,7 @@ class ImportDumpTest extends BaseTest
         $this->disk           = Storage::disk('local');
         $this->baseDirectory  = Config::get('protector.baseDirectory');
         $this->filePath       = $this->protector->createTempFilePath(sprintf('%s%sdump.sql', $this->baseDirectory, DIRECTORY_SEPARATOR));
-        $this->emptyDumpPath  = 'dynamicDumps/dump.sql';
+        $this->emptyDumpPath  = 'testDumps/dump.sql';
 
         $this->shouldDownloadDump = 'Do you want to download and import a fresh dump from the server or an existing local dump?';
     }
@@ -42,7 +42,7 @@ class ImportDumpTest extends BaseTest
     {
         parent::tearDown();
 
-        Config::set('protector.baseDirectory', 'dynamicDumps');
+        Config::set('protector.baseDirectory', 'testDumps');
         $this->disk->deleteDirectory(Config::get('protector.baseDirectory'));
     }
 
@@ -115,12 +115,12 @@ class ImportDumpTest extends BaseTest
         return [
             [
                 ['dump.sql'],
-                'dynamicDumps/dump.sql',
+                'testDumps/dump.sql',
                 false
             ],
             [
                 ['dump.sql', 'secondDump.sql' => 'dump.sql', 'thirdDump' => 'dump.sql'],
-                'dynamicDumps/secondDump.sql',
+                'testDumps/secondDump.sql',
                 true
             ]
         ];
@@ -136,8 +136,8 @@ class ImportDumpTest extends BaseTest
             ],
             [
                 ['dump.sql', 'secondDump.sql' => 'dump.sql'],
-                ['dynamicDumps/secondDump.sql'],
-                'dynamicDumps/secondDump.sql'
+                ['testDumps/secondDump.sql'],
+                'testDumps/secondDump.sql'
             ]
         ];
     }
@@ -196,7 +196,7 @@ class ImportDumpTest extends BaseTest
      */
     public function canReturnLatestFileName(array $fileNames, string $expectedFileName, bool $shouldModify)
     {
-        $this->provideDynamicDumps($fileNames);
+        $this->provideTestDumps($fileNames);
 
         if ($shouldModify) {
             touch($this->disk->path($expectedFileName), time() + 60);
@@ -213,7 +213,7 @@ class ImportDumpTest extends BaseTest
      */
     public function throwsExceptionIfNoFileExists()
     {
-        $this->provideDynamicDumps([]);
+        $this->provideTestDumps([]);
 
         $this->expectException(FileNotFoundException::class);
         $this->protector->getLatestDumpName();
@@ -233,9 +233,9 @@ class ImportDumpTest extends BaseTest
      */
     public function failGetDumpMetaDataOnResponseHasNotEnoughLines()
     {
-        $this->provideDynamicDumps(['emptyDump.sql']);
+        $this->provideTestDumps(['emptyDump.sql']);
 
-        $this->assertEquals(false, $this->protector->getDumpMetaData('dynamicDumps/emptyDump.sql'));
+        $this->assertEquals(false, $this->protector->getDumpMetaData('testDumps/emptyDump.sql'));
     }
 
     /**
@@ -244,7 +244,7 @@ class ImportDumpTest extends BaseTest
      */
     public function flushDumps($fileNames, $expected, $excludeDump)
     {
-        $this->provideDynamicDumps($fileNames);
+        $this->provideTestDumps($fileNames);
 
         $this->protector->flush($excludeDump);
 
