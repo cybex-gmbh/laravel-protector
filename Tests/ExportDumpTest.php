@@ -92,7 +92,7 @@ class ExportDumpTest extends BaseTest
      */
     public function returnExistingDumpMetaDataIfCacheIsNotEmpty()
     {
-        $this->runProtectedMethod('getMetaData', []);
+        $this->runProtectedMethod('getMetaData');
 
         $metaData = $this->runProtectedMethod('getMetaData', [false]);
 

@@ -48,7 +48,7 @@ abstract class BaseTest extends TestCase
      * @param array $params
      * @return mixed
      */
-    protected function runProtectedMethod(string $methodName, array $params): mixed
+    protected function runProtectedMethod(string $methodName, array $params = []): mixed
     {
         $method = $this->getAccessibleReflectionMethod($methodName);
         return $method->invoke($this->protector, ...$params);

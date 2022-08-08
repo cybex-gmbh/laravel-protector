@@ -62,7 +62,7 @@ class RemoteDumpTest extends BaseTest
     {
         Config::set('protector.routeMiddleware', ['auth:sanctum']);
 
-        $shouldEncrypt = $this->runProtectedMethod('shouldEncrypt', []);
+        $shouldEncrypt = $this->runProtectedMethod('shouldEncrypt');
 
         $this->assertTrue($shouldEncrypt);
     }
@@ -74,7 +74,7 @@ class RemoteDumpTest extends BaseTest
     {
         Config::set('protector.routeMiddleware', []);
 
-        $shouldEncrypt = $this->runProtectedMethod('shouldEncrypt', []);
+        $shouldEncrypt = $this->runProtectedMethod('shouldEncrypt');
 
         $this->assertFalse($shouldEncrypt);
     }
@@ -232,7 +232,7 @@ class RemoteDumpTest extends BaseTest
         Config::set('protector.remoteEndpoint.htaccessLogin', '');
 
         $this->expectException(InvalidConfigurationException::class);
-        $this->runProtectedMethod('getConfiguredHttpRequest', []);
+        $this->runProtectedMethod('getConfiguredHttpRequest');
     }
 
     /**
@@ -243,7 +243,7 @@ class RemoteDumpTest extends BaseTest
         Config::set('protector.routeMiddleware', ['auth:sanctum']);
 
         $this->expectException(InvalidConfigurationException::class);
-        $this->runProtectedMethod('getConfiguredHttpRequest', []);
+        $this->runProtectedMethod('getConfiguredHttpRequest');
     }
 
     /**
@@ -251,7 +251,7 @@ class RemoteDumpTest extends BaseTest
      */
     public function addAdditionalOptionsToRequest()
     {
-        $request = $this->runProtectedMethod('getConfiguredHttpRequest', []);
+        $request = $this->runProtectedMethod('getConfiguredHttpRequest');
         $options = $request->getOptions();
 
         $this->assertEquals(true, $options['stream']);
@@ -267,7 +267,7 @@ class RemoteDumpTest extends BaseTest
         Config::set('protector.routeMiddleware', ['auth:sanctum']);
         Config::set('protector.remoteEndpoint.htaccessLogin', null);
 
-        $request = $this->runProtectedMethod('getConfiguredHttpRequest', []);
+        $request = $this->runProtectedMethod('getConfiguredHttpRequest');
         $options = $request->getOptions();
 
         $this->assertTrue(isset($options['headers']['Authorization']));
@@ -279,7 +279,7 @@ class RemoteDumpTest extends BaseTest
      */
     public function addBasicAuthToRequestWhenHtaccessIsUsed()
     {
-        $request = $this->runProtectedMethod('getConfiguredHttpRequest', []);
+        $request = $this->runProtectedMethod('getConfiguredHttpRequest');
         $options = $request->getOptions();
 
         $this->assertTrue(isset($options['auth']));
@@ -373,7 +373,7 @@ class RemoteDumpTest extends BaseTest
      */
     public function canGetAuthToken()
     {
-        $authToken = $this->runProtectedMethod('getAuthToken', []);
+        $authToken = $this->runProtectedMethod('getAuthToken');
 
         $this->assertEquals(env('PROTECTOR_AUTH_TOKEN'), $authToken);
     }
@@ -384,7 +384,7 @@ class RemoteDumpTest extends BaseTest
     public function setAuthToken()
     {
         $this->runProtectedMethod('setAuthToken', [__FUNCTION__]);
-        $authToken = $this->runProtectedMethod('getAuthToken', []);
+        $authToken = $this->runProtectedMethod('getAuthToken');
 
         $this->assertEquals(__FUNCTION__, $authToken);
     }
@@ -395,7 +395,7 @@ class RemoteDumpTest extends BaseTest
     public function setAuthTokenKeyName()
     {
         $this->runProtectedMethod('setAuthTokenKeyName', [__FUNCTION__]);
-        $authTokenKeyName = $this->runProtectedMethod('getAuthTokenKeyName', []);
+        $authTokenKeyName = $this->runProtectedMethod('getAuthTokenKeyName');
 
         $this->assertEquals(__FUNCTION__, $authTokenKeyName);
     }
