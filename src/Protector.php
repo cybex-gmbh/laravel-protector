@@ -379,7 +379,7 @@ class Protector
         $dumpOptions->push(sprintf('--max-allowed-packet=%s', escapeshellarg(config('protector.maxPacketLength'))));
         $dumpOptions->push('--no-create-db');
 
-        if (! DB::connection()->isMaria()) {
+        if (!DB::connection()->isMaria()) {
             $dumpOptions->push('--set-gtid-purged=off');
         }
 
