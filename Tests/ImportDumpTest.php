@@ -2,6 +2,7 @@
 
 use Cybex\Protector\Exceptions\FailedMysqlCommandException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
+use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Cybex\Protector\Protector;
@@ -28,18 +29,20 @@ class ImportDumpTest extends BaseTest
 
         Config::set('protector.baseDirectory', 'protector');
 
-        $this->protector     = app('protector');
-        $this->disk          = Storage::disk('local');
-        $this->baseDirectory = Config::get('protector.baseDirectory');
-        $this->filePath      = sprintf('%s%sdump.sql', $this->baseDirectory, DIRECTORY_SEPARATOR);
-        $this->emptyDumpPath = 'dynamicDumps/dump.sql';
+        $this->protector      = app('protector');
+        $this->disk           = Storage::disk('local');
+        $this->baseDirectory  = Config::get('protector.baseDirectory');
+        $this->filePath       = $this->protector->createTempFilePath(sprintf('%s%sdump.sql', $this->baseDirectory, DIRECTORY_SEPARATOR));
+        $this->emptyDumpPath  = 'testDumps/dump.sql';
+
+        $this->shouldDownloadDump = 'Do you want to download and import a fresh dump from the server or an existing local dump?';
     }
 
     protected function tearDown(): void
     {
         parent::tearDown();
 
-        Config::set('protector.baseDirectory', 'dynamicDumps');
+        Config::set('protector.baseDirectory', 'testDumps');
         $this->disk->deleteDirectory(Config::get('protector.baseDirectory'));
     }
 
@@ -107,18 +110,34 @@ class ImportDumpTest extends BaseTest
         ];
     }
 
-    public function provideEmptyDumpsForLatestDumpName(): array
+    public function provideEmptyDumpsWhenReceivingTheLatestDumpName(): array
     {
         return [
             [
                 ['dump.sql'],
-                'dynamicDumps/dump.sql',
+                'testDumps/dump.sql',
                 false
             ],
             [
-                ['dump.sql', 'secondDump.sql', 'thirdDump.sql'],
-                'dynamicDumps/secondDump.sql',
+                ['dump.sql', 'secondDump.sql' => 'dump.sql', 'thirdDump' => 'dump.sql'],
+                'testDumps/secondDump.sql',
                 true
+            ]
+        ];
+    }
+
+    public function provideEmptyDumpsForFlushingDumps(): array
+    {
+        return [
+            [
+                ['dump.sql'],
+                [],
+                null
+            ],
+            [
+                ['dump.sql', 'secondDump.sql' => 'dump.sql'],
+                ['testDumps/secondDump.sql'],
+                'testDumps/secondDump.sql'
             ]
         ];
     }
@@ -173,11 +192,11 @@ class ImportDumpTest extends BaseTest
 
     /**
      * @test
-     * @dataProvider provideEmptyDumpsForLatestDumpName
+     * @dataProvider provideEmptyDumpsWhenReceivingTheLatestDumpName
      */
     public function canReturnLatestFileName(array $fileNames, string $expectedFileName, bool $shouldModify)
     {
-        $this->provideDynamicDumps($fileNames);
+        $this->provideTestDumps($fileNames);
 
         if ($shouldModify) {
             touch($this->disk->path($expectedFileName), time() + 60);
@@ -191,12 +210,10 @@ class ImportDumpTest extends BaseTest
 
     /**
      * @test
-     * @define-env usesEmptyFolder
      */
     public function throwsExceptionIfNoFileExists()
     {
-        Config::set('protector.baseDirectory', 'noDumps');
-        $this->disk->deleteDirectory(Config::get('protector.baseDirectory'));
+        $this->provideTestDumps([]);
 
         $this->expectException(FileNotFoundException::class);
         $this->protector->getLatestDumpName();
@@ -213,11 +230,27 @@ class ImportDumpTest extends BaseTest
 
     /**
      * @test
-     * @return void
      */
-    public function failGetDumpMetaDataOnResponseHasNotEnoughLines(): void
+    public function failGetDumpMetaDataOnResponseHasNotEnoughLines()
     {
-        $this->provideDynamicDumps(['dump.sql']);
-        $this->assertEquals(false, $this->protector->getDumpMetaData($this->emptyDumpPath));
+        $this->provideTestDumps(['emptyDump.sql']);
+
+        $this->assertEquals(false, $this->protector->getDumpMetaData('testDumps/emptyDump.sql'));
+    }
+
+    /**
+     * @test
+     * @dataProvider provideEmptyDumpsForFlushingDumps
+     */
+    public function flushDumps($fileNames, $expected, $excludeDump)
+    {
+        $this->provideTestDumps($fileNames);
+
+        $this->protector->flush($excludeDump);
+
+        $baseDirectory      = Config::get('protector.baseDirectory');
+        $dumpsAfterFlushing = $this->disk->files($baseDirectory);
+
+        $this->assertEquals($expected, $dumpsAfterFlushing);
     }
 }

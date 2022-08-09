@@ -48,9 +48,11 @@ class RemoteDumpTest extends BaseTest
         $secondPath = sprintf($format, 'dumpWithGit');
         $thirdPath  = sprintf($format, 'dumpWithoutMetadata');
         $fourthPath = sprintf($format, 'dumpWithIncorrectMetadata');
+        $fifthPath  = sprintf($format, 'dumpWithDifferentConnection');
+        $sixthPath  = sprintf($format, 'emptyDump');
 
         $files = $this->disk->files($this->baseDirectory);
-        $files = array_diff($files, [$path, $secondPath, $thirdPath, $fourthPath]);
+        $files = array_diff($files, [$path, $secondPath, $thirdPath, $fourthPath, $fifthPath, $sixthPath]);
 
         $this->disk->delete($files);
     }
@@ -143,6 +145,9 @@ class RemoteDumpTest extends BaseTest
      */
     public function htaccessIsInRequestHeaderWhenSpecified()
     {
+        Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
+        Config::set('protector.routeMiddleware', []);
+
         Http::fake([
             $this->serverUrl => Http::response(__FUNCTION__, 200, ['Chunk-Size' => 100]),
         ]);
@@ -152,6 +157,20 @@ class RemoteDumpTest extends BaseTest
         Http::assertSent(function ($request) {
             return $request->hasHeader('Authorization', 'Basic ' . base64_encode('1234:1234'));
         });
+    }
+
+    /**
+     * @test
+     */
+    public function emptyDumpThrowsException()
+    {
+        Http::fake([
+            $this->serverUrl => Http::response('', 200, ['Chunk-Size' => 100]),
+        ]);
+
+        $this->expectException(FailedRemoteDatabaseFetchingException::class);
+
+        $this->protector->getRemoteDump();
     }
 
     /**
@@ -192,11 +211,25 @@ class RemoteDumpTest extends BaseTest
     /**
      * @test
      */
+    public function failOnFetchingRemoteDump()
+    {
+        $this->expectException(FailedRemoteDatabaseFetchingException::class);
+
+        Http::fake([
+            $this->serverUrl => Http::response([], 500),
+        ]);
+
+        $this->protector->getRemoteDump();
+    }
+
+    /**
+     * @test
+     */
     public function checkForSuccessfulDecryption()
     {
         $message          = env('PROTECTOR_DECRYPTED_MESSAGE');
         $encryptedMessage = sodium_hex2bin(env('PROTECTOR_ENCRYPTED_MESSAGE'));
-        $publicKey        = env('PROTECTOR_PUBLIC_KEY');
+        $publicKey        = sodium_hex2bin(env('PROTECTOR_PUBLIC_KEY'));
 
         $chunkSize = strlen($message);
         $encryptionOverhead = $this->runProtectedMethod('determineEncryptionOverhead', [$chunkSize, $publicKey]);

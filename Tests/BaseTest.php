@@ -55,29 +55,31 @@ abstract class BaseTest extends TestCase
     }
 
     /**
-     * @param $fileNames
+     * Provides a dynamic number of dumps, optionally a new filename can be specified as the array key.
+     *
+     * @param array $fileNames
      * @return void
      */
-    protected function provideDynamicDumps($fileNames): void
+    protected function provideTestDumps(array $fileNames): void
     {
-        $directoryName = 'dynamicDumps';
+        $directoryName = 'testDumps';
         $disk          = Storage::disk('local');
 
         $disk->deleteDirectory($directoryName);
 
-        Config::set('protector.baseDirectory', 'dynamicDumps');
+        Config::set('protector.baseDirectory', $directoryName);
         $disk->makeDirectory($directoryName);
 
-        foreach ($fileNames as $fileName) {
-            $disk->put(sprintf('%s%s%s', $directoryName, DIRECTORY_SEPARATOR, $fileName), '');
+        foreach ($fileNames as $newFileName => $fileName) {
+            $disk->copy(
+                sprintf('protector%s%s', DIRECTORY_SEPARATOR, $fileName),
+                sprintf(
+                    '%s%s%s',
+                    $directoryName,
+                    DIRECTORY_SEPARATOR,
+                    is_string($newFileName) ? $newFileName : $fileName
+                )
+            );
         }
-    }
-
-    /**
-     * @return void
-     */
-    protected function usesEmptyFolder(): void
-    {
-        Storage::disk('local')->makeDirectory('noDumps');
     }
 }
