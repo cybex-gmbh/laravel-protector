@@ -2,6 +2,7 @@
 
 namespace Cybex\Protector\Tests;
 
+use BaseTest;
 use LogicException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;

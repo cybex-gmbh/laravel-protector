@@ -2,7 +2,9 @@
 
 namespace Cybex\Protector\Commands;
 
+use Cybex\Protector\Protector;
 use Illuminate\Console\Command;
+use Illuminate\Http\File;
 
 /**
  * Class ExportDump
@@ -27,28 +29,21 @@ class ExportDump extends Command
      */
     protected $description = 'Exports a dump of the current database including data as backup.';
 
-    /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
+    protected ?Protector $protector = null;
 
     /**
      * Execute the console command.
      *
-     * @return void
+     * @return int
      */
-    public function handle()
+    public function handle(): int
     {
-        $protector = app('protector');
+        $this->protector = app('protector');
 
-        $protector->isExecEnabled();
+        $this->protector->isExecEnabled();
 
-        $fileName  = $this->option('file') ?: $protector->createFilename();
+        $fileName        = $this->option('file') ?: $this->protector->createFilename();
+        $directory       = $this->protector->getBaseDirectory();
 
         if ($this->option('connection')) {
             $connectionName = $this->option('connection');
@@ -57,11 +52,19 @@ class ExportDump extends Command
         $options            = [];
         $options['no-data'] = $this->option('no-data') ?: false;
 
-        if ($protector->configure($connectionName ?? null)) {
-            $filePath = $protector->createDump($fileName, $options);
-            $this->info(sprintf('Dump was created at %s', $protector->getDisk()->path($filePath)));
-        } else {
-            $this->error('Configuration is invalid.');
+        if ($this->protector->configure($connectionName ?? null)) {
+            $tempFilePath = $this->protector->createDump($options);
+
+            $this->protector->getDisk()->putFileAs($directory, new File($tempFilePath), $fileName);
+            unlink($tempFilePath);
+
+            $this->info(sprintf('Dump %s was created in %s', $fileName, $directory));
+
+            return self::SUCCESS;
         }
+
+        $this->error('Configuration is invalid.');
+
+        return self::FAILURE;
     }
 }

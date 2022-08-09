@@ -25,16 +25,6 @@ class CreateKeys extends Command
     protected $description = 'Creates Sodium public and private key.';
 
     /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
-    /**
      * Execute the console command.
      *
      * @return void
