@@ -19,6 +19,13 @@ This package allows you to download, export and import your application's databa
 - User authentication through Laravel Sanctum tokens
 - Transport encryption using Sodium
 
+## Supported databases
+
+- Protector only supports MySQL databases at this point. 
+- MariaDB databases may work, but are currently not actively tested and supported.
+- Source and destination databases are currently not checked. Please make sure you run the same software in the same versions to prevent issues. 
+- Because of different dump formats, pulling dumps from MariaDB and restoring them to MySQL will not work. 
+
 ## Notes
 - Enabling Laravel Telescope will prevent remote files from being downloaded, as it opens and discards the HTTP stream!
 
