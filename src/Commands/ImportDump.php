@@ -84,8 +84,6 @@ class ImportDump extends Command
         $shouldDownloadDump = $optionRemote || (!$shouldImportLocalDump && $this->userWantsRemoteDump());
 
         if ($shouldDownloadDump) {
-            $this->protector->stopTelescopeRecordingIfEnabled();
-
             $importFilePath = $this->getRemoteDump();
         } elseif ($optionFile) {
             $localFilePath  = $optionFile;

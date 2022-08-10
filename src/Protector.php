@@ -278,8 +278,6 @@ class Protector
     {
         $disk = $this->getDisk();
 
-        $this->stopTelescopeRecordingIfEnabled();
-
         if (App::environment('production')) {
             throw new InvalidEnvironmentException('Retrieving a dump is not allowed on production systems.');
         }
@@ -296,10 +294,18 @@ class Protector
 
         $request = $this->getConfiguredHttpRequest();
 
+        if ($isTelescopeRecording = class_exists(\Laravel\Telescope\Telescope::class) && \Laravel\Telescope\Telescope::isRecording()) {
+            \Laravel\Telescope\Telescope::stopRecording();
+        }
+
         try {
             $response = $request->withoutRedirecting()->post($serverUrl);
         } catch (Exception $exception) {
             throw new FailedRemoteDatabaseFetchingException(sprintf('Could not fetch database from remote server: %s', $exception->getMessage()));
+        } finally {
+            if ($isTelescopeRecording) {
+                \Laravel\Telescope\Telescope::startRecording();
+            }
         }
 
         if (!$response->ok()) {
@@ -880,16 +886,6 @@ class Protector
     {
         if (!function_exists('exec')) {
             throw new ShellAccessDeniedException();
-        }
-    }
-
-    /**
-     * Stops Telescope from recording when telescope is used.
-     */
-    public function stopTelescopeRecordingIfEnabled(): void
-    {
-        if (class_exists(\Laravel\Telescope\Telescope::class)) {
-            \Laravel\Telescope\Telescope::stopRecording();
         }
     }
 
