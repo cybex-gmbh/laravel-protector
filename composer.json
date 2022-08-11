@@ -24,12 +24,13 @@
         "php": "^8.0",
         "ext-curl": "*",
         "ext-json": "*",
+        "ext-mbstring": "*",
         "ext-sodium": "*",
         "guzzlehttp/guzzle": "^7.4",
         "illuminate/support": "^8.0|^9.0",
         "laravel/framework": "^8.0|^9.0",
-        "laravel/sanctum": "^2.4",
-        "ext-mbstring": "*"
+        "laravel/sail": "^1.15",
+        "laravel/sanctum": "^2.4"
     },
     "require-dev": {
         "orchestra/testbench": "^6.23|^7.0",
