@@ -295,10 +295,18 @@ class Protector
 
         $request = $this->getConfiguredHttpRequest();
 
+        if ($isTelescopeRecording = class_exists(\Laravel\Telescope\Telescope::class) && \Laravel\Telescope\Telescope::isRecording()) {
+            \Laravel\Telescope\Telescope::stopRecording();
+        }
+
         try {
             $response = $request->withoutRedirecting()->post($serverUrl);
         } catch (Exception $exception) {
             throw new FailedRemoteDatabaseFetchingException(sprintf('Could not fetch database from remote server: %s', $exception->getMessage()));
+        } finally {
+            if ($isTelescopeRecording) {
+                \Laravel\Telescope\Telescope::startRecording();
+            }
         }
 
         if (!$response->ok()) {
