@@ -43,6 +43,3 @@ networks:
     internal: true
   shared:
     external: true
-volumes:
-  sail-mysql:
-    driver: local
