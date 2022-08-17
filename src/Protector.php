@@ -378,6 +378,9 @@ class Protector
 
         $this->createDirectory(Storage::disk('local')->path(dirname($destinationFilePath)));
 
+//        $metaData = DumpMetaData::getNewMetaDataObject($this->connection, $this->connectionConfig['driver']);
+        $metaData = DumpMetaData::createDataObjectFromMetaData('protector/commander.test 2022-08-03 16-05 62ea8099e4113.sql');
+
         // Write dump using specific options.
         exec(sprintf('mysqldump %s > %s 2> /dev/null',
                 $dumpOptions->implode(' '),
