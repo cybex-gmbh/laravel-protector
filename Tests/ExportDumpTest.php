@@ -101,10 +101,23 @@ class ExportDumpTest extends BaseTest
     /**
      * @test
      */
-    public function failGeneratingDumpOnFailedShellCommand()
+    public function failGeneratingDumpOnFailedMysqlShellCommand()
     {
-        $this->disk->put($this->emptyDumpPath, __FUNCTION__);
+        // Provide an database connection to a non-existing database.
+        Config::set('database.connections.invalid', [
+            'driver' => 'mysql',
+            'url' => env('DATABASE_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => 'invalid_database_name',
+            'username' => env('DB_USERNAME', 'forge'),
+            'password' => env('DB_PASSWORD', ''),
+        ]);
 
+        // Configure protector to the invalid database connection right before the mysqldump execution.
+        $this->protector->configure('invalid');
+
+        // Expect the shell return code to be != 0, triggering an Exception.
         $this->expectException(FailedMysqlCommandException::class);
         $this->runProtectedMethod('generateDump', [['no-data' => true]]);
     }
@@ -118,15 +131,6 @@ class ExportDumpTest extends BaseTest
         $this->protector->configure();
 
         $this->expectException(InvalidConnectionException::class);
-        $this->protector->createDump();
-    }
-
-    /**
-     * @test
-     */
-    public function failGetDestinationFilePathWhenGeneratingDump()
-    {
-        $this->expectException(FailedMysqlCommandException::class);
         $this->protector->createDump();
     }
 }
