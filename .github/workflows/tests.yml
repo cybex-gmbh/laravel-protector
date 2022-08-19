@@ -60,6 +60,7 @@ jobs:
           run: vendor/bin/phpunit
           env:
               DB_PORT: ${{ job.services.mysql.ports[3306] }}
+              DB_HOST: mysql
               DB_DATABASE: mysql
               DB_USERNAME: forge
               DB_PASSWORD: forge
