@@ -16,7 +16,7 @@ jobs:
             image: mysql:8.0
             env:
                 MYSQL_DATABASE: mysql
-                MYSQL_USERNAME: forge
+                USER: forge
                 MYSQL_PASSWORD: forge
             ports:
                 - 3306
