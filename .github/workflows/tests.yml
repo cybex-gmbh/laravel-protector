@@ -17,13 +17,10 @@ jobs:
             env:
                 MYSQL_DATABASE: mysql
                 MYSQL_USER: forge
-                MYSQL_PASSWORD: forge
+                MYSQL_ALLOW_EMPTY_PASSWORD: yes
             ports:
                 - 3306
-            healthcheck:
-                test: ["CMD", "mysqladmin", "ping", "-pforge"]
-                retries: 3
-                timeout: 5s
+            options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
     strategy:
       fail-fast: true
       matrix:
@@ -67,4 +64,3 @@ jobs:
               DB_HOST: localhost
               DB_DATABASE: mysql
               DB_USERNAME: forge
-              DB_PASSWORD: forge
