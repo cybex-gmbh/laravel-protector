@@ -1,7 +1,6 @@
 <?php
 
 use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
-use Cybex\Protector\Exceptions\FailedMysqlCommandException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Protector;
 use Illuminate\Contracts\Filesystem\Filesystem;
@@ -118,7 +117,7 @@ class ExportDumpTest extends BaseTest
         $this->protector->configure('invalid');
 
         // Expect the shell return code to be != 0, triggering an Exception.
-        $this->expectException(FailedMysqlCommandException::class);
+        $this->expectException(PDOException::class);
         $this->runProtectedMethod('generateDump', [['no-data' => true]]);
     }
 
