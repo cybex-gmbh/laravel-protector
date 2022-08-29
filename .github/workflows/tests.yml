@@ -20,7 +20,10 @@ jobs:
                 MYSQL_PASSWORD: forge
             ports:
                 - 3306
-            options: --health-cmd="mysqladmin ping -pforge" --health-interval=10s --health-timeout=5s --health-retries=3
+            healthcheck:
+                test: ["CMD", "mysqladmin", "ping", "-pforge"]
+                retries: 3
+                timeout: 5s
     strategy:
       fail-fast: true
       matrix:
