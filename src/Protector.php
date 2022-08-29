@@ -391,6 +391,8 @@ class Protector
             $dumpOptions->push('--set-gtid-purged=off');
         }
 
+        dump('hello world');
+
         if ($options['no-data'] ?? false) {
             $dumpOptions->push('--no-data');
         }
@@ -399,20 +401,20 @@ class Protector
 
         $tempFile = tempnam('', 'protector');
 
-            // Write dump using specific options.
-            exec(sprintf('mysqldump %s > %s 2> /dev/null',
+        // Write dump using specific options.
+        exec(sprintf('mysqldump %s > %s 2> /dev/null',
                 $dumpOptions->implode(' '),
                 escapeshellarg($tempFile)), result_code: $resultCode);
 
-            if (!filesize($tempFile)) {
-                unlink($tempFile);
+        if (!filesize($tempFile)) {
+            unlink($tempFile);
 
-                $tempFile = null;
-            }
+            $tempFile = null;
+        }
 
-            if ($resultCode != 0) {
-                throw new FailedMysqlCommandException();
-            }
+        if ($resultCode != 0) {
+            throw new FailedMysqlCommandException();
+        }
 
         try {
             // Append some import/export-meta-data to the end.
@@ -425,6 +427,7 @@ class Protector
 
             $tempFile = null;
         }
+
 
         return $tempFile;
     }
