@@ -1,7 +1,6 @@
 <?php
 
 use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
-use Cybex\Protector\Exceptions\FailedMysqlCommandException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Protector;
 use Illuminate\Contracts\Filesystem\Filesystem;
@@ -101,7 +100,7 @@ class ExportDumpTest extends BaseTest
     /**
      * @test
      */
-    public function failGeneratingDumpOnFailedMysqlShellCommand()
+    public function failGeneratingDumpWhenTryingToConnectToDatabase()
     {
         // Provide an database connection to a non-existing database.
         Config::set('database.connections.invalid', [
@@ -114,11 +113,11 @@ class ExportDumpTest extends BaseTest
             'password' => env('DB_PASSWORD', ''),
         ]);
 
-        // Configure protector to the invalid database connection right before the mysqldump execution.
+        // Configure protector to the invalid database connection.
         $this->protector->configure('invalid');
 
-        // Expect the shell return code to be != 0, triggering an Exception.
-        $this->expectException(FailedMysqlCommandException::class);
+        // Expect an exception when trying to connect and determine if the connected database is a MariaDB database.
+        $this->expectException(PDOException::class);
         $this->runProtectedMethod('generateDump', [['no-data' => true]]);
     }
 
