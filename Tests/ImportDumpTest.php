@@ -12,11 +12,6 @@ use Illuminate\Support\Facades\Storage;
 
 class ImportDumpTest extends BaseTest
 {
-    /**
-     *  Protector instance.
-     */
-    protected Protector $protector;
-
     protected Filesystem $disk;
 
     protected string $baseDirectory;
@@ -29,7 +24,6 @@ class ImportDumpTest extends BaseTest
 
         Config::set('protector.baseDirectory', 'protector');
 
-        $this->protector      = app('protector');
         $this->disk           = Storage::disk('local');
         $this->baseDirectory  = Config::get('protector.baseDirectory');
         $this->filePath       = $this->protector->createTempFilePath(sprintf('%s%sdump.sql', $this->baseDirectory, DIRECTORY_SEPARATOR));

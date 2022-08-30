@@ -10,11 +10,6 @@ use Illuminate\Support\Facades\Storage;
 
 class ExportDumpTest extends BaseTest
 {
-    /**
-     *  Protector instance.
-     */
-    protected Protector $protector;
-
     protected Filesystem $disk;
 
     protected string $baseDirectory;
@@ -27,7 +22,6 @@ class ExportDumpTest extends BaseTest
 
         Config::set('protector.baseDirectory', 'protector');
 
-        $this->protector     = app('protector');
         $this->disk          = Storage::disk('local');
         $this->baseDirectory = Config::get('protector.baseDirectory');
         $this->filePath      = sprintf('%s/dump.sql', $this->baseDirectory);
