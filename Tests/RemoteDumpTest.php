@@ -14,11 +14,6 @@ use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 class RemoteDumpTest extends BaseTest
 {
-    /**
-     *  Protector instance.
-     */
-    protected Protector $protector;
-
     protected Filesystem $disk;
 
     protected string $serverUrl;
@@ -32,7 +27,6 @@ class RemoteDumpTest extends BaseTest
         Config::set('protector.routeMiddleware', []);
         Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
 
-        $this->protector     = app('protector');
         $this->disk          = Storage::disk('local');
         $this->serverUrl     = app('protector')->getServerUrl();
         $this->baseDirectory = Config::get('protector.baseDirectory');

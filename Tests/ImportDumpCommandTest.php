@@ -13,11 +13,6 @@ use Illuminate\Support\Facades\Storage;
 
 class ImportDumpCommandTest extends BaseTest
 {
-    /**
-     *  Protector instance.
-     */
-    protected Protector $protector;
-
     protected Filesystem $disk;
 
     protected string $serverUrl;
@@ -31,7 +26,6 @@ class ImportDumpCommandTest extends BaseTest
         Config::set('protector.baseDirectory', 'protector');
         Config::set('protector.remoteEndpoint.serverUrl', 'protector.invalid/protector/exportDump');
 
-        $this->protector = app('protector');
         $this->disk      = Storage::disk('local');
         $this->serverUrl = $this->protector->getServerUrl();
 
