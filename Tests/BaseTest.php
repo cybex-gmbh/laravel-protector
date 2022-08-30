@@ -1,5 +1,6 @@
 <?php
 
+use Cybex\Protector\Protector;
 use Cybex\Protector\ProtectorServiceProvider;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
@@ -7,6 +8,18 @@ use Orchestra\Testbench\TestCase;
 
 abstract class BaseTest extends TestCase
 {
+    /**
+     *  Protector instance.
+     */
+    protected Protector $protector;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->protector = app('protector');
+    }
+
     /**
      * @return string
      */
