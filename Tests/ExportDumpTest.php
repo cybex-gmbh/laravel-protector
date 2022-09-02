@@ -20,9 +20,9 @@ class ExportDumpTest extends BaseTest
 
         Config::set('protector.baseDirectory', 'protector');
 
-        $this->disk          = Storage::disk('local');
+        $this->disk = Storage::disk('local');
         $this->baseDirectory = Config::get('protector.baseDirectory');
-        $this->filePath      = sprintf('%s/dump.sql', $this->baseDirectory);
+        $this->filePath = sprintf('%s/dump.sql', $this->baseDirectory);
         $this->emptyDumpPath = 'testDumps/dump.sql';
     }
 
@@ -34,7 +34,7 @@ class ExportDumpTest extends BaseTest
         Config::set('protector.baseDirectory', 'noDumps');
         $this->disk->deleteDirectory(Config::get('protector.baseDirectory'));
 
-        $filePath            = $this->protector->createDestinationFilePath(__FUNCTION__);
+        $filePath = $this->protector->createDestinationFilePath(__FUNCTION__);
         $destinationFilePath = $this->disk->path($filePath);
 
         $this->runProtectedMethod('createDirectory', [$filePath, $this->disk]);
@@ -50,7 +50,7 @@ class ExportDumpTest extends BaseTest
 
         $this->disk->deleteDirectory(Config::get('protector.baseDirectory'));
 
-        $filePath            = $this->protector->createDestinationFilePath(__FUNCTION__, __FUNCTION__);
+        $filePath = $this->protector->createDestinationFilePath(__FUNCTION__, __FUNCTION__);
         $destinationFilePath = $this->disk->path($filePath);
 
         $this->runProtectedMethod('createDirectory', [$filePath, $this->disk]);

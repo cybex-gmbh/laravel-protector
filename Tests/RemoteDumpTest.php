@@ -26,8 +26,8 @@ class RemoteDumpTest extends BaseTest
         Config::set('protector.routeMiddleware', []);
         Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
 
-        $this->disk          = Storage::disk('local');
-        $this->serverUrl     = app('protector')->getServerUrl();
+        $this->disk = Storage::disk('local');
+        $this->serverUrl = app('protector')->getServerUrl();
         $this->baseDirectory = Config::get('protector.baseDirectory');
     }
 
@@ -37,12 +37,12 @@ class RemoteDumpTest extends BaseTest
 
         $format = sprintf('%s%s%s.sql', $this->baseDirectory, DIRECTORY_SEPARATOR, '%s');
 
-        $path       = sprintf($format, 'dump');
+        $path = sprintf($format, 'dump');
         $secondPath = sprintf($format, 'dumpWithGit');
-        $thirdPath  = sprintf($format, 'dumpWithoutMetadata');
+        $thirdPath = sprintf($format, 'dumpWithoutMetadata');
         $fourthPath = sprintf($format, 'dumpWithIncorrectMetadata');
-        $fifthPath  = sprintf($format, 'dumpWithDifferentConnection');
-        $sixthPath  = sprintf($format, 'emptyDump');
+        $fifthPath = sprintf($format, 'dumpWithDifferentConnection');
+        $sixthPath = sprintf($format, 'emptyDump');
 
         $files = $this->disk->files($this->baseDirectory);
         $files = array_diff($files, [$path, $secondPath, $thirdPath, $fourthPath, $fifthPath, $sixthPath]);
@@ -220,18 +220,18 @@ class RemoteDumpTest extends BaseTest
      */
     public function checkForSuccessfulDecryption()
     {
-        $message          = env('PROTECTOR_DECRYPTED_MESSAGE');
+        $message = env('PROTECTOR_DECRYPTED_MESSAGE');
         $encryptedMessage = sodium_hex2bin(env('PROTECTOR_ENCRYPTED_MESSAGE'));
-        $publicKey        = sodium_hex2bin(env('PROTECTOR_PUBLIC_KEY'));
+        $publicKey = sodium_hex2bin(env('PROTECTOR_PUBLIC_KEY'));
 
         $chunkSize = strlen($message);
         $encryptionOverhead = $this->runProtectedMethod('determineEncryptionOverhead', [$chunkSize, $publicKey]);
 
         Http::fake([
             $this->serverUrl => Http::response($encryptedMessage, 200, [
-                'Sanctum-Enabled'     => true,
+                'Sanctum-Enabled' => true,
                 'Content-Disposition' => sprintf('attachment; filename="%s.txt"', __FUNCTION__),
-                'Chunk-Size'          => strlen($message) + $encryptionOverhead,
+                'Chunk-Size' => strlen($message) + $encryptionOverhead,
             ]),
         ]);
 
@@ -244,7 +244,7 @@ class RemoteDumpTest extends BaseTest
     public function responseCodes()
     {
         return [
-            'redirect'     => [302],
+            'redirect' => [302],
             'server error' => [500],
         ];
     }
@@ -387,7 +387,7 @@ class RemoteDumpTest extends BaseTest
      */
     public function canCreateFilename()
     {
-        $fileName  = $this->protector->createFilename();
+        $fileName = $this->protector->createFilename();
         $structure = '%s %d-%d-%d %d-%d %x.sql';
 
         $this->assertIsString($fileName);

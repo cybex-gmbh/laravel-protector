@@ -4,10 +4,10 @@ namespace Cybex\Protector;
 
 use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
 use Cybex\Protector\Exceptions\FailedDumpGenerationException;
+use Cybex\Protector\Exceptions\FailedMysqlCommandException;
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
-use Cybex\Protector\Exceptions\FailedMysqlCommandException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Cybex\Protector\Exceptions\ShellAccessDeniedException;
@@ -136,18 +136,22 @@ class Protector
             throw new FileNotFoundException($sourceFilePath);
         }
 
-        $shellCommandDropCreateDatabase = sprintf('mysql -h%s -u%s -p%s -e %s 2> /dev/null',
+        $shellCommandDropCreateDatabase = sprintf(
+            'mysql -h%s -u%s -p%s -e %s 2> /dev/null',
             escapeshellarg($this->connectionConfig['host']),
             escapeshellarg($this->connectionConfig['username']),
             escapeshellarg($this->connectionConfig['password']),
-            escapeshellarg(sprintf('drop database %1$s; create database %1$s;', $this->connectionConfig['database'])));
+            escapeshellarg(sprintf('drop database %1$s; create database %1$s;', $this->connectionConfig['database']))
+        );
 
-        $shellCommandImport = sprintf('mysql -h%s -u%s -p%s -D%s < %s 2> /dev/null',
+        $shellCommandImport = sprintf(
+            'mysql -h%s -u%s -p%s -D%s < %s 2> /dev/null',
             escapeshellarg($this->connectionConfig['host']),
             escapeshellarg($this->connectionConfig['username']),
             escapeshellarg($this->connectionConfig['password']),
             escapeshellarg($this->connectionConfig['database']),
-            escapeshellarg($sourceFilePath));
+            escapeshellarg($sourceFilePath)
+        );
 
         exec($shellCommandDropCreateDatabase, result_code: $resultCode);
 
@@ -181,11 +185,14 @@ class Protector
      */
     public function createDestinationFilePath(string $fileName, ?string $subFolder = null): string
     {
-        return implode(DIRECTORY_SEPARATOR, array_filter([
-            $this->getConfigValueForKey('baseDirectory'),
-            $subFolder,
-            $fileName,
-        ]));
+        return implode(
+            DIRECTORY_SEPARATOR,
+            array_filter([
+                $this->getConfigValueForKey('baseDirectory'),
+                $subFolder,
+                $fileName,
+            ])
+        );
     }
 
     /**
@@ -284,7 +291,9 @@ class Protector
         }
 
         if ($this->shouldEncrypt() && !$this->getPrivateKey()) {
-            throw new InvalidConfigurationException('For using Laravel Sanctum a crypto keypair is required. There was none found in your .env file.');
+            throw new InvalidConfigurationException(
+                'For using Laravel Sanctum a crypto keypair is required. There was none found in your .env file.'
+            );
         }
 
         if (!$serverUrl = $this->getServerUrl()) {
@@ -295,14 +304,18 @@ class Protector
 
         $request = $this->getConfiguredHttpRequest();
 
-        if ($isTelescopeRecording = class_exists(\Laravel\Telescope\Telescope::class) && \Laravel\Telescope\Telescope::isRecording()) {
+        if ($isTelescopeRecording = class_exists(
+                \Laravel\Telescope\Telescope::class
+            ) && \Laravel\Telescope\Telescope::isRecording()) {
             \Laravel\Telescope\Telescope::stopRecording();
         }
 
         try {
             $response = $request->withoutRedirecting()->post($serverUrl);
         } catch (Exception $exception) {
-            throw new FailedRemoteDatabaseFetchingException(sprintf('Could not fetch database from remote server: %s', $exception->getMessage()));
+            throw new FailedRemoteDatabaseFetchingException(
+                sprintf('Could not fetch database from remote server: %s', $exception->getMessage())
+            );
         } finally {
             if ($isTelescopeRecording) {
                 \Laravel\Telescope\Telescope::startRecording();
@@ -321,9 +334,14 @@ class Protector
         }
 
         $destinationFilePath = $this->getDumpDestinationFilePath($response->header('Content-Disposition'));
-        $stream              = $response->toPsrResponse()->getBody();
+        $stream = $response->toPsrResponse()->getBody();
 
-        $this->writeDumpFile($stream, $destinationFilePath, $response->header('Chunk-Size'), $response->header('Sanctum-Enabled'));
+        $this->writeDumpFile(
+            $stream,
+            $destinationFilePath,
+            $response->header('Chunk-Size'),
+            $response->header('Sanctum-Enabled')
+        );
         $stream->close();
 
         if ($disk->size($destinationFilePath) === 0) {
@@ -399,27 +417,35 @@ class Protector
 
         $tempFile = tempnam('', 'protector');
 
-            // Write dump using specific options.
-            exec(sprintf('mysqldump %s > %s 2> /dev/null',
+        // Write dump using specific options.
+        exec(
+            sprintf(
+                'mysqldump %s > %s 2> /dev/null',
                 $dumpOptions->implode(' '),
-                escapeshellarg($tempFile)), result_code: $resultCode);
+                escapeshellarg($tempFile)
+            ),
+            result_code: $resultCode
+        );
 
-            if (!filesize($tempFile)) {
-                unlink($tempFile);
+        if (!filesize($tempFile)) {
+            unlink($tempFile);
 
-                $tempFile = null;
-            }
+            $tempFile = null;
+        }
 
-            if ($resultCode != 0) {
-                throw new FailedMysqlCommandException();
-            }
+        if ($resultCode != 0) {
+            throw new FailedMysqlCommandException();
+        }
 
         try {
             // Append some import/export-meta-data to the end.
-            $metaData = sprintf("\n-- options:%s\n-- meta:%s", json_encode($options, JSON_UNESCAPED_UNICODE), json_encode($this->createMetaData(), JSON_UNESCAPED_UNICODE));
+            $metaData = sprintf(
+                "\n-- options:%s\n-- meta:%s",
+                json_encode($options, JSON_UNESCAPED_UNICODE),
+                json_encode($this->createMetaData(), JSON_UNESCAPED_UNICODE)
+            );
 
             file_put_contents($tempFile, $metaData, FILE_APPEND);
-
         } catch (Exception) {
             unlink($tempFile);
 
@@ -459,12 +485,23 @@ class Protector
         $metadata = $this->createMetaData();
         [$appUrl, $database, $connection, $date] = [
             parse_url(env('APP_URL'), PHP_URL_HOST),
-            $metadata['database'] ?? '',
-            $metadata['connection'] ?? '',
+                $metadata['database'] ?? '',
+                $metadata['connection'] ?? '',
             $metadata['dumpedAtDate'],
         ];
 
-        return sprintf(config('protector.fileName'), $appUrl, $database, $connection, $date->year, $date->month, $date->day, $date->hour, $date->minute, $date->second);
+        return sprintf(
+            config('protector.fileName'),
+            $appUrl,
+            $database,
+            $connection,
+            $date->year,
+            $date->month,
+            $date->day,
+            $date->hour,
+            $date->minute,
+            $date->second
+        );
     }
 
     /**
@@ -481,12 +518,12 @@ class Protector
         }
 
         return $this->cacheMetaData = [
-            'database'        => $this->connectionConfig['database'],
-            'connection'      => $this->connection,
-            'gitRevision'     => $this->getGitRevision(),
-            'gitBranch'       => $this->getGitBranch(),
+            'database' => $this->connectionConfig['database'],
+            'connection' => $this->connection,
+            'gitRevision' => $this->getGitRevision(),
+            'gitBranch' => $this->getGitBranch(),
             'gitRevisionDate' => $this->getGitHeadDate(),
-            'dumpedAtDate'    => now(),
+            'dumpedAtDate' => now(),
         ];
     }
 
@@ -507,7 +544,7 @@ class Protector
         fseek($fileHandle, 0, SEEK_END);
 
         $linesToRead = $lines;
-        $contents    = '';
+        $contents = '';
 
         // Only read file as long as file-pointer is not at start of the file and there are still lines to read open.
         while (ftell($fileHandle) && $linesToRead >= 0) {
@@ -535,7 +572,7 @@ class Protector
      * Returns a config value for a specific key and checks for Callables.
      *
      * @param string $key
-     * @param mixed  $default
+     * @param mixed $default
      *
      * @return mixed
      */
@@ -577,17 +614,18 @@ class Protector
      *
      * @return Response|StreamedResponse
      */
-    public function generateFileDownloadResponse(Request $request, string $connectionName = null): Response|StreamedResponse
-    {
+    public function generateFileDownloadResponse(
+        Request $request,
+        string $connectionName = null
+    ): Response|StreamedResponse {
         $shouldEncrypt = $this->shouldEncrypt();
 
         // Only proceed when either Laravel Sanctum is turned off or the user's token is valid.
         if (!$shouldEncrypt || $request->user()->tokenCan('protector:import')) {
             if ($this->configure($connectionName)) {
-
                 try {
                     $serverFilePath = $this->createDump();
-                    $publicKey      = $this->getPublicKey($request);
+                    $publicKey = $this->getPublicKey($request);
                 } catch (InvalidConnectionException|FailedDumpGenerationException|InvalidConfigurationException $exception) {
                     return response($exception->getMessage(), 500, ['message' => $exception->getMessage()]);
                 }
@@ -614,11 +652,11 @@ class Protector
                     },
                     $this->createFilename(),
                     [
-                        'Content-Type'    => 'text/plain',
-                        'Pragma'          => 'no-cache',
-                        'Expires'         => gmdate(DATE_RFC7231, time() - 3600),
+                        'Content-Type' => 'text/plain',
+                        'Pragma' => 'no-cache',
+                        'Expires' => gmdate(DATE_RFC7231, time() - 3600),
                         // Encryption adds some overhead to the chunk, which has to be considered when decrypting it.
-                        'Chunk-Size'      => $shouldEncrypt ? $chunkSize + $this->determineEncryptionOverhead(
+                        'Chunk-Size' => $shouldEncrypt ? $chunkSize + $this->determineEncryptionOverhead(
                                 $chunkSize,
                                 $publicKey
                             ) : $chunkSize,
@@ -656,14 +694,18 @@ class Protector
     {
         if ($disk->missing($destinationPath)) {
             if ($disk->makeDirectory($destinationPath) === false) {
-                throw new FailedCreatingDestinationPathException(sprintf('Could not create the non-existing destination path %s on given disk.', $destinationPath));
+                throw new FailedCreatingDestinationPathException(
+                    sprintf('Could not create the non-existing destination path %s on given disk.', $destinationPath)
+                );
             }
 
             return;
         }
 
         if (in_array($destinationPath, $disk->files($this->getBaseDirectory()))) {
-            throw new FailedCreatingDestinationPathException(sprintf('Could not create directory %s, because a file with the same name exists.', $destinationPath));
+            throw new FailedCreatingDestinationPathException(
+                sprintf('Could not create directory %s, because a file with the same name exists.', $destinationPath)
+            );
         }
     }
 
@@ -688,10 +730,12 @@ class Protector
         } elseif ($htaccessLogin) {
             // Add basic authentication to request.
             $credentials = explode(':', $htaccessLogin);
-            $request     = Http::withBasicAuth($credentials[0], $credentials[1]);
+            $request = Http::withBasicAuth($credentials[0], $credentials[1]);
         } else {
             // Protector cannot be used without any authentication.
-            throw new InvalidConfigurationException('Either Laravel Sanctum has to be active or a htaccess login has to be defined.');
+            throw new InvalidConfigurationException(
+                'Either Laravel Sanctum has to be active or a htaccess login has to be defined.'
+            );
         }
 
         return $request->withOptions(['stream' => true])->withHeaders(['Accept' => 'application/json']);
@@ -795,9 +839,9 @@ class Protector
      */
     public function getLatestDumpName(): string
     {
-        $disk          = $this->getDisk();
+        $disk = $this->getDisk();
         $baseDirectory = $this->getConfigValueForKey('baseDirectory');
-        $files         = $disk->files($baseDirectory);
+        $files = $disk->files($baseDirectory);
 
         if (empty($files)) {
             throw new FileNotFoundException($disk->path($baseDirectory));
@@ -821,7 +865,9 @@ class Protector
         $decryptedString = sodium_crypto_box_seal_open($encryptedString, sodium_hex2bin($this->getPrivateKey()));
 
         if ($decryptedString === false) {
-            throw new InvalidConfigurationException("There was an error decrypting the provided string. This might be due to mismatching crypto keys.");
+            throw new InvalidConfigurationException(
+                "There was an error decrypting the provided string. This might be due to mismatching crypto keys."
+            );
         }
 
         return $decryptedString;
@@ -837,7 +883,9 @@ class Protector
         try {
             $publicKey = sodium_hex2bin($request->user()->protector_public_key);
         } catch (SodiumException) {
-            throw new InvalidConfigurationException('There was an error receiving the crypto keys. This might be due to mismatching crypto keys.');
+            throw new InvalidConfigurationException(
+                'There was an error receiving the crypto keys. This might be due to mismatching crypto keys.'
+            );
         }
 
         return $publicKey;
@@ -920,14 +968,18 @@ class Protector
      * When the database dump is encrypted (indicated by whether Laravel Sanctum is enabled or not) those chunks will also be decrypted.
      *
      * @param StreamInterface $stream
-     * @param string          $destinationFilePath
-     * @param int             $chunkSize
-     * @param bool            $sanctumEnabled
+     * @param string $destinationFilePath
+     * @param int $chunkSize
+     * @param bool $sanctumEnabled
      *
      * @return void
      */
-    protected function writeDumpFile(StreamInterface $stream, string $destinationFilePath, int $chunkSize, bool $sanctumEnabled): void
-    {
+    protected function writeDumpFile(
+        StreamInterface $stream,
+        string $destinationFilePath,
+        int $chunkSize,
+        bool $sanctumEnabled
+    ): void {
         $resource = StreamWrapper::getResource($stream);
 
         $outputHandle = fopen($this->getDisk()->path($destinationFilePath), 'wb');
@@ -945,14 +997,14 @@ class Protector
     }
 
     /**
-     * @param int    $chunkSize
+     * @param int $chunkSize
      * @param string $publicKey
      *
      * @return int
      */
     protected function determineEncryptionOverhead(int $chunkSize, string $publicKey): int
     {
-        $chunk          = str_repeat('0', $chunkSize);
+        $chunk = str_repeat('0', $chunkSize);
         $encryptedChunk = sodium_crypto_box_seal($chunk, $publicKey);
 
         return strlen($encryptedChunk) - $chunkSize;
