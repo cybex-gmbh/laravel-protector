@@ -34,7 +34,10 @@
         <env name="PROTECTOR_ENCRYPTED_MESSAGE" value="c93e1c30857b0a5a36dddd11237ff65ef153144e0c400304cc80501da7e9b41a99c568fb34491629577ba4b5c0ec632e50067d61cf1ece27e1eabc" />
         <env name="PROTECTOR_DECRYPTED_MESSAGE" value="hello world" />
         <env name="PROTECTOR_AUTH_TOKEN" value="1|bxa5BBNo7lXxgtRY4DN775JdAtQSAlN4UfgRnFhz" />
-        <env name="DB_PASSWORD" value="example" />
+        <env name="DB_HOST" value="laravel-protector-mysql_testing-1" />
+        <env name="DB_DATABASE" value="protector_test" />
+        <env name="DB_USERNAME" value="forge" />
+        <env name="DB_PASSWORD" value="forge" />
         <env name="APP_URL" value="http://protector.invalid" />
     </php>
 </phpunit>

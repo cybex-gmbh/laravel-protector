@@ -11,6 +11,14 @@ on:
 jobs:
   linux_tests:
     runs-on: ubuntu-latest
+    services:
+        mysql:
+            image: mysql:8.0
+            env:
+                MYSQL_ALLOW_EMPTY_PASSWORD: yes
+            ports:
+                - 3306
+            options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
     strategy:
       fail-fast: true
       matrix:
@@ -49,3 +57,5 @@ jobs:
             composer update --${{ matrix.dependency-version }} --prefer-dist --no-interaction --no-progress
       -   name: Execute tests
           run: vendor/bin/phpunit
+          env:
+              DB_PORT: ${{ job.services.mysql.ports[3306] }}
