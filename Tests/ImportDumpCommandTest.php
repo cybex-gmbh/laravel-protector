@@ -5,7 +5,6 @@ use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
-use Cybex\Protector\Protector;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;

@@ -2,7 +2,6 @@
 
 use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
-use Cybex\Protector\Protector;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;

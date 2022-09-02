@@ -3,7 +3,6 @@
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
-use Cybex\Protector\Protector;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Config;
