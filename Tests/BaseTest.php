@@ -47,7 +47,7 @@ abstract class BaseTest extends TestCase
     protected function getAccessibleReflectionMethod($method): ReflectionMethod
     {
         $reflectionProtector = new ReflectionClass($this->protector);
-        $method              = $reflectionProtector->getMethod($method);
+        $method = $reflectionProtector->getMethod($method);
 
         $method->setAccessible(true);
 
@@ -76,7 +76,7 @@ abstract class BaseTest extends TestCase
     protected function provideTestDumps(array $fileNames): void
     {
         $directoryName = 'testDumps';
-        $disk          = Storage::disk('local');
+        $disk = Storage::disk('local');
 
         $disk->deleteDirectory($directoryName);
 

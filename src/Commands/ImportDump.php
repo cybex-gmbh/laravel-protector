@@ -45,9 +45,9 @@ class ImportDump extends Command
      */
     protected $description = 'Imports a local or remote database dump.';
 
-    protected const DOWNLOAD_REMOTE_DUMP       = 'Download remote dump';
+    protected const DOWNLOAD_REMOTE_DUMP = 'Download remote dump';
     protected const IMPORT_EXISTING_LOCAL_DUMP = 'Import existing local dump';
-    protected ?Protector $protector            = null;
+    protected ?Protector $protector = null;
 
     /**
      * Execute the console command.
@@ -61,15 +61,17 @@ class ImportDump extends Command
 
         $this->protector->isExecEnabled();
 
-        $optionDump       = $this->option('dump');
-        $optionFile       = $this->option('file');
-        $optionRemote     = $this->option('remote');
-        $optionForce      = $this->option('force');
-        $optionLatest     = $this->option('latest');
+        $optionDump = $this->option('dump');
+        $optionFile = $this->option('file');
+        $optionRemote = $this->option('remote');
+        $optionForce = $this->option('force');
+        $optionLatest = $this->option('latest');
         $optionConnection = $this->option('connection');
 
         if (App::environment('production') && !$this->option('allow-production')) {
-            throw new InvalidEnvironmentException('Import is not allowed on production systems! Use --allow-production');
+            throw new InvalidEnvironmentException(
+                'Import is not allowed on production systems! Use --allow-production'
+            );
         }
 
         if ($optionForce && !($optionRemote || $optionFile || $optionDump)) {
@@ -86,7 +88,7 @@ class ImportDump extends Command
         if ($shouldDownloadDump) {
             $importFilePath = $this->getRemoteDump();
         } elseif ($optionFile) {
-            $localFilePath  = $optionFile;
+            $localFilePath = $optionFile;
         } elseif ($optionDump) {
             $importFilePath = $this->getPathForDump($optionDump);
         } elseif ($optionLatest) {
@@ -136,12 +138,14 @@ class ImportDump extends Command
      */
     protected function getRemoteDump(): ?string
     {
-        $disk         = $this->protector->getDisk();
-        $basePath     = $this->protector->getBaseDirectory();
-        $serverUrl    = $this->protector->getServerUrl();
+        $disk = $this->protector->getDisk();
+        $basePath = $this->protector->getBaseDirectory();
+        $serverUrl = $this->protector->getServerUrl();
         $absolutePath = $disk->path($basePath);
 
-        $this->line(sprintf('<<< Downloading dump from remote server to directory: <comment>%s</comment>', $absolutePath));
+        $this->line(
+            sprintf('<<< Downloading dump from remote server to directory: <comment>%s</comment>', $absolutePath)
+        );
 
         try {
             $importFilePath = $this->protector->getRemoteDump();
@@ -172,7 +176,7 @@ class ImportDump extends Command
     protected function getPathForDump(string $dumpName): string
     {
         $filePath = implode(DIRECTORY_SEPARATOR, [$this->protector->getBaseDirectory(), $dumpName]);
-        $disk     = $this->protector->getDisk();
+        $disk = $this->protector->getDisk();
 
         if ($disk->exists($filePath)) {
             return $filePath;
@@ -223,27 +227,30 @@ class ImportDump extends Command
 
             if ($this->option('ignore-connection-filter') || (!is_array($metaData) || empty($metaData))) {
                 $matchingFiles->push([
-                    'path'        => $directoryFile,
-                    'file'        => basename($directoryFile),
-                    'database'    => '',
-                    'connection'  => 'external_dump',
-                    'date'        => '',
-                    'time'        => '',
+                    'path' => $directoryFile,
+                    'file' => basename($directoryFile),
+                    'database' => '',
+                    'connection' => 'external_dump',
+                    'date' => '',
+                    'time' => '',
                     'gitRevision' => '',
-                    'gitBranch'   => '',
-                    'dateTime'    => '',
+                    'gitBranch' => '',
+                    'dateTime' => '',
                 ]);
 
                 continue;
             }
 
-            if (($metaData['meta']['connection'] ?? false) && Arr::exists(config('database.connections'), $metaData['meta']['connection'])) {
+            if (($metaData['meta']['connection'] ?? false) && Arr::exists(
+                    config('database.connections'),
+                    $metaData['meta']['connection']
+                )) {
                 $fileInformation = [
-                    'path'        => $directoryFile,
-                    'file'        => basename($directoryFile),
-                    'database'    => Arr::get($metaData, 'meta.database', null),
-                    'connection'  => Arr::get($metaData, 'meta.connection', null),
-                    'date'        => Arr::get(
+                    'path' => $directoryFile,
+                    'file' => basename($directoryFile),
+                    'database' => Arr::get($metaData, 'meta.database', null),
+                    'connection' => Arr::get($metaData, 'meta.connection', null),
+                    'date' => Arr::get(
                         $metaData,
                         'meta.date',
                         sprintf(
@@ -253,7 +260,7 @@ class ImportDump extends Command
                             Arr::get($metaData, 'meta.dumpedAtDate.mday', '00')
                         )
                     ),
-                    'time'        => Arr::get(
+                    'time' => Arr::get(
                         $metaData,
                         'meta.time',
                         sprintf(
@@ -264,7 +271,7 @@ class ImportDump extends Command
                         )
                     ),
                     'gitRevision' => Arr::get($metaData, 'meta.gitRevision', null),
-                    'gitBranch'   => Arr::get($metaData, 'meta.gitBranch', null),
+                    'gitBranch' => Arr::get($metaData, 'meta.gitBranch', null),
                 ];
             }
 
@@ -287,7 +294,12 @@ class ImportDump extends Command
      */
     public function importDump(string $importFilePath, ?bool $optionForce): void
     {
-        if ($importFilePath && ($optionForce || $this->confirm(sprintf('Are you sure that you want to import the dump into the database: %s?', $this->protector->getDatabaseName())))) {
+        if ($importFilePath && ($optionForce || $this->confirm(
+                    sprintf(
+                        'Are you sure that you want to import the dump into the database: %s?',
+                        $this->protector->getDatabaseName()
+                    )
+                ))) {
             try {
                 $this->protector->importDump($importFilePath, Arr::except($this->options(), ['migrate']));
 
@@ -366,7 +378,12 @@ class ImportDump extends Command
         if ($connectionNames->count() === 1) {
             $connectionName = $connectionNames->first();
 
-            $this->info(sprintf('Using connection "%s" because there are no dumps created through other connections.', $connectionName));
+            $this->info(
+                sprintf(
+                    'Using connection "%s" because there are no dumps created through other connections.',
+                    $connectionName
+                )
+            );
 
             return $connectionName;
         }

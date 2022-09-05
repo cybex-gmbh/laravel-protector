@@ -66,7 +66,7 @@ return [
     |
     */
     'remoteEndpoint' => [
-        'serverUrl'     => env('PROTECTOR_SERVER_URL'),
+        'serverUrl' => env('PROTECTOR_SERVER_URL'),
         // Htaccess may only be used without Laravel Sanctum or basic auth has to be added to the server URL.
         'htaccessLogin' => '',
     ],

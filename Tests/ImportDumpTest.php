@@ -22,10 +22,12 @@ class ImportDumpTest extends BaseTest
 
         Config::set('protector.baseDirectory', 'protector');
 
-        $this->disk           = Storage::disk('local');
-        $this->baseDirectory  = Config::get('protector.baseDirectory');
-        $this->filePath       = $this->protector->createTempFilePath(sprintf('%s%sdump.sql', $this->baseDirectory, DIRECTORY_SEPARATOR));
-        $this->emptyDumpPath  = 'testDumps/dump.sql';
+        $this->disk = Storage::disk('local');
+        $this->baseDirectory = Config::get('protector.baseDirectory');
+        $this->filePath = $this->protector->createTempFilePath(
+            sprintf('%s%sdump.sql', $this->baseDirectory, DIRECTORY_SEPARATOR)
+        );
+        $this->emptyDumpPath = 'testDumps/dump.sql';
 
         $this->shouldDownloadDump = 'Do you want to download and import a fresh dump from the server or an existing local dump?';
     }
@@ -45,23 +47,23 @@ class ImportDumpTest extends BaseTest
                 "protector/dump.sql",
                 [
                     'meta' => [
-                        'database'        => 'protector-tests',
-                        'connection'      => 'mysql',
-                        'gitRevision'     => '',
-                        'gitBranch'       => '',
+                        'database' => 'protector-tests',
+                        'connection' => 'mysql',
+                        'gitRevision' => '',
+                        'gitBranch' => '',
                         'gitRevisionDate' => '',
-                        'dumpedAtDate'    => [
+                        'dumpedAtDate' => [
                             'seconds' => 24,
                             'minutes' => 43,
-                            'hours'   => 12,
-                            'mday'    => 29,
-                            'wday'    => 3,
-                            'mon'     => 6,
-                            'year'    => 2022,
-                            'yday'    => 179,
+                            'hours' => 12,
+                            'mday' => 29,
+                            'wday' => 3,
+                            'mon' => 6,
+                            'year' => 2022,
+                            'yday' => 179,
                             'weekday' => 'Wednesday',
-                            'month'   => 'June',
-                            0         => 1656506604
+                            'month' => 'June',
+                            0 => 1656506604
                         ]
                     ]
                 ]
@@ -70,23 +72,23 @@ class ImportDumpTest extends BaseTest
                 "protector/dumpWithGit.sql",
                 [
                     'meta' => [
-                        'database'        => 'protector-tests',
-                        'connection'      => 'mysql',
-                        'gitRevision'     => '2aae6c35c94fcfb415dbe95f408b9ce91ee846ed',
-                        'gitBranch'       => 'feature/tests',
+                        'database' => 'protector-tests',
+                        'connection' => 'mysql',
+                        'gitRevision' => '2aae6c35c94fcfb415dbe95f408b9ce91ee846ed',
+                        'gitBranch' => 'feature/tests',
                         'gitRevisionDate' => '2022-07-12 08:00:00 +0200',
-                        'dumpedAtDate'    => [
+                        'dumpedAtDate' => [
                             'seconds' => 24,
                             'minutes' => 43,
-                            'hours'   => 12,
-                            'mday'    => 29,
-                            'wday'    => 3,
-                            'mon'     => 6,
-                            'year'    => 2022,
-                            'yday'    => 179,
+                            'hours' => 12,
+                            'mday' => 29,
+                            'wday' => 3,
+                            'mon' => 6,
+                            'year' => 2022,
+                            'yday' => 179,
                             'weekday' => 'Wednesday',
-                            'month'   => 'June',
-                            0         => 1656506604
+                            'month' => 'June',
+                            0 => 1656506604
                         ]
                     ]
                 ]
@@ -240,7 +242,7 @@ class ImportDumpTest extends BaseTest
 
         $this->protector->flush($excludeDump);
 
-        $baseDirectory      = Config::get('protector.baseDirectory');
+        $baseDirectory = Config::get('protector.baseDirectory');
         $dumpsAfterFlushing = $this->disk->files($baseDirectory);
 
         $this->assertEquals($expected, $dumpsAfterFlushing);

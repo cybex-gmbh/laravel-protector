@@ -66,7 +66,7 @@ return [
     |
     */
     'remoteEndpoint' => [
-        'serverUrl'     => 'protector.invalid/protector/exportDump',
+        'serverUrl' => 'protector.invalid/protector/exportDump',
         // Htaccess may only be used without Laravel Sanctum or basic auth has to be added to the server URL.
         'htaccessLogin' => '',
     ],

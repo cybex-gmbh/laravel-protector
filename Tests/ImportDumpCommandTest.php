@@ -25,11 +25,14 @@ class ImportDumpCommandTest extends BaseTest
         Config::set('protector.baseDirectory', 'protector');
         Config::set('protector.remoteEndpoint.serverUrl', 'protector.invalid/protector/exportDump');
 
-        $this->disk      = Storage::disk('local');
+        $this->disk = Storage::disk('local');
         $this->serverUrl = $this->protector->getServerUrl();
 
         $this->shouldDownloadDump = 'Do you want to download and import a fresh dump from the server or an existing local dump?';
-        $this->shouldImportDump   = sprintf('Are you sure that you want to import the dump into the database: %s?', $this->protector->getDatabaseName());
+        $this->shouldImportDump = sprintf(
+            'Are you sure that you want to import the dump into the database: %s?',
+            $this->protector->getDatabaseName()
+        );
     }
 
     protected function tearDown(): void
@@ -122,7 +125,10 @@ class ImportDumpCommandTest extends BaseTest
         $this->artisan('protector:import --remote --flush')
             ->expectsConfirmation($this->shouldImportDump);
 
-        $this->assertEquals([sprintf('%s%sremote_dump.sql', Config::get('protector.baseDirectory'), DIRECTORY_SEPARATOR)], $this->protector->getDumpFiles());
+        $this->assertEquals(
+            [sprintf('%s%sremote_dump.sql', Config::get('protector.baseDirectory'), DIRECTORY_SEPARATOR)],
+            $this->protector->getDumpFiles()
+        );
     }
 
     /**
@@ -131,7 +137,9 @@ class ImportDumpCommandTest extends BaseTest
     public function failGetRemoteOnDumpWithNoResponse()
     {
         $this->artisan('protector:import --remote')
-            ->expectsOutput("Error retrieving dump from remote server: Could not fetch database from remote server: The scheme '' is not supported.")
+            ->expectsOutput(
+                "Error retrieving dump from remote server: Could not fetch database from remote server: The scheme '' is not supported."
+            )
             ->assertFailed();
     }
 
@@ -164,7 +172,10 @@ class ImportDumpCommandTest extends BaseTest
         $this->provideTestDumps(['dump.sql']);
 
         $this->artisan('protector:import --latest')->expectsConfirmation($this->shouldImportDump);
-        $this->assertEquals(sprintf('%s%sdump.sql', $this->protector->getBaseDirectory(), DIRECTORY_SEPARATOR), $this->protector->getLatestDumpName());
+        $this->assertEquals(
+            sprintf('%s%sdump.sql', $this->protector->getBaseDirectory(), DIRECTORY_SEPARATOR),
+            $this->protector->getLatestDumpName()
+        );
     }
 
     /**
