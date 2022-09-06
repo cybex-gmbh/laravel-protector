@@ -2,6 +2,7 @@
 
 namespace Cybex\Protector\Tests;
 
+use BaseTest;
 use LogicException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -16,19 +17,23 @@ class ExceptionTest extends BaseTest
     {
         try {
             throw new HttpException(200);
-        } catch (HttpException) {}
+        } catch (HttpException) {
+        }
 
         try {
             throw new UnauthorizedHttpException('');
-        } catch (UnauthorizedHttpException) {}
+        } catch (UnauthorizedHttpException) {
+        }
 
         try {
             throw new NotFoundHttpException();
-        } catch (NotFoundHttpException) {}
+        } catch (NotFoundHttpException) {
+        }
 
         try {
             throw new LogicException();
-        } catch (LogicException) {}
+        } catch (LogicException) {
+        }
 
         $this->expectNotToPerformAssertions();
     }

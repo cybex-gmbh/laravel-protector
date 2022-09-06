@@ -27,16 +27,6 @@ class CreateToken extends Command
     protected $description = 'Creates a token for a specified user id and optionally sets the public key.';
 
     /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
-    /**
      * Execute the console command.
      *
      * @return void
@@ -44,12 +34,14 @@ class CreateToken extends Command
     public function handle()
     {
         $publicKey = $this->option('publicKey');
-        $user      = config('auth.providers.users.model')::findOrFail($this->argument('userId'));
+        $user = config('auth.providers.users.model')::findOrFail($this->argument('userId'));
         $user->tokens()->whereAbilities('["protector:import"]')->delete();
         $userInformation = sprintf('%s: %s (%s)', $user->id, $user->name, $user->email);
 
         if (!$user->protector_public_key && !$publicKey) {
-            $this->error('The user doesn\'t have a protector public key and none was specified. Please provide a public key for the user.');
+            $this->error(
+                'The user doesn\'t have a protector public key and none was specified. Please provide a public key for the user.'
+            );
             return null;
         }
 

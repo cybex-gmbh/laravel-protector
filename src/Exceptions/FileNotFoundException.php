@@ -3,6 +3,7 @@
 namespace Cybex\Protector\Exceptions;
 
 use Exception;
+use Throwable;
 
 /**
  * Class FileNotFoundException
@@ -13,8 +14,8 @@ use Exception;
  */
 class FileNotFoundException extends Exception
 {
-    public function __construct(string $path)
+    public function __construct($path, $code = 0, Throwable $previous = null)
     {
-        parent::__construct(sprintf('The file "%s" was not found.', $path));
+        parent::__construct(sprintf('The file "%s" was not found.', $path), $code, $previous);
     }
 }

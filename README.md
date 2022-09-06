@@ -4,12 +4,11 @@
 
 This package allows you to download, export and import your application's database backups.
 
-
 ## Common usage scenarios
+
 - Store your local database in a file
 - Non-productive developer machines can download the live server database
 - A central backup server can collect backups from multiple live servers
-
 
 ## Feature set
 
@@ -19,6 +18,17 @@ This package allows you to download, export and import your application's databa
 - User authentication through Laravel Sanctum tokens
 - Transport encryption using Sodium
 
+## Supported databases
+
+- Protector only supports MySQL databases at this point.
+- MariaDB databases may work, but are currently not actively tested and supported.
+- Source and destination databases are currently not checked. Please make sure you run the same software in the same
+  versions to prevent issues.
+- Because of different dump formats, pulling dumps from MariaDB and restoring them to MySQL will not work.
+
+## Notes
+
+- Enabling Laravel Telescope will prevent remote files from being downloaded, as it opens and discards the HTTP stream!
 
 ## Table of contents
 
@@ -28,44 +38,78 @@ This package allows you to download, export and import your application's databa
     - [Importing the database of a remote server](#setup-for-importing-the-database-of-a-remote-server)
     - [Collecting backups from multiple servers](#setup-for-collecting-backups-from-multiple-servers)
 
-
 ## Usage
+
+### Export to file
+
+To save a copy of your local database, run
+
+```bash
+php artisan protector:export
+```
+
+By default, dumps are stored in `storage/app/protector` on your default project disk.
+You can configure the target disk, filename, etc. by publishing the protector config file to your project
+
+```bash
+artisan vendor:publish --tag=protector.config
+```
 
 ### Import
 
 Run the following command for an interactive shell
+
 ```bash
 php artisan protector:import
 ```
 
+#### Importing a specific source
+
 To download and import the server database in one go, run
+
 ```bash
 php artisan protector:import --remote
 ```
+
 When used with other options, remote will serve as fallback behavior.
 
-To import a database you downloaded earlier, run
+To import a specific database file that you downloaded earlier, run
+
 ```bash
-php artisan protector:import --file=<your backup file>
+php artisan protector:import --file=<absolute path to database file>
+```
+
+Or just reference the database file name in the protector folder (default folder is storage/app/protector).
+
+```bash
+php artisan protector:import --dump=<name of database file>
 ```
 
 To import the latest existing database file, run
+
 ```bash
 php artisan protector:import --latest
 ```
 
-To learn more about import options run
+#### Options
+
+If you want to run migrations after the import of the database file, run
+
 ```bash
-php artisan protector:import --help
+php artisan protector:import --migrate
 ```
 
->By default dumps are stored in `storage/app/protector`
+For automation, also consider the flush option to clean up older database files, and the force option to bypass user
+interaction.
 
-### Export to file
-
-To save a copy of your local database to your local disk, run
 ```bash
-php artisan protector:export
+php artisan protector:import --remote --migrate --flush --force
+```
+
+To learn more about import options, run
+
+```bash
+php artisan protector:import --help
 ```
 
 ## Setup instructions
@@ -85,9 +129,11 @@ composer require cybex/laravel-protector
 ```
 
 You can optionally publish the protector config to set the following options
+
 - `fileName`: the file name of the database dump
 - `baseDirectory`: where files are being stored
-- `diskName`: a dedicated Laravel disk defined in config/filesystems.php. These can point to a specific local folder or a cloud file bucket like AWS S3
+- `diskName`: a dedicated Laravel disk defined in config/filesystems.php. These can point to a specific local folder or
+  a cloud file bucket like AWS S3
 
 ```bash
 artisan vendor:publish --tag=protector.config
@@ -101,9 +147,11 @@ You can now use the artisan command to write a backup to the protector storage f
 php artisan protector:export
 ```
 
-By default the file will be stored in storage/protector and have a timestamp in the name. You can also specify the filename.
+By default the file will be stored in storage/protector and have a timestamp in the name. You can also specify the
+filename.
 
 You could also automate this by
+
 - installing a cronjob on linux
 - running it when you deploy to your server
 - creating a Laravel Job and queueing it
@@ -114,7 +162,8 @@ php artisan protector:export --file=storage/database.sql
 
 ### Setup for importing the database of a remote server
 
-This package can run on both servers and client machines of the same software repository. You set up authorized developers on the server, and give them the key for their local machine.
+This package can run on both servers and client machines of the same software repository. You set up authorized
+developers on the server, and give them the key for their local machine.
 
 #### Installing protector in your Laravel project
 
@@ -125,6 +174,7 @@ composer require cybex/laravel-protector
 ```
 
 In your User model class, add the following trait.
+
 ```php
 use Laravel\Sanctum\HasApiTokens;
 
@@ -137,16 +187,20 @@ class User extends Authenticatable
 ```
 
 Publish the protector database migration, and optionally modify it to work with your project.
+
 ```bash
 php artisan vendor:publish --tag=protector.migrations
 ```
 
 Run the migration on the client and server repository.
+
 ```bash
 php artisan migrate
 ```
 
-You can optionally publish the protector config to set options regarding the storage, access and transmission of the files.
+You can optionally publish the protector config to set options regarding the storage, access and transmission of the
+files.
+
 ```bash
 php artisan vendor:publish --tag=protector.config
 ```
@@ -154,24 +208,27 @@ php artisan vendor:publish --tag=protector.config
 #### On the client machine
 
 Run the following command to receive
+
 - the public key to give to your server admin
 - the private key to save in your .env file
+
 ```bash
 php artisan protector:keys
 ```
 
 Your server admin will then give you the token and server-url to save in your .env file.
 Unless specified otherwise in your software, the .env keys are
+
 ```bash
 PROTECTOR_AUTH_TOKEN=
 PROTECTOR_SERVER_URL=
 ```
 
->Do not give your private key to anyone and keep it protected at all time
+> Do not give your private key to anyone and keep it protected at all time
 
 See [Usage](#usage) on how to import the remote database.
 
->Downloaded database dump files are stored unencrypted
+> Downloaded database dump files are stored unencrypted
 
 #### On the server
 
@@ -189,14 +246,16 @@ The developer can then download and import the server database on their own.
 
 ### Setup for collecting backups from multiple servers
 
-You can develop a custom client that can access and store remote server backups. The servers can be different Laravel projects that have the protector package installed.
+You can develop a custom client that can access and store remote server backups. The servers can be different Laravel
+projects that have the protector package installed.
 
-See the previous chapter on how to give your backup client access to all servers. The backup client will need an according user on each target server.
+See the previous chapter on how to give your backup client access to all servers. The backup client will need an
+according user on each target server.
+
 - All the backup users on the target servers will have the same public key from the client
-- For each target server, the client will store the according url and token 
+- For each target server, the client will store the according url and token
 
 See [cybex-gmbh/collector](https://github.com/cybex-gmbh/collector) for an example implementation.
-
 
 ## Contributing
 
@@ -204,8 +263,8 @@ Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 
 ### Security
 
-If you discover any security related issues, please email webdevelopment@cybex-online.com instead of using the issue tracker.
-
+If you discover any security related issues, please email webdevelopment@cybex-online.com instead of using the issue
+tracker.
 
 ## Credits
 
@@ -213,11 +272,9 @@ If you discover any security related issues, please email webdevelopment@cybex-o
 - [Marco Szulik](https://github.com/mszulik)
 - [All Contributors](../../contributors)
 
-
 ## License
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
-
 
 ## Laravel Package Boilerplate
 

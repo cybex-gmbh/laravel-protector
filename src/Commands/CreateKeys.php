@@ -25,23 +25,13 @@ class CreateKeys extends Command
     protected $description = 'Creates Sodium public and private key.';
 
     /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
-    /**
      * Execute the console command.
      *
      * @return void
      */
     public function handle()
     {
-        $keyPair   = sodium_crypto_box_keypair();
+        $keyPair = sodium_crypto_box_keypair();
         $publicKey = sodium_crypto_box_publickey($keyPair);
 
         $this->info('Successfully generated Sodium key pair.');

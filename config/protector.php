@@ -31,9 +31,9 @@ return [
     | 6: day
     | 7: hour
     | 8: minute
-    | 9: unique id to prevent problems which may occur when multiple users download a dump simultaneously
+    | 9: seconds
     */
-    'fileName' => '%1$s %4$4d-%5$02d-%6$02d %7$02d-%8$02d %9$s.sql',
+    'fileName' => '%1$s %4$4d-%5$02d-%6$02d %7$02d_%8$02d_%9$02d.sql',
 
     /*
     |--------------------------------------------------------------------------
@@ -66,7 +66,7 @@ return [
     |
     */
     'remoteEndpoint' => [
-        'serverUrl'     => env('PROTECTOR_SERVER_URL'),
+        'serverUrl' => env('PROTECTOR_SERVER_URL'),
         // Htaccess may only be used without Laravel Sanctum or basic auth has to be added to the server URL.
         'htaccessLogin' => '',
     ],
