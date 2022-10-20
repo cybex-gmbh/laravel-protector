@@ -122,7 +122,7 @@ class Protector
      */
     public function importDump(string $sourceFilePath, array $options = []): void
     {
-        $this->isExecEnabled();
+        $this->guardExecEnabled();
 
         // Production environment is not allowed unless set in options.
         if (App::environment('production') && !Arr::get($options, 'allow-production')) {
@@ -211,7 +211,7 @@ class Protector
             throw new InvalidConnectionException('Connection is not configured properly.');
         }
 
-        $this->isExecEnabled();
+        $this->guardExecEnabled();
 
         return $this->generateDump($options) ?: throw new FailedDumpGenerationException('Dump could not be created.');
     }
@@ -439,7 +439,7 @@ class Protector
             $metaData = sprintf(
                 "\n-- options:%s\n-- meta:%s",
                 json_encode($options, JSON_UNESCAPED_UNICODE),
-                json_encode($this->createMetaData(), JSON_UNESCAPED_UNICODE)
+                json_encode($this->getMetaData(), JSON_UNESCAPED_UNICODE)
             );
 
             file_put_contents($tempFile, $metaData, FILE_APPEND);
@@ -479,7 +479,7 @@ class Protector
      */
     public function createFilename(): string
     {
-        $metadata = $this->createMetaData();
+        $metadata = $this->getMetaData();
         [$appUrl, $database, $connection, $date] = [
             parse_url(env('APP_URL'), PHP_URL_HOST),
                 $metadata['database'] ?? '',
@@ -508,7 +508,7 @@ class Protector
      *
      * @return array
      */
-    protected function createMetaData(bool $refresh = false): array
+    public function getMetaData(bool $refresh = false): array
     {
         if (!$refresh && $this->cacheMetaData) {
             return $this->cacheMetaData;
@@ -517,7 +517,7 @@ class Protector
         $gitInformation = [];
 
         if ($this->isUnderGitVersionControl()) {
-            $this->isExecEnabled();
+            $this->guardExecEnabled();
 
             $gitInformation = [
                 'gitRevision'     => $this->getGitRevision(),
@@ -943,7 +943,7 @@ class Protector
      *
      * @throws ShellAccessDeniedException
      */
-    public function isExecEnabled(): void
+    public function guardExecEnabled(): void
     {
         if (!function_exists('exec')) {
             throw new ShellAccessDeniedException();

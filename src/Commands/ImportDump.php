@@ -59,7 +59,7 @@ class ImportDump extends Command
     {
         $this->protector = app('protector');
 
-        $this->protector->isExecEnabled();
+        $this->protector->guardExecEnabled();
 
         $optionDump = $this->option('dump');
         $optionFile = $this->option('file');
