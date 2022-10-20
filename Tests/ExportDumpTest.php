@@ -73,9 +73,7 @@ class ExportDumpTest extends BaseTest
      */
     public function canCreateDumpMetaData()
     {
-        $metaData = $this->runProtectedMethod('createMetaData', [false]);
-
-        $this->assertIsArray($metaData);
+        $this->assertIsArray($this->protector->getMetaData());
     }
 
     /**
@@ -83,11 +81,19 @@ class ExportDumpTest extends BaseTest
      */
     public function canCreateDumpMetaDataUsingCache()
     {
-        $this->runProtectedMethod('createMetaData');
+        $metaData = $this->protector->getMetaData();
 
-        $metaData = $this->runProtectedMethod('createMetaData', [false]);
+        $metaData['hello'] = 'world';
 
-        $this->assertIsArray($metaData);
+        $this->setProtectedProperty('metaDataCache', $metaData);
+
+        $cachedMetaData = $this->protector->getMetaData();
+
+        $this->assertEquals($metaData, $cachedMetaData);
+
+        $newMetaData = $this->protector->getMetaData(refresh: true);
+
+        $this->assertNotEquals($metaData, $newMetaData);
     }
 
     /**
