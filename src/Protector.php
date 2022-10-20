@@ -529,7 +529,9 @@ class Protector
         return $this->cacheMetaData = [
             'database'        => $this->connectionConfig['database'],
             'connection'      => $this->connection,
-            ...$gitInformation,
+            'gitRevision'     => $gitInformation['gitRevision'] ?? null,
+            'gitBranch'       => $gitInformation['gitBranch'] ?? null,
+            'gitRevisionDate' => $gitInformation['gitRevisionDate'] ?? null,
             'dumpedAtDate'    => now(),
         ];
     }
