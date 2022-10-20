@@ -53,7 +53,7 @@ class Protector
      *
      * @var array
      */
-    protected array $cacheMetaData = [];
+    protected array $metaDataCache = [];
 
     /**
      * The name of the .env key for the Protector DB Token.
@@ -510,8 +510,8 @@ class Protector
      */
     public function getMetaData(bool $refresh = false): array
     {
-        if (!$refresh && $this->cacheMetaData) {
-            return $this->cacheMetaData;
+        if (!$refresh && $this->metaDataCache) {
+            return $this->metaDataCache;
         }
 
         $gitInformation = [];
@@ -526,7 +526,7 @@ class Protector
             ];
         }
 
-        return $this->cacheMetaData = [
+        return $this->metaDataCache = [
             'database'        => $this->connectionConfig['database'],
             'connection'      => $this->connection,
             'gitRevision'     => $gitInformation['gitRevision'] ?? null,
