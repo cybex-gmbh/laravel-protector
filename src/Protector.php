@@ -21,6 +21,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Psr\Http\Message\StreamInterface;
@@ -354,38 +355,34 @@ class Protector
     }
 
     /**
-     * Returns the current git-revision.
-     *
-     * @return string
+     * Returns whether the app is under git version control based on a filesystem check.
      */
-    public function getGitRevision(): string
+    public function isUnderGitVersionControl(): bool
     {
-        $this->isExecEnabled();
+        return File::exists(base_path('.git'));
+    }
 
+    /**
+     * Returns the current git-revision.
+     */
+    protected function getGitRevision(): string
+    {
         return @exec('git rev-parse HEAD');
     }
 
     /**
      * Returns the current git-revision date.
-     *
-     * @return string
      */
-    public function getGitHeadDate(): string
+    protected function getGitHeadDate(): string
     {
-        $this->isExecEnabled();
-
         return @exec('git show -s --format=%ci HEAD');
     }
 
     /**
      * Returns the current git-branch.
-     *
-     * @return string
      */
-    public function getGitBranch(): string
+    protected function getGitBranch(): string
     {
-        $this->isExecEnabled();
-
         return @exec('git rev-parse --abbrev-ref HEAD');
     }
 
@@ -517,13 +514,23 @@ class Protector
             return $this->cacheMetaData;
         }
 
+        $gitInformation = [];
+
+        if ($this->isUnderGitVersionControl()) {
+            $this->isExecEnabled();
+
+            $gitInformation = [
+                'gitRevision'     => $this->getGitRevision(),
+                'gitBranch'       => $this->getGitBranch(),
+                'gitRevisionDate' => $this->getGitHeadDate(),
+            ];
+        }
+
         return $this->cacheMetaData = [
-            'database' => $this->connectionConfig['database'],
-            'connection' => $this->connection,
-            'gitRevision' => $this->getGitRevision(),
-            'gitBranch' => $this->getGitBranch(),
-            'gitRevisionDate' => $this->getGitHeadDate(),
-            'dumpedAtDate' => now(),
+            'database'        => $this->connectionConfig['database'],
+            'connection'      => $this->connection,
+            ...$gitInformation,
+            'dumpedAtDate'    => now(),
         ];
     }
 
