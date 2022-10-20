@@ -3,6 +3,7 @@
 use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 
@@ -73,7 +74,14 @@ class ExportDumpTest extends BaseTest
      */
     public function canCreateDumpMetaData()
     {
-        $this->assertIsArray($this->protector->getMetaData());
+        $dumpDate = now();
+
+        Carbon::setTestNow($dumpDate);
+
+        $metaData = $this->protector->getMetaData();
+
+        $this->assertIsArray($metaData);
+        $this->assertEquals($dumpDate, $metaData['dumpedAtDate']);
     }
 
     /**
