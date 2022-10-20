@@ -66,6 +66,8 @@ abstract class BaseTest extends TestCase
     protected function setProtectedProperty(string $propertyName, mixed $value): void
     {
         $property = new ReflectionProperty($this->protector, $propertyName);
+
+        $property->setAccessible(true);
         $property->setValue($this->protector, $value);
     }
 
