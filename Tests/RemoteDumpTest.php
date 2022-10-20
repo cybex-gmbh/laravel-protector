@@ -107,7 +107,7 @@ class RemoteDumpTest extends BaseTest
     {
         Config::set('protector.routeMiddleware', ['auth:sanctum']);
 
-        $this->protector->setPrivateKeyName('');
+        $this->protector->setPrivateKeyName('NON_EXISTENT_PRIVATE_KEY_NAME');
 
         Http::fake([
             $this->serverUrl => Http::response(),
