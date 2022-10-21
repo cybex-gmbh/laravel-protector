@@ -19,9 +19,7 @@ use GuzzleHttp\Psr7\StreamWrapper;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Schema\MySqlSchemaState;
-use Illuminate\Database\Schema\PostgresSchemaState;
 use Illuminate\Database\Schema\SchemaState;
-use Illuminate\Database\Schema\SqliteSchemaState;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Request;
@@ -51,7 +49,6 @@ class Protector
      * @var array
      */
     protected array $metaDataCache = [];
-
 
     public function __construct(string $connectionName = null)
     {
@@ -410,9 +407,9 @@ class Protector
             $this->guardExecEnabled();
 
             $gitInformation = [
-            'gitRevision'     => $this->getGitRevision(),
-            'gitBranch'       => $this->getGitBranch(),
-            'gitRevisionDate' => $this->getGitHeadDate(),
+                'gitRevision'     => $this->getGitRevision(),
+                'gitBranch'       => $this->getGitBranch(),
+                'gitRevisionDate' => $this->getGitHeadDate(),
             ];
         }
 
