@@ -329,43 +329,22 @@ class Protector
      */
     protected function generateDump(array $options = []): ?string
     {
-        $dumpOptions = collect();
-        $dumpOptions->push(sprintf('-h%s', escapeshellarg($this->connectionConfig['host'])));
-        $dumpOptions->push(sprintf('-u%s', escapeshellarg($this->connectionConfig['username'])));
-        $dumpOptions->push(sprintf('-p%s', escapeshellarg($this->connectionConfig['password'])));
-        $dumpOptions->push(sprintf('--max-allowed-packet=%s', escapeshellarg(config('protector.maxPacketLength'))));
-        $dumpOptions->push('--no-create-db');
-
-        if (!DB::connection($this->connection)->isMaria()) {
-            $dumpOptions->push('--set-gtid-purged=off');
-        }
-
         if ($options['no-data'] ?? false) {
-            $dumpOptions->push('--no-data');
+            $this->withoutData();
         }
 
-        $dumpOptions->push(sprintf('%s', escapeshellarg($this->connectionConfig['database'])));
+        /** @var Connection $connection */
+        $connection       = DB::connection($this->connectionName);
+        $schemaState      = $connection->getSchemaState();
+        $schemaStateProxy = $this->getProxyForSchemaState($schemaState);
+        $tempFile         = tempnam('', 'protector');
 
-        $tempFile = tempnam('', 'protector');
-
-        // Write dump using specific options.
-        exec(
-            sprintf(
-                'mysqldump %s > %s 2> /dev/null',
-                $dumpOptions->implode(' '),
-                escapeshellarg($tempFile)
-            ),
-            result_code: $resultCode
-        );
+        $schemaStateProxy->dump($connection, $tempFile);
 
         if (!filesize($tempFile)) {
             unlink($tempFile);
 
             $tempFile = null;
-        }
-
-        if ($resultCode != 0) {
-            throw new FailedMysqlCommandException();
         }
 
         try {
@@ -765,5 +744,18 @@ class Protector
         $encryptedChunk = sodium_crypto_box_seal($chunk, $publicKey);
 
         return strlen($encryptedChunk) - $chunkSize;
+    }
+
+    /**
+     * @throws UnsupportedDatabaseException
+     */
+    protected function getProxyForSchemaState($schemaState): SchemaState
+    {
+        return match (get_class($schemaState)) {
+            MySqlSchemaState::class => app(MySQLSchemaStateProxy::class, [$schemaState, $this]),
+            PostgresSchemaState::class => app('PostgresSchemaStateProxy', [$schemaState, $this]),
+            SqliteSchemaState::class => app('SqliteSchemaStateProxy', [$schemaState, $this]),
+            default => throw new UnsupportedDatabaseException('Unsupported database schema state: '.class_basename($schemaState)),
+        };
     }
 }
