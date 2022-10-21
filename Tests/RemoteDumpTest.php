@@ -318,21 +318,9 @@ class RemoteDumpTest extends BaseTest
     public function canReturnDatabaseName()
     {
         Config::set('database.connections.mysql.database', __FUNCTION__);
-        $this->protector->configure();
+        $this->protector->withConnectionName();
 
         $this->assertEquals(__FUNCTION__, $this->protector->getDatabaseName());
-    }
-
-    /**
-     * @test
-     */
-    public function failOnNoDatabaseConnectionIsSet()
-    {
-        Config::set('database.connections', null);
-
-        $result = $this->protector->configure();
-
-        $this->assertFalse($result);
     }
 
     /**
@@ -409,7 +397,8 @@ class RemoteDumpTest extends BaseTest
      */
     public function setAuthToken()
     {
-        $this->runProtectedMethod('setAuthToken', [__FUNCTION__]);
+        $this->protector->withAuthToken(__FUNCTION__);
+
         $authToken = $this->runProtectedMethod('getAuthToken');
 
         $this->assertEquals(__FUNCTION__, $authToken);
@@ -420,7 +409,8 @@ class RemoteDumpTest extends BaseTest
      */
     public function setAuthTokenKeyName()
     {
-        $this->runProtectedMethod('setAuthTokenKeyName', [__FUNCTION__]);
+        $this->protector->withAuthTokenKeyName(__FUNCTION__);
+
         $authTokenKeyName = $this->runProtectedMethod('getAuthTokenKeyName');
 
         $this->assertEquals(__FUNCTION__, $authTokenKeyName);
