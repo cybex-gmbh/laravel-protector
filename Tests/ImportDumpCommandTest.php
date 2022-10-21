@@ -83,7 +83,7 @@ class ImportDumpCommandTest extends BaseTest
     {
         Config::set('database.connections', null);
 
-        $this->expectException(InvalidConfigurationException::class);
+        $this->expectException(InvalidConnectionException::class);
 
         $this->artisan('protector:import');
     }
