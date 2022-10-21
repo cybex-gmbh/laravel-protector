@@ -51,7 +51,7 @@ class ProtectorServiceProvider extends ServiceProvider
         });
 
         // Register the SchemaState proxy classes.
-        $this->app->bind(MySQLSchemaStateProxy::class, function ($app, array $params) {
+        $this->app->bind(MySqlSchemaStateProxy::class, function ($app, array $params) {
             return new MySqlSchemaStateProxy(...$params);
         });
     }

@@ -767,7 +767,7 @@ class Protector
     protected function getProxyForSchemaState($schemaState): SchemaState
     {
         return match (get_class($schemaState)) {
-            MySqlSchemaState::class => app(MySQLSchemaStateProxy::class, [$schemaState, $this]),
+            MySqlSchemaState::class => app(MySqlSchemaStateProxy::class, [$schemaState, $this]),
             PostgresSchemaState::class => app('PostgresSchemaStateProxy', [$schemaState, $this]),
             SqliteSchemaState::class => app('SqliteSchemaStateProxy', [$schemaState, $this]),
             default => throw new UnsupportedDatabaseException('Unsupported database schema state: '.class_basename($schemaState)),
