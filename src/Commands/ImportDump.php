@@ -154,8 +154,6 @@ class ImportDump extends Command
     /**
      * Checks if a dump with the specified name exists and return the file path.
      *
-     * @param string $dumpName
-     * @return string
      * @throws FileNotFoundException
      * @throws InvalidConfigurationException
      */
@@ -173,9 +171,6 @@ class ImportDump extends Command
 
     /**
      * Returns the file path to a selected dump.
-     *
-     * @param string|null $connectionName
-     * @return string
      */
     protected function chooseImportDump(?string $connectionName): string
     {
@@ -200,9 +195,6 @@ class ImportDump extends Command
 
     /**
      * Reads the metadata and returns a list of the available dumps.
-     *
-     * @param array $directoryFiles
-     * @return Collection
      */
     public function getMetaDataForFiles(array $directoryFiles): Collection
     {
@@ -273,10 +265,6 @@ class ImportDump extends Command
 
     /**
      * Imports the selected SQL dump.
-     *
-     * @param string $importFilePath
-     * @param bool|null $optionForce
-     * @return void
      */
     public function importDump(string $importFilePath, ?bool $optionForce): void
     {
@@ -355,9 +343,6 @@ class ImportDump extends Command
     /**
      * Returns the connection name for dump imports.
      * Asks the user if there are multiple possibilities.
-     *
-     * @param Collection $connectionNames
-     * @return string
      */
     protected function chooseConnectionName(Collection $connectionNames): string
     {

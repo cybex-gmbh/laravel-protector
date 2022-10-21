@@ -61,11 +61,6 @@ class Protector
     /**
      * Imports a specific SQL dump.
      *
-     * @param  string  $sourceFilePath
-     * @param  array  $options
-     *
-     * @return void
-     *
      * @throws FailedMysqlCommandException
      * @throws InvalidEnvironmentException
      * @throws InvalidConnectionException
