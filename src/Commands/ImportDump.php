@@ -80,7 +80,7 @@ class ImportDump extends Command
             return self::FAILURE;
         }
 
-        $this->setConnection($optionConnection);
+        $this->protector->withConnectionName($optionConnection);
 
         $shouldImportLocalDump = $optionFile || $optionDump || $optionLatest;
         $shouldDownloadDump = $optionRemote || (!$shouldImportLocalDump && $this->userWantsRemoteDump());
@@ -115,20 +115,6 @@ class ImportDump extends Command
         }
 
         return self::SUCCESS;
-    }
-
-    /**
-     * Sets the given connection.
-     *
-     * @param string|null $connectionName
-     * @return void
-     * @throws InvalidConfigurationException
-     */
-    public function setConnection(?string $connectionName): void
-    {
-        if (!$this->protector->configure($connectionName)) {
-            throw new InvalidConfigurationException('Configuration is invalid');
-        }
     }
 
     /**

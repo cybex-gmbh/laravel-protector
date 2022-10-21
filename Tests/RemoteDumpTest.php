@@ -107,7 +107,7 @@ class RemoteDumpTest extends BaseTest
     {
         Config::set('protector.routeMiddleware', ['auth:sanctum']);
 
-        $this->protector->setPrivateKeyName('NON_EXISTENT_PRIVATE_KEY_NAME');
+        $this->protector->withPrivateKeyName('NON_EXISTENT_PRIVATE_KEY_NAME');
 
         Http::fake([
             $this->serverUrl => Http::response(),
@@ -367,7 +367,7 @@ class RemoteDumpTest extends BaseTest
      */
     public function validateUsersPrivateKeyName()
     {
-        $this->protector->setPrivateKeyName(__FUNCTION__);
+        $this->protector->withPrivateKeyName(__FUNCTION__);
         $privateKeyName = $this->protector->getPrivateKeyName();
 
         $this->assertEquals(__FUNCTION__, $privateKeyName);

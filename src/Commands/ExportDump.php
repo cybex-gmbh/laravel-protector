@@ -52,19 +52,15 @@ class ExportDump extends Command
         $options = [];
         $options['no-data'] = $this->option('no-data') ?: false;
 
-        if ($this->protector->configure($connectionName ?? null)) {
-            $tempFilePath = $this->protector->createDump($options);
+        $this->protector->withConnectionName($connectionName ?? null);
 
-            $this->protector->getDisk()->putFileAs($directory, new File($tempFilePath), $fileName);
-            unlink($tempFilePath);
+        $tempFilePath = $this->protector->createDump($options);
 
-            $this->info(sprintf('Dump %s was created in %s', $fileName, $directory));
+        $this->protector->getDisk()->putFileAs($directory, new File($tempFilePath), $fileName);
+        unlink($tempFilePath);
 
-            return self::SUCCESS;
-        }
+        $this->info(sprintf('Dump %s was created in %s', $fileName, $directory));
 
-        $this->error('Configuration is invalid.');
-
-        return self::FAILURE;
+        return self::SUCCESS;
     }
 }
