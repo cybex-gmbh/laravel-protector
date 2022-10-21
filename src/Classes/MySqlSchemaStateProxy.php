@@ -5,9 +5,9 @@ namespace Cybex\Protector\Classes;
 use Illuminate\Database\Connection;
 
 /**
- * This is a proxy class to the MySqlSchemaState class which allows overriding methods to match our requirements.
- * Unfortunately, the class can not be switched out on framework level, because it is not pulled from the IOC.
- * However, you may extend this class, and override its app container binding with your own implementation.
+ * This is a proxy to the MySqlSchemaState class which allows us to override methods to match our own requirements.
+ * Unfortunately, the class is not bound to the IOC container and thus cannot be switched out at framework level.
+ * However, you may extend this proxy, and override its app container binding with your custom implementation.
  */
 class MySqlSchemaStateProxy extends AbstractMySqlSchemaStateProxy
 {

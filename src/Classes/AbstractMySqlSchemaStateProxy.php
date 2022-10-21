@@ -10,9 +10,7 @@ use Illuminate\Database\Schema\SchemaState;
 use Symfony\Component\Process\Process;
 
 /**
- * This is a proxy class to the MySqlSchemaState class to be able to override methods to match our requirements.
- * Unfortunately, the class can not be switched out on framework level, because it is not pulled from the IOC.
- * However, you may extend this class, and override the app container binding with your own implementation.
+ * This abstract class provides proxies to protected methods within the related MySqlSchemaState.
  */
 abstract class AbstractMySqlSchemaStateProxy extends MySqlSchemaState
 {
