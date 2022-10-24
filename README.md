@@ -32,25 +32,14 @@ This package allows you to download, export and import your application's databa
 
 ## Table of contents
 
-* [Laravel Protector](#laravel-protector)
-  * [Common usage scenarios](#common-usage-scenarios)
-  * [Feature set](#feature-set)
-  * [Supported databases](#supported-databases)
-  * [Notes](#notes)
-  * [Table of contents](#table-of-contents)
-  * [Usage](#usage)
-    * [Export to file](#export-to-file)
-    * [Import](#import)
-  * [Setup instructions](#setup-instructions)
-    * [Setup for storing the local database](#setup-for-storing-the-local-database)
-    * [Setup for importing the database of a remote server](#setup-for-importing-the-database-of-a-remote-server)
-    * [Setup for collecting backups from multiple servers](#setup-for-collecting-backups-from-multiple-servers)
-  * [Migration guide from protector v1.x to v2.x](#migration-guide-from-protector-v1x-to-v2x)
-  * [Contributing](#contributing)
-    * [Security](#security)
-  * [Credits](#credits)
-  * [License](#license)
-  * [Laravel Package Boilerplate](#laravel-package-boilerplate)
+* [Usage](#usage)
+  * [Export to file](#export-to-file)
+  * [Import](#import)
+* [Setup instructions](#setup-instructions)
+  * [Setup for storing the local database](#setup-for-storing-the-local-database)
+  * [Setup for importing the database of a remote server](#setup-for-importing-the-database-of-a-remote-server)
+  * [Setup for collecting backups from multiple servers](#setup-for-collecting-backups-from-multiple-servers)
+* [Migration guide from Protector v1.x to v2.x](#migration-guide-from-protector-v1x-to-v2x)
 
 ## Usage
 
@@ -271,7 +260,7 @@ according user on each target server.
 
 See [cybex-gmbh/collector](https://github.com/cybex-gmbh/collector) for an example implementation.
 
-## Migration guide from protector v1.x to v2.x
+## Migration guide from Protector v1.x to v2.x
 
 Likelihood of impact: low
 
