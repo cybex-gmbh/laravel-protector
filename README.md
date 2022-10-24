@@ -32,11 +32,14 @@ This package allows you to download, export and import your application's databa
 
 ## Table of contents
 
-- [Usage](#usage)
-- [Setup Instructions](#setup-instructions)
-    - [Storing the local database](#setup-for-storing-the-local-database)
-    - [Importing the database of a remote server](#setup-for-importing-the-database-of-a-remote-server)
-    - [Collecting backups from multiple servers](#setup-for-collecting-backups-from-multiple-servers)
+* [Usage](#usage)
+  * [Export to file](#export-to-file)
+  * [Import](#import)
+* [Setup instructions](#setup-instructions)
+  * [Setup for storing the local database](#setup-for-storing-the-local-database)
+  * [Setup for importing the database of a remote server](#setup-for-importing-the-database-of-a-remote-server)
+  * [Setup for collecting backups from multiple servers](#setup-for-collecting-backups-from-multiple-servers)
+* [Migration guide from Protector v1.x to v2.x](#migration-guide-from-protector-v1x-to-v2x)
 
 ## Usage
 
@@ -120,7 +123,7 @@ Find below three common scenarios of usage. These are not mutually exclusive.
 
 If you only want to store a copy of your local database to a disk, the setup is pretty simple.
 
-#### Installing protector in your Laravel project
+#### Installing protector in your local Laravel project
 
 Install the package via composer.
 
@@ -139,7 +142,7 @@ You can optionally publish the protector config to set the following options
 artisan vendor:publish --tag=protector.config
 ```
 
-#### Usage
+#### Local usage
 
 You can now use the artisan command to write a backup to the protector storage folder.
 
@@ -147,7 +150,7 @@ You can now use the artisan command to write a backup to the protector storage f
 php artisan protector:export
 ```
 
-By default the file will be stored in storage/protector and have a timestamp in the name. You can also specify the
+By default, the file will be stored in storage/protector and have a timestamp in the name. You can also specify the
 filename.
 
 You could also automate this by
@@ -257,6 +260,13 @@ according user on each target server.
 
 See [cybex-gmbh/collector](https://github.com/cybex-gmbh/collector) for an example implementation.
 
+## Migration guide from Protector v1.x to v2.x
+
+Likelihood of impact: low
+
+- Access to the formerly public methods getGitRevision(), getGitHeadDate() or getGitBranch() is now protected.
+You now need to call getMetaData() and extract the information from the returned array.
+  
 ## Contributing
 
 Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
