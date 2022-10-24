@@ -262,6 +262,13 @@ See [cybex-gmbh/collector](https://github.com/cybex-gmbh/collector) for an examp
 
 ## Migration guide from Protector v1.x to v2.x
 
+Likelihood of impact: high
+
+- If your app does not explicitly require the laravel/sanctum package, upgrading Protector to version 2.x may also 
+upgrade Sanctum to version 3.x. This will require you to follow its 
+[upgrade guide](https://github.com/laravel/sanctum/blob/3.x/UPGRADE.md). Alternatively you can explicitly require 
+laravel/sanctum ^2.4 in your app to lock its version.
+
 Likelihood of impact: low
 
 - Access to the formerly public methods getGitRevision(), getGitHeadDate() or getGitBranch() is now protected.
