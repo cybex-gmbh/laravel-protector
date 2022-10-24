@@ -39,12 +39,7 @@ abstract class BaseTest extends TestCase
         ];
     }
 
-    /**
-     * @param $method
-     *
-     * @return ReflectionMethod
-     */
-    protected function getAccessibleReflectionMethod($method): ReflectionMethod
+    protected function getAccessibleReflectionMethod(string $method): ReflectionMethod
     {
         $reflectionProtector = new ReflectionClass($this->protector);
         $method = $reflectionProtector->getMethod($method);
@@ -64,7 +59,16 @@ abstract class BaseTest extends TestCase
     protected function runProtectedMethod(string $methodName, array $params = []): mixed
     {
         $method = $this->getAccessibleReflectionMethod($methodName);
+
         return $method->invoke($this->protector, ...$params);
+    }
+
+    protected function setProtectedProperty(string $propertyName, mixed $value): void
+    {
+        $property = new ReflectionProperty($this->protector, $propertyName);
+
+        $property->setAccessible(true);
+        $property->setValue($this->protector, $value);
     }
 
     /**

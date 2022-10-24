@@ -21,6 +21,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Psr\Http\Message\StreamInterface;
@@ -52,7 +53,7 @@ class Protector
      *
      * @var array
      */
-    protected array $cacheMetaData = [];
+    protected array $metaDataCache = [];
 
     /**
      * The name of the .env key for the Protector DB Token.
@@ -121,7 +122,7 @@ class Protector
      */
     public function importDump(string $sourceFilePath, array $options = []): void
     {
-        $this->isExecEnabled();
+        $this->guardExecEnabled();
 
         // Production environment is not allowed unless set in options.
         if (App::environment('production') && !Arr::get($options, 'allow-production')) {
@@ -210,7 +211,7 @@ class Protector
             throw new InvalidConnectionException('Connection is not configured properly.');
         }
 
-        $this->isExecEnabled();
+        $this->guardExecEnabled();
 
         return $this->generateDump($options) ?: throw new FailedDumpGenerationException('Dump could not be created.');
     }
@@ -354,38 +355,34 @@ class Protector
     }
 
     /**
-     * Returns the current git-revision.
-     *
-     * @return string
+     * Returns whether the app is under git version control based on a filesystem check.
      */
-    public function getGitRevision(): string
+    public function isUnderGitVersionControl(): bool
     {
-        $this->isExecEnabled();
+        return File::exists(base_path('.git'));
+    }
 
+    /**
+     * Returns the current git-revision.
+     */
+    protected function getGitRevision(): string
+    {
         return @exec('git rev-parse HEAD');
     }
 
     /**
      * Returns the current git-revision date.
-     *
-     * @return string
      */
-    public function getGitHeadDate(): string
+    protected function getGitHeadDate(): string
     {
-        $this->isExecEnabled();
-
         return @exec('git show -s --format=%ci HEAD');
     }
 
     /**
      * Returns the current git-branch.
-     *
-     * @return string
      */
-    public function getGitBranch(): string
+    protected function getGitBranch(): string
     {
-        $this->isExecEnabled();
-
         return @exec('git rev-parse --abbrev-ref HEAD');
     }
 
@@ -442,7 +439,7 @@ class Protector
             $metaData = sprintf(
                 "\n-- options:%s\n-- meta:%s",
                 json_encode($options, JSON_UNESCAPED_UNICODE),
-                json_encode($this->createMetaData(), JSON_UNESCAPED_UNICODE)
+                json_encode($this->getMetaData(), JSON_UNESCAPED_UNICODE)
             );
 
             file_put_contents($tempFile, $metaData, FILE_APPEND);
@@ -482,7 +479,7 @@ class Protector
      */
     public function createFilename(): string
     {
-        $metadata = $this->createMetaData();
+        $metadata = $this->getMetaData();
         [$appUrl, $database, $connection, $date] = [
             parse_url(env('APP_URL'), PHP_URL_HOST),
                 $metadata['database'] ?? '',
@@ -511,19 +508,31 @@ class Protector
      *
      * @return array
      */
-    protected function createMetaData(bool $refresh = false): array
+    public function getMetaData(bool $refresh = false): array
     {
-        if (!$refresh && $this->cacheMetaData) {
-            return $this->cacheMetaData;
+        if (!$refresh && $this->metaDataCache) {
+            return $this->metaDataCache;
         }
 
-        return $this->cacheMetaData = [
-            'database' => $this->connectionConfig['database'],
-            'connection' => $this->connection,
-            'gitRevision' => $this->getGitRevision(),
-            'gitBranch' => $this->getGitBranch(),
-            'gitRevisionDate' => $this->getGitHeadDate(),
-            'dumpedAtDate' => now(),
+        $gitInformation = [];
+
+        if ($this->isUnderGitVersionControl()) {
+            $this->guardExecEnabled();
+
+            $gitInformation = [
+                'gitRevision'     => $this->getGitRevision(),
+                'gitBranch'       => $this->getGitBranch(),
+                'gitRevisionDate' => $this->getGitHeadDate(),
+            ];
+        }
+
+        return $this->metaDataCache = [
+            'database'        => $this->connectionConfig['database'],
+            'connection'      => $this->connection,
+            'gitRevision'     => $gitInformation['gitRevision'] ?? null,
+            'gitBranch'       => $gitInformation['gitBranch'] ?? null,
+            'gitRevisionDate' => $gitInformation['gitRevisionDate'] ?? null,
+            'dumpedAtDate'    => now(),
         ];
     }
 
@@ -934,7 +943,7 @@ class Protector
      *
      * @throws ShellAccessDeniedException
      */
-    public function isExecEnabled(): void
+    public function guardExecEnabled(): void
     {
         if (!function_exists('exec')) {
             throw new ShellAccessDeniedException();
