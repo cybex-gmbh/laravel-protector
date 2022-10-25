@@ -13,11 +13,8 @@ use Illuminate\Support\Facades\Storage;
 class ImportDumpCommandTest extends BaseTest
 {
     protected Filesystem $disk;
-
     protected string $serverUrl;
-
     protected string $shouldDownloadDump;
-
     protected string $shouldImportDump;
 
     protected function setUp(): void
