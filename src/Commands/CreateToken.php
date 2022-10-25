@@ -6,7 +6,6 @@ use Illuminate\Console\Command;
 
 /**
  * Class CreateToken
- * @package Cybex\Protector\Commands;
  */
 class CreateToken extends Command
 {
@@ -38,10 +37,11 @@ class CreateToken extends Command
         $user->tokens()->whereAbilities('["protector:import"]')->delete();
         $userInformation = sprintf('%s: %s (%s)', $user->id, $user->name, $user->email);
 
-        if (!$user->protector_public_key && !$publicKey) {
+        if (! $user->protector_public_key && ! $publicKey) {
             $this->error(
                 'The user doesn\'t have a protector public key and none was specified. Please provide a public key for the user.'
             );
+
             return null;
         }
 

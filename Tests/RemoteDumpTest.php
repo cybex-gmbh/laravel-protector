@@ -16,6 +16,7 @@ class RemoteDumpTest extends BaseTest
     protected Filesystem $disk;
 
     protected string $serverUrl;
+
     protected string $baseDirectory;
 
     protected function setUp(): void
@@ -90,7 +91,7 @@ class RemoteDumpTest extends BaseTest
      */
     public function failOnProductionEnvironment()
     {
-        $this->app->detectEnvironment(fn() => 'production');
+        $this->app->detectEnvironment(fn () => 'production');
 
         Http::fake([
             $this->serverUrl => Http::response(),
@@ -148,7 +149,7 @@ class RemoteDumpTest extends BaseTest
         $this->protector->getRemoteDump();
 
         Http::assertSent(function ($request) {
-            return $request->hasHeader('Authorization', 'Basic ' . base64_encode('1234:1234'));
+            return $request->hasHeader('Authorization', 'Basic '.base64_encode('1234:1234'));
         });
     }
 
@@ -354,7 +355,7 @@ class RemoteDumpTest extends BaseTest
     {
         $functionName = __FUNCTION__;
 
-        Config::set('protector.baseDirectory', fn() => $functionName);
+        Config::set('protector.baseDirectory', fn () => $functionName);
 
         $result = $this->runProtectedMethod('getConfigValueForKey', ['baseDirectory']);
 
@@ -363,6 +364,7 @@ class RemoteDumpTest extends BaseTest
 
     /**
      * Sets the env key name for the private key.
+     *
      * @test
      */
     public function validateUsersPrivateKeyName()
