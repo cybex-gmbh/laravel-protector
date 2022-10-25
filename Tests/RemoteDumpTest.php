@@ -14,9 +14,7 @@ use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 class RemoteDumpTest extends BaseTest
 {
     protected Filesystem $disk;
-
     protected string $serverUrl;
-
     protected string $baseDirectory;
 
     protected function setUp(): void
