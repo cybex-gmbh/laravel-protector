@@ -74,8 +74,8 @@ class ImportDump extends Command
             );
         }
 
-        if ($optionForce && !($optionRemote || $optionFile || $optionDump)) {
-            $this->error('The force option requires either the file, dump or remote option to be set.');
+        if ($optionForce && !($optionRemote || $optionFile || $optionDump || $optionLatest)) {
+            $this->error('Nothing to import.');
 
             return self::FAILURE;
         }
@@ -93,14 +93,14 @@ class ImportDump extends Command
             $importFilePath = $this->getPathForDump($optionDump);
         } elseif ($optionLatest) {
             $importFilePath = $this->protector->getLatestDumpName();
-            $this->info(sprintf('Using %s.', $importFilePath));
+            $this->info(sprintf('Importing <comment>%s</comment>', $importFilePath));
         } else {
             $importFilePath = $this->chooseImportDump($optionConnection);
         }
 
         if (empty($localFilePath)) {
             if (!$importFilePath) {
-                $this->error("Found no file to import.");
+                $this->error('Found no file to import.');
 
                 return self::FAILURE;
             }
@@ -292,14 +292,14 @@ class ImportDump extends Command
      * @param bool|null $optionForce
      * @return void
      */
-    public function importDump(string $importFilePath, ?bool $optionForce): void
+    protected function importDump(string $importFilePath, ?bool $optionForce): void
     {
-        if ($importFilePath && ($optionForce || $this->confirm(
+        if ($optionForce || $this->confirm(
                     sprintf(
                         'Are you sure that you want to import the dump into the database: %s?',
                         $this->protector->getDatabaseName()
                     )
-                ))) {
+                )) {
             try {
                 $this->protector->importDump($importFilePath, Arr::except($this->options(), ['migrate']));
 
