@@ -6,7 +6,6 @@ use Illuminate\Console\Command;
 
 /**
  * Class CreateToken
- * @package Cybex\Protector\Commands;
  */
 class CreateToken extends Command
 {
@@ -42,6 +41,7 @@ class CreateToken extends Command
             $this->error(
                 'The user doesn\'t have a protector public key and none was specified. Please provide a public key for the user.'
             );
+
             return null;
         }
 

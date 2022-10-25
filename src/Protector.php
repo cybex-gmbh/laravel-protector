@@ -91,8 +91,7 @@ class Protector
     /**
      * Configures the current instance based on the passed configuration or defaults.
      *
-     * @param string|null $connectionName
-     *
+     * @param  string|null  $connectionName
      * @return bool
      */
     public function configure(string $connectionName = null): bool
@@ -109,9 +108,8 @@ class Protector
     /**
      * Imports a specific SQL dump.
      *
-     * @param string $sourceFilePath
-     * @param array $options
-     *
+     * @param  string  $sourceFilePath
+     * @param  array  $options
      * @return void
      *
      * @throws FailedMysqlCommandException
@@ -180,8 +178,8 @@ class Protector
     /**
      * Public function to create the Destination File Path for the dump.
      *
-     * @param string $fileName
-     * @param string|null $subFolder
+     * @param  string  $fileName
+     * @param  string|null  $subFolder
      * @return string
      */
     public function createDestinationFilePath(string $fileName, ?string $subFolder = null): string
@@ -199,7 +197,7 @@ class Protector
     /**
      * Public function to create a dump for the given configuration.
      *
-     * @param array $options
+     * @param  array  $options
      * @return string
      *
      * @throws FailedDumpGenerationException
@@ -219,8 +217,7 @@ class Protector
     /**
      * Returns the appended Meta-Data from a file.
      *
-     * @param string $dumpFile
-     *
+     * @param  string  $dumpFile
      * @return array|bool
      */
     public function getDumpMetaData(string $dumpFile): bool|array
@@ -264,7 +261,7 @@ class Protector
     /**
      * Deletes all dumps except an optional given file.
      *
-     * @param string|null $excludeFile
+     * @param  string|null  $excludeFile
      * @return void
      */
     public function flush(?string $excludeFile = null): void
@@ -389,8 +386,9 @@ class Protector
     /**
      * Generates an SQL dump from the current app database and returns the path to the file.
      *
-     * @param array $options
+     * @param  array  $options
      * @return string|null
+     *
      * @throws FailedMysqlCommandException
      */
     protected function generateDump(array $options = []): ?string
@@ -482,8 +480,8 @@ class Protector
         $metadata = $this->getMetaData();
         [$appUrl, $database, $connection, $date] = [
             parse_url(env('APP_URL'), PHP_URL_HOST),
-                $metadata['database'] ?? '',
-                $metadata['connection'] ?? '',
+            $metadata['database'] ?? '',
+            $metadata['connection'] ?? '',
             $metadata['dumpedAtDate'],
         ];
 
@@ -504,8 +502,7 @@ class Protector
     /**
      * Returns the existing Meta-Data for a new dump.
      *
-     * @param bool $refresh
-     *
+     * @param  bool  $refresh
      * @return array
      */
     public function getMetaData(bool $refresh = false): array
@@ -520,29 +517,28 @@ class Protector
             $this->guardExecEnabled();
 
             $gitInformation = [
-                'gitRevision'     => $this->getGitRevision(),
-                'gitBranch'       => $this->getGitBranch(),
+                'gitRevision' => $this->getGitRevision(),
+                'gitBranch' => $this->getGitBranch(),
                 'gitRevisionDate' => $this->getGitHeadDate(),
             ];
         }
 
         return $this->metaDataCache = [
-            'database'        => $this->connectionConfig['database'],
-            'connection'      => $this->connection,
-            'gitRevision'     => $gitInformation['gitRevision'] ?? null,
-            'gitBranch'       => $gitInformation['gitBranch'] ?? null,
+            'database' => $this->connectionConfig['database'],
+            'connection' => $this->connection,
+            'gitRevision' => $gitInformation['gitRevision'] ?? null,
+            'gitBranch' => $gitInformation['gitBranch'] ?? null,
             'gitRevisionDate' => $gitInformation['gitRevisionDate'] ?? null,
-            'dumpedAtDate'    => now(),
+            'dumpedAtDate' => now(),
         ];
     }
 
     /**
      * Returns the last x lines from a file in correct order.
      *
-     * @param string $file
-     * @param int $lines
-     * @param int $buffer
-     *
+     * @param  string  $file
+     * @param  int  $lines
+     * @param  int  $buffer
      * @return array
      */
     protected function tail(string $file, int $lines, int $buffer = 1024): array
@@ -580,9 +576,8 @@ class Protector
     /**
      * Returns a config value for a specific key and checks for Callables.
      *
-     * @param string $key
-     * @param mixed $default
-     *
+     * @param  string  $key
+     * @param  mixed  $default
      * @return mixed
      */
     protected function getConfigValueForKey(string $key, mixed $default = null): mixed
@@ -606,8 +601,7 @@ class Protector
      * Prepares the file download response.
      * Prevents the exposure of the connectionName parameter to routing.
      *
-     * @param Request $request
-     *
+     * @param  Request  $request
      * @return Response|StreamedResponse
      */
     public function prepareFileDownloadResponse(Request $request): Response|StreamedResponse
@@ -618,9 +612,8 @@ class Protector
     /**
      * Generates a response which allows downloading the dump file.
      *
-     * @param Request $request
-     * @param string|null $connectionName
-     *
+     * @param  Request  $request
+     * @param  string|null  $connectionName
      * @return Response|StreamedResponse
      */
     public function generateFileDownloadResponse(
@@ -642,7 +635,7 @@ class Protector
                 $chunkSize = $this->getConfigValueForKey('chunkSize');
 
                 return response()->streamDownload(
-                    function () use ($publicKey, $request, $serverFilePath, $chunkSize, $shouldEncrypt) {
+                    function () use ($publicKey, $serverFilePath, $chunkSize, $shouldEncrypt) {
                         $inputHandle = fopen($serverFilePath, 'rb');
 
                         while (!feof($inputHandle)) {
@@ -681,7 +674,7 @@ class Protector
     /**
      * Returns the disk which is stated in the config. If no disk is stated the default filesystem disk will be returned.
      *
-     * @param string|null $diskName
+     * @param  string|null  $diskName
      * @return FilesystemAdapter
      */
     public function getDisk(?string $diskName = null): FilesystemAdapter
@@ -694,9 +687,10 @@ class Protector
     /**
      * Creates a directory at the given path, if it doesn't exist already.
      *
-     * @param string $destinationPath
-     * @param FilesystemAdapter $disk
+     * @param  string  $destinationPath
+     * @param  FilesystemAdapter  $disk
      * @return void
+     *
      * @throws FailedCreatingDestinationPathException
      */
     protected function createDirectory(string $destinationPath, FilesystemAdapter $disk): void
@@ -722,6 +716,7 @@ class Protector
      * Configure Http request with either the sanctum token or htaccess credentials.
      *
      * @return PendingRequest
+     *
      * @throws InvalidConfigurationException
      */
     protected function getConfiguredHttpRequest(): PendingRequest
@@ -753,7 +748,7 @@ class Protector
     /**
      * Sets the name of the .env key for the Protector DB Token.
      *
-     * @param string $authTokenKeyName
+     * @param  string  $authTokenKeyName
      */
     public function setAuthTokenKeyName(string $authTokenKeyName): void
     {
@@ -773,7 +768,7 @@ class Protector
     /**
      * Sets the name of the .env key for the Protector Crypto Key.
      *
-     * @param string $privateKeyName
+     * @param  string  $privateKeyName
      */
     public function setPrivateKeyName(string $privateKeyName): void
     {
@@ -813,7 +808,7 @@ class Protector
     /**
      * Sets the auth token for Laravel Sanctum authentication.
      *
-     * @param string $authToken
+     * @param  string  $authToken
      */
     public function setAuthToken(string $authToken): void
     {
@@ -833,7 +828,7 @@ class Protector
     /**
      * Sets the server url of the dump endpoint.
      *
-     * @param string $serverUrl
+     * @param  string  $serverUrl
      */
     public function setServerUrl(string $serverUrl): void
     {
@@ -844,6 +839,7 @@ class Protector
      * Returns the name of the most recent dump.
      *
      * @return string
+     *
      * @throws FileNotFoundException
      */
     public function getLatestDumpName(): string
@@ -864,9 +860,9 @@ class Protector
     }
 
     /**
-     * @param string $encryptedString
-     *
+     * @param  string  $encryptedString
      * @return string
+     *
      * @throws InvalidConfigurationException
      */
     public function decryptString(string $encryptedString): string
@@ -875,7 +871,7 @@ class Protector
 
         if ($decryptedString === false) {
             throw new InvalidConfigurationException(
-                "There was an error decrypting the provided string. This might be due to mismatching crypto keys."
+                'There was an error decrypting the provided string. This might be due to mismatching crypto keys.'
             );
         }
 
@@ -883,8 +879,9 @@ class Protector
     }
 
     /**
-     * @param Request $request
+     * @param  Request  $request
      * @return string
+     *
      * @throws InvalidConfigurationException
      */
     protected function getPublicKey(Request $request): string
@@ -901,7 +898,7 @@ class Protector
     }
 
     /**
-     * @param string $diskFilePath
+     * @param  string  $diskFilePath
      * @return false|string
      */
     public function createTempFilePath(string $diskFilePath): string|false
@@ -953,8 +950,7 @@ class Protector
     /**
      * Returns the destination file path for the database dump.
      *
-     * @param string $fileName
-     *
+     * @param  string  $fileName
      * @return string
      */
     protected function getDumpDestinationFilePath(string $fileName): string
@@ -976,11 +972,10 @@ class Protector
      * Contents are retrieved in chunks from the provided stream.
      * When the database dump is encrypted (indicated by whether Laravel Sanctum is enabled or not) those chunks will also be decrypted.
      *
-     * @param StreamInterface $stream
-     * @param string $destinationFilePath
-     * @param int $chunkSize
-     * @param bool $sanctumEnabled
-     *
+     * @param  StreamInterface  $stream
+     * @param  string  $destinationFilePath
+     * @param  int  $chunkSize
+     * @param  bool  $sanctumEnabled
      * @return void
      */
     protected function writeDumpFile(
@@ -1006,9 +1001,8 @@ class Protector
     }
 
     /**
-     * @param int $chunkSize
-     * @param string $publicKey
-     *
+     * @param  int  $chunkSize
+     * @param  string  $publicKey
      * @return int
      */
     protected function determineEncryptionOverhead(int $chunkSize, string $publicKey): int

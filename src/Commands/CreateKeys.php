@@ -6,7 +6,6 @@ use Illuminate\Console\Command;
 
 /**
  * Class CreateKeys
- * @package Cybex\Protector\Commands;
  */
 class CreateKeys extends Command
 {

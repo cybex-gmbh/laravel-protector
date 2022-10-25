@@ -104,5 +104,5 @@ return [
     | By default the chunk size is set to 20MB.
     |
     */
-    'chunkSize' => 20 * 1024 * 1024
+    'chunkSize' => 20 * 1024 * 1024,
 ];
