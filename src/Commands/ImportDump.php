@@ -74,7 +74,7 @@ class ImportDump extends Command
             );
         }
 
-        if ($optionForce && !($optionRemote || $optionFile || $optionDump)) {
+        if ($optionForce && !($optionRemote || $optionFile || $optionDump || $optionLatest)) {
             $this->error('The force option requires either the file, dump or remote option to be set.');
 
             return self::FAILURE;
