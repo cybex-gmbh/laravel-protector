@@ -90,7 +90,7 @@ class RemoteDumpTest extends BaseTest
      */
     public function failOnProductionEnvironment()
     {
-        $this->app->detectEnvironment(fn() => 'production');
+        $this->app->detectEnvironment(fn () => 'production');
 
         Http::fake([
             $this->serverUrl => Http::response(),
@@ -354,7 +354,7 @@ class RemoteDumpTest extends BaseTest
     {
         $functionName = __FUNCTION__;
 
-        Config::set('protector.baseDirectory', fn() => $functionName);
+        Config::set('protector.baseDirectory', fn () => $functionName);
 
         $result = $this->runProtectedMethod('getConfigValueForKey', ['baseDirectory']);
 

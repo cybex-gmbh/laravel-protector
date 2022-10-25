@@ -167,7 +167,7 @@ class Protector
         }
 
         if (Arr::get($options, 'migrate')) {
-            $output = new BufferedOutput;
+            $output = new BufferedOutput();
 
             Artisan::call('migrate', [], $output);
 
@@ -306,8 +306,8 @@ class Protector
         $request = $this->getConfiguredHttpRequest();
 
         if ($isTelescopeRecording = class_exists(
-                \Laravel\Telescope\Telescope::class
-            ) && \Laravel\Telescope\Telescope::isRecording()) {
+            \Laravel\Telescope\Telescope::class
+        ) && \Laravel\Telescope\Telescope::isRecording()) {
             \Laravel\Telescope\Telescope::stopRecording();
         }
 
@@ -666,9 +666,9 @@ class Protector
                         'Expires' => gmdate(DATE_RFC7231, time() - 3600),
                         // Encryption adds some overhead to the chunk, which has to be considered when decrypting it.
                         'Chunk-Size' => $shouldEncrypt ? $chunkSize + $this->determineEncryptionOverhead(
-                                $chunkSize,
-                                $publicKey
-                            ) : $chunkSize,
+                            $chunkSize,
+                            $publicKey
+                        ) : $chunkSize,
                         'Sanctum-Enabled' => $shouldEncrypt,
                     ]
                 );

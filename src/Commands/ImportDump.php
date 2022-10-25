@@ -242,9 +242,9 @@ class ImportDump extends Command
             }
 
             if (($metaData['meta']['connection'] ?? false) && Arr::exists(
-                    config('database.connections'),
-                    $metaData['meta']['connection']
-                )) {
+                config('database.connections'),
+                $metaData['meta']['connection']
+            )) {
                 $fileInformation = [
                     'path' => $directoryFile,
                     'file' => basename($directoryFile),
@@ -295,11 +295,11 @@ class ImportDump extends Command
     protected function importDump(string $importFilePath, ?bool $optionForce): void
     {
         if ($optionForce || $this->confirm(
-                    sprintf(
-                        'Are you sure that you want to import the dump into the database: %s?',
-                        $this->protector->getDatabaseName()
-                    )
-                )) {
+            sprintf(
+                'Are you sure that you want to import the dump into the database: %s?',
+                $this->protector->getDatabaseName()
+            )
+        )) {
             try {
                 $this->protector->importDump($importFilePath, Arr::except($this->options(), ['migrate']));
 

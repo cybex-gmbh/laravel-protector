@@ -48,7 +48,7 @@ class ImportDumpCommandTest extends BaseTest
      */
     public function failOnProductionEnvironment()
     {
-        $this->app->detectEnvironment(fn() => 'production');
+        $this->app->detectEnvironment(fn () => 'production');
 
         $this->expectException(InvalidEnvironmentException::class);
 

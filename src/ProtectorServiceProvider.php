@@ -46,7 +46,7 @@ class ProtectorServiceProvider extends ServiceProvider
 
         // Register the main class to use with the facade
         $this->app->singleton('protector', function () {
-            return new Protector;
+            return new Protector();
         });
     }
 
