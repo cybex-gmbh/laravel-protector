@@ -33,12 +33,12 @@ This package allows you to download, export and import your application's databa
 ## Table of contents
 
 * [Usage](#usage)
-  * [Export to file](#export-to-file)
-  * [Import](#import)
+    * [Export to file](#export-to-file)
+    * [Import](#import)
 * [Setup instructions](#setup-instructions)
-  * [Setup for storing the local database](#setup-for-storing-the-local-database)
-  * [Setup for importing the database of a remote server](#setup-for-importing-the-database-of-a-remote-server)
-  * [Setup for collecting backups from multiple servers](#setup-for-collecting-backups-from-multiple-servers)
+    * [Setup for storing the local database](#setup-for-storing-the-local-database)
+    * [Setup for importing the database of a remote server](#setup-for-importing-the-database-of-a-remote-server)
+    * [Setup for collecting backups from multiple servers](#setup-for-collecting-backups-from-multiple-servers)
 * [Migration guide from Protector v1.x to v2.x](#migration-guide-from-protector-v1x-to-v2x)
 
 ## Usage
@@ -265,8 +265,8 @@ See [cybex-gmbh/collector](https://github.com/cybex-gmbh/collector) for an examp
 Likelihood of impact: low
 
 - Access to the formerly public methods getGitRevision(), getGitHeadDate() or getGitBranch() is now protected.
-You now need to call getMetaData() and extract the information from the returned array.
-  
+  You now need to call getMetaData() and extract the information from the returned array.
+
 ## Contributing
 
 Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
