@@ -8,7 +8,6 @@ use Illuminate\Http\File;
 
 /**
  * Class ExportDump
- * @package Cybex\Protector\Commands;
  */
 class ExportDump extends Command
 {

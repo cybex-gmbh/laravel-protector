@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\Storage;
 class ImportDumpCommandTest extends BaseTest
 {
     protected Filesystem $disk;
-
     protected string $serverUrl;
     protected string $shouldDownloadDump;
     protected string $shouldImportDump;
@@ -48,7 +47,7 @@ class ImportDumpCommandTest extends BaseTest
      */
     public function failOnProductionEnvironment()
     {
-        $this->app->detectEnvironment(fn() => 'production');
+        $this->app->detectEnvironment(fn () => 'production');
 
         $this->expectException(InvalidEnvironmentException::class);
 

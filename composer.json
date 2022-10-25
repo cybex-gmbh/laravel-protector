@@ -33,6 +33,7 @@
         "ext-pdo": "*"
     },
     "require-dev": {
+        "laravel/pint": "^1.2",
         "laravel/sail": "^1.15",
         "orchestra/testbench": "^6.23|^7.0",
         "phpunit/phpunit": "^9.5"

@@ -9,8 +9,6 @@ use Throwable;
  * Class FailedShellCommandException
  *
  * Thrown if a shell command couldn't be executed properly.
- *
- * @package Cybex\Protector\Exceptions
  */
 class FailedMysqlCommandException extends Exception
 {

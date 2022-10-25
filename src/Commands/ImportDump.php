@@ -16,8 +16,6 @@ use Illuminate\Support\Facades\App;
 
 /**
  * Class ImportDump
- *
- * @package Cybex\Protector\Commands
  */
 class ImportDump extends Command
 {
@@ -47,12 +45,14 @@ class ImportDump extends Command
 
     protected const DOWNLOAD_REMOTE_DUMP = 'Download remote dump';
     protected const IMPORT_EXISTING_LOCAL_DUMP = 'Import existing local dump';
+
     protected ?Protector $protector = null;
 
     /**
      * Execute the console command.
      *
      * @return int
+     *
      * @throws InvalidEnvironmentException
      */
     public function handle(): int
@@ -120,8 +120,9 @@ class ImportDump extends Command
     /**
      * Sets the given connection.
      *
-     * @param string|null $connectionName
+     * @param  string|null  $connectionName
      * @return void
+     *
      * @throws InvalidConfigurationException
      */
     public function setConnection(?string $connectionName): void
@@ -168,8 +169,9 @@ class ImportDump extends Command
     /**
      * Checks if a dump with the specified name exists and return the file path.
      *
-     * @param string $dumpName
+     * @param  string  $dumpName
      * @return string
+     *
      * @throws FileNotFoundException
      * @throws InvalidConfigurationException
      */
@@ -188,7 +190,7 @@ class ImportDump extends Command
     /**
      * Returns the file path to a selected dump.
      *
-     * @param string|null $connectionName
+     * @param  string|null  $connectionName
      * @return string
      */
     protected function chooseImportDump(?string $connectionName): string
@@ -215,7 +217,7 @@ class ImportDump extends Command
     /**
      * Reads the metadata and returns a list of the available dumps.
      *
-     * @param array $directoryFiles
+     * @param  array  $directoryFiles
      * @return Collection
      */
     public function getMetaDataForFiles(array $directoryFiles): Collection
@@ -242,9 +244,9 @@ class ImportDump extends Command
             }
 
             if (($metaData['meta']['connection'] ?? false) && Arr::exists(
-                    config('database.connections'),
-                    $metaData['meta']['connection']
-                )) {
+                config('database.connections'),
+                $metaData['meta']['connection']
+            )) {
                 $fileInformation = [
                     'path' => $directoryFile,
                     'file' => basename($directoryFile),
@@ -288,18 +290,18 @@ class ImportDump extends Command
     /**
      * Imports the selected SQL dump.
      *
-     * @param string $importFilePath
-     * @param bool|null $optionForce
+     * @param  string  $importFilePath
+     * @param  bool|null  $optionForce
      * @return void
      */
     protected function importDump(string $importFilePath, ?bool $optionForce): void
     {
         if ($optionForce || $this->confirm(
-                    sprintf(
-                        'Are you sure that you want to import the dump into the database: %s?',
-                        $this->protector->getDatabaseName()
-                    )
-                )) {
+            sprintf(
+                'Are you sure that you want to import the dump into the database: %s?',
+                $this->protector->getDatabaseName()
+            )
+        )) {
             try {
                 $this->protector->importDump($importFilePath, Arr::except($this->options(), ['migrate']));
 
@@ -370,7 +372,7 @@ class ImportDump extends Command
      * Returns the connection name for dump imports.
      * Asks the user if there are multiple possibilities.
      *
-     * @param Collection $connectionNames
+     * @param  Collection  $connectionNames
      * @return string
      */
     protected function chooseConnectionName(Collection $connectionNames): string

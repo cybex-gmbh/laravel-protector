@@ -14,7 +14,6 @@ use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 class RemoteDumpTest extends BaseTest
 {
     protected Filesystem $disk;
-
     protected string $serverUrl;
     protected string $baseDirectory;
 
@@ -90,7 +89,7 @@ class RemoteDumpTest extends BaseTest
      */
     public function failOnProductionEnvironment()
     {
-        $this->app->detectEnvironment(fn() => 'production');
+        $this->app->detectEnvironment(fn () => 'production');
 
         Http::fake([
             $this->serverUrl => Http::response(),
@@ -354,7 +353,7 @@ class RemoteDumpTest extends BaseTest
     {
         $functionName = __FUNCTION__;
 
-        Config::set('protector.baseDirectory', fn() => $functionName);
+        Config::set('protector.baseDirectory', fn () => $functionName);
 
         $result = $this->runProtectedMethod('getConfigValueForKey', ['baseDirectory']);
 
@@ -363,6 +362,7 @@ class RemoteDumpTest extends BaseTest
 
     /**
      * Sets the env key name for the private key.
+     *
      * @test
      */
     public function validateUsersPrivateKeyName()

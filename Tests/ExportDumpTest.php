@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Storage;
 class ExportDumpTest extends BaseTest
 {
     protected Filesystem $disk;
-
     protected string $baseDirectory;
     protected string $filePath;
     protected string $emptyDumpPath;

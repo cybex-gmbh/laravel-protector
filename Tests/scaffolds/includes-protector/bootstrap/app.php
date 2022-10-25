@@ -18,5 +18,4 @@ collect(glob(__DIR__ . '/../routes/testbench-*.php'))
         require $routeFile;
     });
 
-
 return $app;
