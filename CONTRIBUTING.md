@@ -41,9 +41,11 @@ Before submitting a pull request:
 
 If the project maintainer has any additional requirements, you will find them listed here.
 
-- **[PSR-12 Coding Standard.](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-12-extended-coding-style-guide.md)**
-  The easiest way to apply the conventions is to
-  install [PHP Code Sniffer](https://pear.php.net/package/PHP_CodeSniffer).
+- **[Laravel Code Style](https://github.com/spatie/guidelines.spatie.be/blob/master/content/code-style/laravel-php.md)**
+  (with some added rules). 
+  The easiest way to apply the conventions is to simply run `vendor/bin/pint` in the provided docker container. 
+  The laravel/pint package is already required for --dev, and the pint.json file is already set up.
+  A Github action will automatically fix any style differences.
 
 - **Add tests!** Your patch won't be accepted if it doesn't have tests.
 
