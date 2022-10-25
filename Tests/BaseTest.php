@@ -52,8 +52,8 @@ abstract class BaseTest extends TestCase
     /**
      * Allows a test to call a protected method.
      *
-     * @param string $methodName
-     * @param array $params
+     * @param  string  $methodName
+     * @param  array  $params
      * @return mixed
      */
     protected function runProtectedMethod(string $methodName, array $params = []): mixed
@@ -74,7 +74,7 @@ abstract class BaseTest extends TestCase
     /**
      * Provides a dynamic number of dumps, optionally a new filename can be specified as the array key.
      *
-     * @param array $fileNames
+     * @param  array  $fileNames
      * @return void
      */
     protected function provideTestDumps(array $fileNames): void

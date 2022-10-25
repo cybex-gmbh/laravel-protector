@@ -13,7 +13,9 @@ class ImportDumpTest extends BaseTest
     protected Filesystem $disk;
 
     protected string $baseDirectory;
+
     protected string $filePath;
+
     protected string $emptyDumpPath;
 
     protected function setUp(): void
@@ -44,7 +46,7 @@ class ImportDumpTest extends BaseTest
     {
         return [
             [
-                "protector/dump.sql",
+                'protector/dump.sql',
                 [
                     'meta' => [
                         'database' => 'protector-tests',
@@ -63,13 +65,13 @@ class ImportDumpTest extends BaseTest
                             'yday' => 179,
                             'weekday' => 'Wednesday',
                             'month' => 'June',
-                            0 => 1656506604
-                        ]
-                    ]
-                ]
+                            0 => 1656506604,
+                        ],
+                    ],
+                ],
             ],
             [
-                "protector/dumpWithGit.sql",
+                'protector/dumpWithGit.sql',
                 [
                     'meta' => [
                         'database' => 'protector-tests',
@@ -88,18 +90,18 @@ class ImportDumpTest extends BaseTest
                             'yday' => 179,
                             'weekday' => 'Wednesday',
                             'month' => 'June',
-                            0 => 1656506604
-                        ]
-                    ]
-                ]
+                            0 => 1656506604,
+                        ],
+                    ],
+                ],
             ],
             [
-                "protector/dumpWithoutMetadata.sql",
-                []
+                'protector/dumpWithoutMetadata.sql',
+                [],
             ],
             [
-                "protector/dumpWithIncorrectMetadata.sql",
-                false
+                'protector/dumpWithIncorrectMetadata.sql',
+                false,
             ],
         ];
     }
@@ -110,13 +112,13 @@ class ImportDumpTest extends BaseTest
             [
                 ['dump.sql'],
                 'testDumps/dump.sql',
-                false
+                false,
             ],
             [
                 ['dump.sql', 'secondDump.sql' => 'dump.sql', 'thirdDump' => 'dump.sql'],
                 'testDumps/secondDump.sql',
-                true
-            ]
+                true,
+            ],
         ];
     }
 
@@ -126,13 +128,13 @@ class ImportDumpTest extends BaseTest
             [
                 ['dump.sql'],
                 [],
-                null
+                null,
             ],
             [
                 ['dump.sql', 'secondDump.sql' => 'dump.sql'],
                 ['testDumps/secondDump.sql'],
-                'testDumps/secondDump.sql'
-            ]
+                'testDumps/secondDump.sql',
+            ],
         ];
     }
 

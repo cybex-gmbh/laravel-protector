@@ -9,8 +9,6 @@ use Throwable;
  * Class FileNotFoundException
  *
  * Thrown if a file could not be found.
- *
- * @package Cybex\Protector\Exceptions
  */
 class FileNotFoundException extends Exception
 {

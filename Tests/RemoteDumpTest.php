@@ -16,6 +16,7 @@ class RemoteDumpTest extends BaseTest
     protected Filesystem $disk;
 
     protected string $serverUrl;
+
     protected string $baseDirectory;
 
     protected function setUp(): void
@@ -363,6 +364,7 @@ class RemoteDumpTest extends BaseTest
 
     /**
      * Sets the env key name for the private key.
+     *
      * @test
      */
     public function validateUsersPrivateKeyName()
