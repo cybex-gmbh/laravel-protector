@@ -93,14 +93,14 @@ class ImportDump extends Command
             $importFilePath = $this->getPathForDump($optionDump);
         } elseif ($optionLatest) {
             $importFilePath = $this->protector->getLatestDumpName();
-            $this->info(sprintf('Using %s.', $importFilePath));
+            $this->info(sprintf('Importing <comment>%s</comment>', $importFilePath));
         } else {
             $importFilePath = $this->chooseImportDump($optionConnection);
         }
 
         if (empty($localFilePath)) {
             if (!$importFilePath) {
-                $this->error("Found no file to import.");
+                $this->error('Found no file to import.');
 
                 return self::FAILURE;
             }
