@@ -107,7 +107,7 @@ class RemoteDumpTest extends BaseTest
     {
         Config::set('protector.routeMiddleware', ['auth:sanctum']);
 
-        $this->protector->setPrivateKeyName('NON_EXISTENT_PRIVATE_KEY_NAME');
+        $this->protector->withPrivateKeyName('NON_EXISTENT_PRIVATE_KEY_NAME');
 
         Http::fake([
             $this->serverUrl => Http::response(),
@@ -318,21 +318,9 @@ class RemoteDumpTest extends BaseTest
     public function canReturnDatabaseName()
     {
         Config::set('database.connections.mysql.database', __FUNCTION__);
-        $this->protector->configure();
+        $this->protector->withConnectionName();
 
         $this->assertEquals(__FUNCTION__, $this->protector->getDatabaseName());
-    }
-
-    /**
-     * @test
-     */
-    public function failOnNoDatabaseConnectionIsSet()
-    {
-        Config::set('database.connections', null);
-
-        $result = $this->protector->configure();
-
-        $this->assertFalse($result);
     }
 
     /**
@@ -367,7 +355,7 @@ class RemoteDumpTest extends BaseTest
      */
     public function validateUsersPrivateKeyName()
     {
-        $this->protector->setPrivateKeyName(__FUNCTION__);
+        $this->protector->withPrivateKeyName(__FUNCTION__);
         $privateKeyName = $this->protector->getPrivateKeyName();
 
         $this->assertEquals(__FUNCTION__, $privateKeyName);
@@ -409,7 +397,8 @@ class RemoteDumpTest extends BaseTest
      */
     public function setAuthToken()
     {
-        $this->runProtectedMethod('setAuthToken', [__FUNCTION__]);
+        $this->protector->withAuthToken(__FUNCTION__);
+
         $authToken = $this->runProtectedMethod('getAuthToken');
 
         $this->assertEquals(__FUNCTION__, $authToken);
@@ -420,7 +409,8 @@ class RemoteDumpTest extends BaseTest
      */
     public function setAuthTokenKeyName()
     {
-        $this->runProtectedMethod('setAuthTokenKeyName', [__FUNCTION__]);
+        $this->protector->withAuthTokenKeyName(__FUNCTION__);
+
         $authTokenKeyName = $this->runProtectedMethod('getAuthTokenKeyName');
 
         $this->assertEquals(__FUNCTION__, $authTokenKeyName);

@@ -153,10 +153,8 @@ class ImportDumpTest extends BaseTest
     public function failOnInvalidConnectionConfig()
     {
         Config::set('database.connections', null);
-        $this->protector->configure();
-
         $this->expectException(InvalidConnectionException::class);
-        $this->protector->importDump($this->filePath);
+        $this->protector->withConnectionName(null);
     }
 
     /**
@@ -178,7 +176,7 @@ class ImportDumpTest extends BaseTest
         Config::set('database.default', 'mysql');
         Config::set('database.connections.mysql.host', 'protector.invalid');
 
-        $this->protector->configure();
+        $this->protector->withConnectionName(null);
 
         $this->expectException(FailedMysqlCommandException::class);
         $this->protector->importDump($this->filePath);
