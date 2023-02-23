@@ -2,6 +2,7 @@
 
 namespace Cybex\Protector;
 
+use Cybex\Protector\Classes\MySqlSchemaStateProxy;
 use Cybex\Protector\Commands\CreateKeys;
 use Cybex\Protector\Commands\CreateToken;
 use Cybex\Protector\Commands\ExportDump;
@@ -41,12 +42,17 @@ class ProtectorServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Automatically apply the package configuration
+        // Automatically apply the package configuration.
         $this->mergeConfigFrom(__DIR__ . '/../config/protector.php', 'protector');
 
-        // Register the main class to use with the facade
+        // Register the main class to use with the facade.
         $this->app->singleton('protector', function () {
             return new Protector;
+        });
+
+        // Register the SchemaState proxy classes.
+        $this->app->bind(MySqlSchemaStateProxy::class, function ($app, array $params) {
+            return new MySqlSchemaStateProxy(...$params);
         });
     }
 

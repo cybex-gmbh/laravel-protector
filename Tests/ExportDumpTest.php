@@ -121,22 +121,10 @@ class ExportDumpTest extends BaseTest
         ]);
 
         // Configure protector to the invalid database connection.
-        $this->protector->configure('invalid');
+        $this->protector->withConnectionName('invalid');
 
         // Expect an exception when trying to connect and determine if the connected database is a MariaDB database.
         $this->expectException(PDOException::class);
         $this->runProtectedMethod('generateDump', [['no-data' => true]]);
-    }
-
-    /**
-     * @test
-     */
-    public function failOnDumpHasNoConnectionConfigured()
-    {
-        Config::set('database.connections', null);
-        $this->protector->configure();
-
-        $this->expectException(InvalidConnectionException::class);
-        $this->protector->createDump();
     }
 }
