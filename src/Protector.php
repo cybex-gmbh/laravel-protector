@@ -490,7 +490,7 @@ class Protector
         $shouldEncrypt = $this->shouldEncrypt();
 
         // Only proceed when either Laravel Sanctum is turned off or the user's token is valid.
-        if (!$shouldEncrypt || $request->user()->tokenCan('protector:import')) {
+        if (!$shouldEncrypt || $request->user()?->tokenCan('protector:import')) {
             if ($this->withConnectionName($connectionName)) {
                 try {
                     $serverFilePath = $this->createDump();
@@ -647,7 +647,7 @@ class Protector
     protected function getPublicKey(Request $request): string
     {
         try {
-            $publicKey = sodium_hex2bin($request->user()->protector_public_key);
+            $publicKey = sodium_hex2bin($request->user()?->protector_public_key);
         } catch (SodiumException) {
             throw new InvalidConfigurationException(
                 'There was an error receiving the crypto keys. This might be due to mismatching crypto keys.'
