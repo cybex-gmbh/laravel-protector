@@ -19,7 +19,6 @@ services:
         volumes:
             - '.:/var/www/html'
         networks:
-            - shared
             - internal
         depends_on:
             - mysql_testing
@@ -41,5 +40,3 @@ services:
 networks:
     internal:
         internal: true
-    shared:
-        external: true
