@@ -56,6 +56,6 @@ jobs:
                     composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update --dev --no-progress
                     composer update --${{ matrix.dependency-version }} --prefer-dist --no-interaction --no-progress
             -   name: Execute tests
-                run: vendor/bin/phpunit
+                run: vendor/bin/phpunit -c phpunit-ci.xml.dist
                 env:
                     DB_PORT: ${{ job.services.mysql.ports[3306] }}
