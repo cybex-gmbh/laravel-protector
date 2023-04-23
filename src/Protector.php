@@ -491,7 +491,7 @@ class Protector
 
         // Only proceed when either Laravel Sanctum is turned off or the user's token is valid.
         if (!$shouldEncrypt || $request->user()->tokenCan('protector:import')) {
-            if ($this->configure($connectionName)) {
+            if ($this->withConnectionName($connectionName)) {
                 try {
                     $serverFilePath = $this->createDump();
                     $publicKey      = $this->getPublicKey($request);
