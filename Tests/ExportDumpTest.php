@@ -1,11 +1,12 @@
 <?php
 
 use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
-use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExportDumpTest extends BaseTest
 {
@@ -126,5 +127,18 @@ class ExportDumpTest extends BaseTest
         // Expect an exception when trying to connect and determine if the connected database is a MariaDB database.
         $this->expectException(PDOException::class);
         $this->runProtectedMethod('generateDump', [['no-data' => true]]);
+    }
+
+    /**
+     * @test
+     */
+    public function createsStreamedFileDownloadResponse()
+    {
+        Config::set('protector.routeMiddleware', []);
+
+        $response = $this->protector->generateFileDownloadResponse(new Request(), null);
+
+        $this->assertInstanceOf(StreamedResponse::class, $response);
+        $this->assertEquals(200, $response->getStatusCode());
     }
 }

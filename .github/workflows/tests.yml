@@ -16,6 +16,7 @@ jobs:
                 image: mysql:8.0
                 env:
                     MYSQL_ALLOW_EMPTY_PASSWORD: yes
+                    MYSQL_DATABASE: protector_test
                 ports:
                     - 3306
                 options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
@@ -56,6 +57,6 @@ jobs:
                     composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update --dev --no-progress
                     composer update --${{ matrix.dependency-version }} --prefer-dist --no-interaction --no-progress
             -   name: Execute tests
-                run: vendor/bin/phpunit
+                run: vendor/bin/phpunit -c phpunit-ci.xml.dist
                 env:
                     DB_PORT: ${{ job.services.mysql.ports[3306] }}
