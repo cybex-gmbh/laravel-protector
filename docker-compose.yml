@@ -4,11 +4,11 @@ services:
     app:
         container_name: ${DOCKER_CONTAINER_NAME:-protector_test}
         build:
-            context: ./docker/${DOCKER_PHP_VERSION:-8.1}
+            context: ./docker/${DOCKER_PHP_VERSION:-8.2}
             dockerfile: Dockerfile
             args:
                 WWWGROUP: '${WWWGROUP}'
-        image: sail-${DOCKER_PHP_VERSION:-8.1}/app
+        image: sail-${DOCKER_PHP_VERSION:-8.2}/app
         extra_hosts:
             - 'host.docker.internal:host-gateway'
         environment:
@@ -19,7 +19,6 @@ services:
         volumes:
             - '.:/var/www/html'
         networks:
-            - shared
             - internal
         depends_on:
             - mysql_testing
@@ -41,5 +40,3 @@ services:
 networks:
     internal:
         internal: true
-    shared:
-        external: true
