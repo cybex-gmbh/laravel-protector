@@ -27,6 +27,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
@@ -679,6 +680,37 @@ class Protector
         }
 
         return $files;
+    }
+
+    public function setConnectionConfig(
+        string $connectionName,
+        string $driver,
+        string $url,
+        string $host,
+        int $port,
+        string $databaseName,
+        string $username,
+        string $password
+    ): void {
+        $configKey = sprintf('database.connections.%s', $this->connectionName);
+        $this->connectionName = $connectionName;
+        $this->connectionConfig = [
+            'driver' => $driver,
+            'url' => $url,
+            'host' => $host,
+            'port' => $port,
+            'database' => $databaseName,
+            'username' => $username,
+            'password' => $password,
+        ];
+
+        if (Config::has($configKey)) {
+            throw new \InvalidArgumentException(
+                sprintf('%s() is not intended to change existing database configurations', __METHOD__)
+            );
+        }
+
+        Config::set($configKey, $this->connectionConfig);
     }
 
     /**
