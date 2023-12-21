@@ -682,33 +682,38 @@ class Protector
         return $files;
     }
 
+    /**
+     * Creates a new database connection and sets this for the current protector instance.
+     *
+     * @param string $connectionName
+     * @param string $driver
+     * @param string $host
+     * @param int $port
+     * @param string $databaseName
+     * @param string $username
+     * @param string $password
+     * @return void
+     */
     public function setConnectionConfig(
         string $connectionName,
         string $driver,
-        string $url,
         string $host,
         int $port,
         string $databaseName,
         string $username,
         string $password
     ): void {
+        $this->connectionName = sprintf('_protector_%s', $connectionName);
         $configKey = sprintf('database.connections.%s', $this->connectionName);
-        $this->connectionName = $connectionName;
+
         $this->connectionConfig = [
             'driver' => $driver,
-            'url' => $url,
             'host' => $host,
             'port' => $port,
             'database' => $databaseName,
             'username' => $username,
             'password' => $password,
         ];
-
-        if (Config::has($configKey)) {
-            throw new \InvalidArgumentException(
-                sprintf('%s() is not intended to change existing database configurations', __METHOD__)
-            );
-        }
 
         Config::set($configKey, $this->connectionConfig);
     }
