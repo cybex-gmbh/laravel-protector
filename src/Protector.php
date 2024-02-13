@@ -218,10 +218,6 @@ class Protector
     {
         $disk = $this->getDisk();
 
-        if (App::environment('production')) {
-            throw new InvalidEnvironmentException('Retrieving a dump is not allowed on production systems.');
-        }
-
         if ($this->shouldEncrypt() && !$this->getPrivateKey()) {
             throw new InvalidConfigurationException(
                 'For using Laravel Sanctum a crypto keypair is required. There was none found in your .env file.'

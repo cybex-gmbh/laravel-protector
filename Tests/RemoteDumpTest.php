@@ -88,21 +88,6 @@ class RemoteDumpTest extends BaseTest
     /**
      * @test
      */
-    public function failOnProductionEnvironment()
-    {
-        $this->app->detectEnvironment(fn() => 'production');
-
-        Http::fake([
-            $this->serverUrl => Http::response(),
-        ]);
-
-        $this->expectException(InvalidEnvironmentException::class);
-        $this->protector->getRemoteDump();
-    }
-
-    /**
-     * @test
-     */
     public function failWhenPrivateKeyIsNotSet()
     {
         Config::set('protector.routeMiddleware', ['auth:sanctum']);
