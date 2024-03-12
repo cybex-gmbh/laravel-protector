@@ -104,5 +104,16 @@ return [
     | By default the chunk size is set to 20MB.
     |
     */
-    'chunkSize' => 20 * 1024 * 1024
+    'chunkSize' => 20 * 1024 * 1024,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Http Timeout
+    |--------------------------------------------------------------------------
+    |
+    | Here you may customize the timeout for HTTP requests for receiving remote dumps.
+    | The default is 120 seconds.
+    |
+    */
+    // 'httpTimeout' => env('PROTECTOR_HTTP_TIMEOUT')
 ];
