@@ -596,7 +596,7 @@ class Protector
             );
         }
 
-        return $request->withOptions(['stream' => true])->withHeaders(['Accept' => 'application/json']);
+        return $request->withOptions(['stream' => true])->withHeaders(['Accept' => 'application/json'])->timeout($this->getConfigValueForKey('httpTimeout', 120));
     }
 
     /**
