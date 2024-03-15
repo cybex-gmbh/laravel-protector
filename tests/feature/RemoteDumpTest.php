@@ -1,8 +1,10 @@
 <?php
 
+namespace Cybex\Protector\Tests\feature;
+
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
-use Cybex\Protector\Exceptions\InvalidEnvironmentException;
+use Cybex\Protector\Tests\TestCase;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Config;
@@ -11,7 +13,7 @@ use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
-class RemoteDumpTest extends BaseTest
+class RemoteDumpTest extends TestCase
 {
     protected Filesystem $disk;
 
@@ -360,8 +362,10 @@ class RemoteDumpTest extends BaseTest
      */
     public function canCreateFilename()
     {
-        $fileName = $this->protector->createFilename();
         $structure = '%s %d-%d-%d %d-%d %x.sql';
+        config()->set('protector.fileName', $structure);
+
+        $fileName = $this->protector->createFilename();
 
         $this->assertIsString($fileName);
         $this->assertStringMatchesFormat($structure, $fileName);

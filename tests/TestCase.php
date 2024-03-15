@@ -1,12 +1,20 @@
 <?php
 
+namespace Cybex\Protector\Tests;
+
 use Cybex\Protector\Protector;
 use Cybex\Protector\ProtectorServiceProvider;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
-use Orchestra\Testbench\TestCase;
+use Orchestra\Testbench\TestCase as OrchestraTestCase;
+use ReflectionClass;
+use ReflectionMethod;
+use ReflectionProperty;
 
-abstract class BaseTest extends TestCase
+//use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+
+class TestCase extends OrchestraTestCase
 {
     /**
      *  Protector instance.
@@ -18,14 +26,6 @@ abstract class BaseTest extends TestCase
         parent::setUp();
 
         $this->protector = app('protector');
-    }
-
-    /**
-     * @return string
-     */
-    protected function getBasePath(): string
-    {
-        return __DIR__ . '/scaffolds/includes-protector';
     }
 
     /**
@@ -71,32 +71,27 @@ abstract class BaseTest extends TestCase
         $property->setValue($this->protector, $value);
     }
 
-    /**
-     * Provides a dynamic number of dumps, optionally a new filename can be specified as the array key.
-     *
-     * @param array $fileNames
-     * @return void
-     */
-    protected function provideTestDumps(array $fileNames): void
+    protected function getFakeDumpDisk(): Filesystem
     {
-        $directoryName = 'testDumps';
-        $disk = Storage::disk('local');
+        $disk = $this->getDumpDisk();
+        $baseDirectory = $this->protector->getBaseDirectory();
 
-        $disk->deleteDirectory($directoryName);
-
-        Config::set('protector.baseDirectory', $directoryName);
-        $disk->makeDirectory($directoryName);
-
-        foreach ($fileNames as $newFileName => $fileName) {
-            $disk->copy(
-                sprintf('protector%s%s', DIRECTORY_SEPARATOR, $fileName),
-                sprintf(
-                    '%s%s%s',
-                    $directoryName,
-                    DIRECTORY_SEPARATOR,
-                    is_string($newFileName) ? $newFileName : $fileName
-                )
-            );
+        foreach (glob(getcwd() . '/tests/dumps/*.sql') as $filename) {
+            Storage::disk('local')->putFileAs($baseDirectory, $filename, basename($filename));
         }
+
+        return $disk;
+    }
+
+    protected function getDumpDisk(): Filesystem
+    {
+        $diskName = config('protector.diskName', config('filesystems.default'));
+
+        return Storage::fake($diskName);
+    }
+
+    protected function clearDumpDirectory(): void
+    {
+        $this->getDumpDisk()->deleteDirectory($this->protector->getBaseDirectory());
     }
 }

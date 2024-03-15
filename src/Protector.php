@@ -38,6 +38,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
+use Throwable;
 
 class Protector
 {
@@ -416,11 +417,18 @@ class Protector
 
     /**
      * Returns the last x lines from a file in correct order.
+     *
+     * @throws FileNotFoundException
      */
     protected function tail(string $file, int $lines, int $buffer = 1024): array
     {
         // Open file-handle.
         $fileHandle = $this->getDisk()->readStream($file);
+
+        if (!is_resource($fileHandle)) {
+            throw new FileNotFoundException($file);
+        }
+
         // Jump to last character.
         fseek($fileHandle, 0, SEEK_END);
 
@@ -557,14 +565,6 @@ class Protector
                     sprintf('Could not create the non-existing destination path %s on given disk.', $destinationPath)
                 );
             }
-
-            return;
-        }
-
-        if (in_array($destinationPath, $disk->files($this->getBaseDirectory()))) {
-            throw new FailedCreatingDestinationPathException(
-                sprintf('Could not create directory %s, because a file with the same name exists.', $destinationPath)
-            );
         }
     }
 
@@ -653,11 +653,33 @@ class Protector
         return $publicKey;
     }
 
-    public function createTempFilePath(string $diskFilePath): string|false
+    /**
+     * Copies the specified dump to a local temporary file, in case the dump is stored remotely.
+     *
+     * @throws Exception
+     * @throws FileNotFoundException
+     */
+    public function createTempFilePath(string $diskFilePath): string
     {
         $tempFilePath = tempnam('', 'protector');
+
+        if ($tempFilePath === false) {
+            throw new Exception('Could not create a temporary file for dump.');
+        }
+
         $handle       = fopen($tempFilePath, 'w');
+
+        if ($handle === false) {
+            throw new Exception('Could not open temporary file for writing.');
+        }
+
         $stream       = $this->getDisk()->readStream($diskFilePath);
+
+        if (!is_resource($stream)) {
+            fclose($handle);
+
+            throw new FileNotFoundException($diskFilePath);
+        }
 
         stream_copy_to_stream($stream, $handle);
 
