@@ -15,7 +15,9 @@ class ExportDumpTest extends TestCase
     protected Filesystem $disk;
 
     protected string $baseDirectory;
+
     protected string $filePath;
+
     protected string $emptyDumpPath;
 
     protected function setUp(): void
@@ -25,7 +27,7 @@ class ExportDumpTest extends TestCase
         $this->disk = $this->getFakeDumpDisk();
 
         $this->baseDirectory = Config::get('protector.baseDirectory');
-        $this->filePath      = sprintf('%s/dump.sql', $this->baseDirectory);
+        $this->filePath = sprintf('%s/dump.sql', $this->baseDirectory);
         $this->emptyDumpPath = 'testDumps/dump.sql';
     }
 
@@ -36,7 +38,7 @@ class ExportDumpTest extends TestCase
     {
         $this->disk->deleteDirectory(Config::get('protector.baseDirectory'));
 
-        $filePath            = $this->protector->createDestinationFilePath(__FUNCTION__);
+        $filePath = $this->protector->createDestinationFilePath(__FUNCTION__);
         $destinationFilePath = $this->disk->path($filePath);
 
         $this->runProtectedMethod('createDirectory', [$filePath, $this->disk]);
@@ -50,7 +52,7 @@ class ExportDumpTest extends TestCase
     {
         $this->disk->deleteDirectory(Config::get('protector.baseDirectory'));
 
-        $filePath            = $this->protector->createDestinationFilePath(__FUNCTION__, __FUNCTION__);
+        $filePath = $this->protector->createDestinationFilePath(__FUNCTION__, __FUNCTION__);
         $destinationFilePath = $this->disk->path($filePath);
 
         $this->runProtectedMethod('createDirectory', [$filePath, $this->disk]);
@@ -99,10 +101,10 @@ class ExportDumpTest extends TestCase
     {
         // Provide an database connection to a non-existing database.
         Config::set('database.connections.invalid', [
-            'driver'   => 'mysql',
-            'url'      => env('DATABASE_URL'),
-            'host'     => env('DB_HOST', '127.0.0.1'),
-            'port'     => env('DB_PORT', '3306'),
+            'driver' => 'mysql',
+            'url' => env('DATABASE_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
             'database' => 'invalid_database_name',
             'username' => env('DB_USERNAME', 'forge'),
             'password' => env('DB_PASSWORD', ''),

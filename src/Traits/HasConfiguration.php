@@ -71,7 +71,6 @@ trait HasConfiguration
      */
     protected bool $removeAutoIncrementingState = false;
 
-
     /**
      * Sets the auth token for Laravel Sanctum authentication.
      */
@@ -123,7 +122,7 @@ trait HasConfiguration
     /**
      * @throws InvalidConnectionException
      */
-    public function withConnectionName(string $connectionName = null): static
+    public function withConnectionName(?string $connectionName = null): static
     {
         $this->connectionName = $connectionName ?? config('database.default');
 
@@ -147,7 +146,6 @@ trait HasConfiguration
 
         return $this;
     }
-
 
     public function withMaxPacketLength(string $maxPacketLength): static
     {

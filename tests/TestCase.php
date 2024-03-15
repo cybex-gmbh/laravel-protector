@@ -5,7 +5,6 @@ namespace Cybex\Protector\Tests;
 use Cybex\Protector\Protector;
 use Cybex\Protector\ProtectorServiceProvider;
 use Illuminate\Contracts\Filesystem\Filesystem;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use Orchestra\Testbench\TestCase as OrchestraTestCase;
 use ReflectionClass;
@@ -29,7 +28,6 @@ class TestCase extends OrchestraTestCase
     }
 
     /**
-     * @param $app
      * @return string[]
      */
     protected function getPackageProviders($app): array
@@ -51,10 +49,6 @@ class TestCase extends OrchestraTestCase
 
     /**
      * Allows a test to call a protected method.
-     *
-     * @param string $methodName
-     * @param array $params
-     * @return mixed
      */
     protected function runProtectedMethod(string $methodName, array $params = []): mixed
     {
@@ -76,7 +70,7 @@ class TestCase extends OrchestraTestCase
         $disk = $this->getDumpDisk();
         $baseDirectory = $this->protector->getBaseDirectory();
 
-        foreach (glob(getcwd() . '/tests/dumps/*.sql') as $filename) {
+        foreach (glob(getcwd().'/tests/dumps/*.sql') as $filename) {
             Storage::disk('local')->putFileAs($baseDirectory, $filename, basename($filename));
         }
 

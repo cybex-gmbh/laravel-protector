@@ -14,8 +14,11 @@ use Illuminate\Support\Facades\Config;
 class ImportDumpTest extends TestCase
 {
     protected Filesystem $disk;
+
     protected static string $baseDirectory = 'dumps';
+
     protected string $filePath;
+
     protected Protector $protector;
 
     protected function setUp(): void
@@ -28,14 +31,14 @@ class ImportDumpTest extends TestCase
 
         $this->disk = $this->getFakeDumpDisk();
 
-        $this->filePath = getcwd() . '/tests/dumps/dump.sql';
+        $this->filePath = getcwd().'/tests/dumps/dump.sql';
     }
 
     public static function provideDumpMetadata(): array
     {
         return [
             [
-                static::$baseDirectory . "/dump.sql",
+                static::$baseDirectory.'/dump.sql',
                 [
                     'meta' => [
                         'database' => 'protector-tests',
@@ -54,13 +57,13 @@ class ImportDumpTest extends TestCase
                             'yday' => 179,
                             'weekday' => 'Wednesday',
                             'month' => 'June',
-                            0 => 1656506604
-                        ]
-                    ]
-                ]
+                            0 => 1656506604,
+                        ],
+                    ],
+                ],
             ],
             [
-                static::$baseDirectory . "/dumpWithGit.sql",
+                static::$baseDirectory.'/dumpWithGit.sql',
                 [
                     'meta' => [
                         'database' => 'protector-tests',
@@ -79,18 +82,18 @@ class ImportDumpTest extends TestCase
                             'yday' => 179,
                             'weekday' => 'Wednesday',
                             'month' => 'June',
-                            0 => 1656506604
-                        ]
-                    ]
-                ]
+                            0 => 1656506604,
+                        ],
+                    ],
+                ],
             ],
             [
-                static::$baseDirectory . "/dumpWithoutMetadata.sql",
-                []
+                static::$baseDirectory.'/dumpWithoutMetadata.sql',
+                [],
             ],
             [
-                static::$baseDirectory . "/dumpWithIncorrectMetadata.sql",
-                false
+                static::$baseDirectory.'/dumpWithIncorrectMetadata.sql',
+                false,
             ],
         ];
     }
@@ -99,13 +102,13 @@ class ImportDumpTest extends TestCase
     {
         return [
             [
-                static::$baseDirectory . '/dump.sql',
-                false
+                static::$baseDirectory.'/dump.sql',
+                false,
             ],
             [
-                static::$baseDirectory . '/secondDump.sql',
-                true
-            ]
+                static::$baseDirectory.'/secondDump.sql',
+                true,
+            ],
         ];
     }
 
@@ -114,12 +117,12 @@ class ImportDumpTest extends TestCase
         return [
             [
                 [],
-                null
+                null,
             ],
             [
-                [static::$baseDirectory . '/emptyDump.sql'],
-                static::$baseDirectory . '/emptyDump.sql'
-            ]
+                [static::$baseDirectory.'/emptyDump.sql'],
+                static::$baseDirectory.'/emptyDump.sql',
+            ],
         ];
     }
 
@@ -128,7 +131,7 @@ class ImportDumpTest extends TestCase
      */
     public function failOnProductionEnvironment()
     {
-        $this->app->detectEnvironment(fn() => 'production');
+        $this->app->detectEnvironment(fn () => 'production');
 
         $this->expectException(InvalidEnvironmentException::class);
         $this->protector->importDump($this->filePath);
@@ -171,6 +174,7 @@ class ImportDumpTest extends TestCase
 
     /**
      * @test
+     *
      * @dataProvider provideEmptyDumpsWhenReceivingTheLatestDumpName
      */
     public function canReturnLatestFileName(string $expectedFileName, bool $shouldModify)
@@ -197,6 +201,7 @@ class ImportDumpTest extends TestCase
 
     /**
      * @test
+     *
      * @dataProvider provideDumpMetadata
      */
     public function verifyDumpDateMetaData($filePath, $expectedMetaData)
@@ -209,11 +214,12 @@ class ImportDumpTest extends TestCase
      */
     public function failGetDumpMetaDataOnResponseHasNotEnoughLines()
     {
-        $this->assertEquals(false, $this->protector->getDumpMetaData(static::$baseDirectory . '/emptyDump.sql'));
+        $this->assertEquals(false, $this->protector->getDumpMetaData(static::$baseDirectory.'/emptyDump.sql'));
     }
 
     /**
      * @test
+     *
      * @dataProvider provideEmptyDumpsForFlushingDumps
      */
     public function flushDumps($expected, $excludeFromFlush)
