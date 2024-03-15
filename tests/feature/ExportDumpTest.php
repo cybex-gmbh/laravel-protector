@@ -13,11 +13,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class ExportDumpTest extends TestCase
 {
     protected Filesystem $disk;
-
     protected string $baseDirectory;
-
     protected string $filePath;
-
     protected string $emptyDumpPath;
 
     protected function setUp(): void

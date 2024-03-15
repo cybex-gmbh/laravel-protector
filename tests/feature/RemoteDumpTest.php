@@ -16,9 +16,7 @@ use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 class RemoteDumpTest extends TestCase
 {
     protected Filesystem $disk;
-
     protected string $serverUrl;
-
     protected string $baseDirectory;
 
     protected function setUp(): void
@@ -136,7 +134,7 @@ class RemoteDumpTest extends TestCase
         $this->protector->getRemoteDump();
 
         Http::assertSent(function ($request) {
-            return $request->hasHeader('Authorization', 'Basic '.base64_encode('1234:1234'));
+            return $request->hasHeader('Authorization', 'Basic ' . base64_encode('1234:1234'));
         });
     }
 

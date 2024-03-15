@@ -14,13 +14,9 @@ use Illuminate\Support\Facades\Http;
 class ImportDumpCommandTest extends TestCase
 {
     protected Filesystem $disk;
-
     protected string $serverUrl;
-
     protected string $shouldDownloadDump;
-
     protected string $shouldImportDump;
-
     protected static string $baseDirectory = 'dumps';
 
     protected function setUp(): void
@@ -101,7 +97,7 @@ class ImportDumpCommandTest extends TestCase
         $this->artisan('protector:import --remote')
             ->expectsConfirmation($this->shouldImportDump);
 
-        $this->assertFileExists($this->disk->path(static::$baseDirectory.'/remote_dump.sql'));
+        $this->assertFileExists($this->disk->path(static::$baseDirectory . '/remote_dump.sql'));
     }
 
     /**
@@ -188,13 +184,13 @@ class ImportDumpCommandTest extends TestCase
      */
     public function chooseImportDumpWithOnlyOneFileInBaseDirectory()
     {
-        $this->protector->flush(static::$baseDirectory.'/dump.sql');
+        $this->protector->flush(static::$baseDirectory . '/dump.sql');
 
         $this->assertCount(1, $this->protector->getDumpFiles());
 
         $this->artisan('protector:import')
             ->expectsChoice($this->shouldDownloadDump, 2, ['Download remote dump', 'Import existing local dump'])
-            ->expectsOutput('Using file "'.static::$baseDirectory.'/dump.sql" because there are no other dumps.')
+            ->expectsOutput('Using file "' . static::$baseDirectory . '/dump.sql" because there are no other dumps.')
             ->expectsConfirmation($this->shouldImportDump);
     }
 }

@@ -70,15 +70,15 @@ class Protector
         $this->guardExecEnabled();
 
         // Production environment is not allowed unless set in options.
-        if (App::environment('production') && ! Arr::get($options, 'allow-production')) {
+        if (App::environment('production') && !Arr::get($options, 'allow-production')) {
             throw new InvalidEnvironmentException('Production environment is not allowed and option was not set.');
         }
 
-        if (! $this->connectionConfig) {
+        if (!$this->connectionConfig) {
             throw new InvalidConnectionException('Connection is not configured properly');
         }
 
-        if (! file_exists($sourceFilePath)) {
+        if (!file_exists($sourceFilePath)) {
             throw new FileNotFoundException($sourceFilePath);
         }
 
@@ -145,7 +145,7 @@ class Protector
      */
     public function createDump(array $options = []): string
     {
-        if (! $this->connectionConfig) {
+        if (!$this->connectionConfig) {
             throw new InvalidConnectionException('Connection is not configured properly.');
         }
 
@@ -183,7 +183,7 @@ class Protector
                     $decodedData = json_decode($matches['data'], true);
 
                     // We store json-encoded arrays, if we do not get an array back, that means something went wrong.
-                    if (! is_array($decodedData)) {
+                    if (!is_array($decodedData)) {
                         return false;
                     }
 
@@ -216,13 +216,13 @@ class Protector
     {
         $disk = $this->getDisk();
 
-        if ($this->shouldEncrypt() && ! $this->getPrivateKey()) {
+        if ($this->shouldEncrypt() && !$this->getPrivateKey()) {
             throw new InvalidConfigurationException(
                 'For using Laravel Sanctum a crypto keypair is required. There was none found in your .env file.'
             );
         }
 
-        if (! $serverUrl = $this->getServerUrl()) {
+        if (!$serverUrl = $this->getServerUrl()) {
             throw new InvalidConfigurationException('Server url is not set or invalid.');
         }
 
@@ -248,14 +248,14 @@ class Protector
             }
         }
 
-        if (! $response->ok()) {
+        if (!$response->ok()) {
             $httpCode = $response->status();
 
             throw match ($httpCode) {
-                401, 403 => new UnauthorizedHttpException('', $httpCode.' Unauthorized access'),
-                404 => new NotFoundHttpException('404 Not found: '.$serverUrl),
+                401, 403 => new UnauthorizedHttpException('', $httpCode . ' Unauthorized access'),
+                404 => new NotFoundHttpException('404 Not found: ' . $serverUrl),
                 500 => new FailedRemoteDatabaseFetchingException($response->header('message')),
-                default => new HttpException($httpCode, 'Status code '.$httpCode),
+                default => new HttpException($httpCode, 'Status code ' . $httpCode),
             };
         }
 
@@ -330,7 +330,7 @@ class Protector
 
         $schemaStateProxy->dump($connection, $tempFile);
 
-        if (! filesize($tempFile)) {
+        if (!filesize($tempFile)) {
             unlink($tempFile);
 
             $tempFile = null;
@@ -386,7 +386,7 @@ class Protector
      */
     public function getMetaData(bool $refresh = false): array
     {
-        if (! $refresh && $this->metaDataCache) {
+        if (!$refresh && $this->metaDataCache) {
             return $this->metaDataCache;
         }
 
@@ -422,7 +422,7 @@ class Protector
         // Open file-handle.
         $fileHandle = $this->getDisk()->readStream($file);
 
-        if (! is_resource($fileHandle)) {
+        if (!is_resource($fileHandle)) {
             throw new FileNotFoundException($file);
         }
 
@@ -441,7 +441,7 @@ class Protector
             fseek($fileHandle, -$seekLength, SEEK_CUR);
 
             // Get the next content-chunk by using the according length.
-            $contents = ($chunk = fread($fileHandle, $seekLength)).$contents;
+            $contents = ($chunk = fread($fileHandle, $seekLength)) . $contents;
 
             // Reset pointer to the position before reading the current chunk.
             fseek($fileHandle, -mb_strlen($chunk, 'UTF-8'), SEEK_CUR);
@@ -491,7 +491,7 @@ class Protector
         $shouldEncrypt = $this->shouldEncrypt();
 
         // Only proceed when either Laravel Sanctum is turned off or the user's token is valid.
-        if (! $shouldEncrypt || $request->user()?->tokenCan('protector:import')) {
+        if (!$shouldEncrypt || $request->user()?->tokenCan('protector:import')) {
             if ($this->withConnectionName($connectionName)) {
                 try {
                     $serverFilePath = $this->createDump();
@@ -506,7 +506,7 @@ class Protector
                     function () use ($publicKey, $serverFilePath, $chunkSize, $shouldEncrypt) {
                         $inputHandle = fopen($serverFilePath, 'rb');
 
-                        while (! feof($inputHandle)) {
+                        while (!feof($inputHandle)) {
                             $chunk = fread($inputHandle, $chunkSize);
 
                             // Encrypt the data when Laravel Sanctum is active.
@@ -672,7 +672,7 @@ class Protector
 
         $stream = $this->getDisk()->readStream($diskFilePath);
 
-        if (! is_resource($stream)) {
+        if (!is_resource($stream)) {
             fclose($handle);
 
             throw new FileNotFoundException($diskFilePath);
@@ -711,7 +711,7 @@ class Protector
      */
     public function guardExecEnabled(): void
     {
-        if (! function_exists('exec')) {
+        if (!function_exists('exec')) {
             throw new ShellAccessDeniedException();
         }
     }
@@ -749,7 +749,7 @@ class Protector
         $outputHandle = fopen($this->getDisk()->path($destinationFilePath), 'wb');
 
         // Stop when EOF is reached or an empty chunk was read.
-        while (! feof($resource) && $chunk = stream_get_contents($resource, $chunkSize)) {
+        while (!feof($resource) && $chunk = stream_get_contents($resource, $chunkSize)) {
             if ($sanctumEnabled) {
                 $chunk = $this->decryptString($chunk);
             }
@@ -777,7 +777,7 @@ class Protector
             MySqlSchemaState::class => app(MySqlSchemaStateProxy::class, [$schemaState, $this]),
             //            PostgresSchemaState::class => app('PostgresSchemaStateProxy', [$schemaState, $this]),
             //            SqliteSchemaState::class => app('SqliteSchemaStateProxy', [$schemaState, $this]),
-            default => throw new UnsupportedDatabaseException('Unsupported database schema state: '.class_basename($schemaState)),
+            default => throw new UnsupportedDatabaseException('Unsupported database schema state: ' . class_basename($schemaState)),
         };
     }
 }

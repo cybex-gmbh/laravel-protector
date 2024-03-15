@@ -44,7 +44,6 @@ class ImportDump extends Command
     protected $description = 'Imports a local or remote database dump.';
 
     protected const DOWNLOAD_REMOTE_DUMP = 'Download remote dump';
-
     protected const IMPORT_EXISTING_LOCAL_DUMP = 'Import existing local dump';
 
     protected ?Protector $protector = null;
@@ -67,13 +66,13 @@ class ImportDump extends Command
         $optionLatest = $this->option('latest');
         $optionConnection = $this->option('connection');
 
-        if (App::environment('production') && ! $this->option('allow-production')) {
+        if (App::environment('production') && !$this->option('allow-production')) {
             throw new InvalidEnvironmentException(
                 'Import is not allowed on production systems! Use --allow-production'
             );
         }
 
-        if ($optionForce && ! ($optionRemote || $optionFile || $optionDump || $optionLatest)) {
+        if ($optionForce && !($optionRemote || $optionFile || $optionDump || $optionLatest)) {
             $this->error('Nothing to import.');
 
             return self::FAILURE;
@@ -82,7 +81,7 @@ class ImportDump extends Command
         $this->protector->withConnectionName($optionConnection);
 
         $shouldImportLocalDump = $optionFile || $optionDump || $optionLatest;
-        $shouldDownloadDump = $optionRemote || (! $shouldImportLocalDump && $this->userWantsRemoteDump());
+        $shouldDownloadDump = $optionRemote || (!$shouldImportLocalDump && $this->userWantsRemoteDump());
 
         if ($shouldDownloadDump) {
             $importFilePath = $this->getRemoteDump();
@@ -98,7 +97,7 @@ class ImportDump extends Command
         }
 
         if (empty($localFilePath)) {
-            if (! $importFilePath) {
+            if (!$importFilePath) {
                 $this->error('Found no file to import.');
 
                 return self::FAILURE;
@@ -109,7 +108,7 @@ class ImportDump extends Command
 
         $this->importDump($localFilePath, $optionForce);
 
-        if (! $optionFile) {
+        if (!$optionFile) {
             unlink($localFilePath);
         }
 
@@ -200,7 +199,7 @@ class ImportDump extends Command
         foreach ($directoryFiles as $directoryFile) {
             $metaData = $this->protector->getDumpMetaData($directoryFile);
 
-            if ($this->option('ignore-connection-filter') || (! is_array($metaData) || empty($metaData))) {
+            if ($this->option('ignore-connection-filter') || (!is_array($metaData) || empty($metaData))) {
                 $matchingFiles->push([
                     'path' => $directoryFile,
                     'file' => basename($directoryFile),
@@ -306,11 +305,11 @@ class ImportDump extends Command
 
         $filesByConnection = $sortedFiles->groupBy('connection');
 
-        if ($connectionName && ! $filesByConnection->has($connectionName)) {
+        if ($connectionName && !$filesByConnection->has($connectionName)) {
             throw new InvalidConnectionException();
         }
 
-        if (! $connectionName) {
+        if (!$connectionName) {
             $connectionName = $this->chooseConnectionName($filesByConnection->keys());
         }
 

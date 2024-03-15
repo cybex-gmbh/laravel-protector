@@ -45,14 +45,14 @@ class MySqlSchemaStateProxy extends AbstractMySqlSchemaStateProxy
      */
     protected function getCommandString(): string
     {
-        $command = 'mysqldump '.$this->schemaState->connectionString().' ';
+        $command = 'mysqldump ' . $this->schemaState->connectionString() . ' ';
 
         $conditionalParameters = [
-            '--set-gtid-purged=OFF' => ! $this->schemaState->connection->isMaria(),
-            '--no-create-db' => ! $this->protector->shouldCreateDb(),
-            '--skip-comments' => ! $this->protector->shouldDumpComments(),
-            '--skip-set-charset' => ! $this->protector->shouldDumpCharsets(),
-            '--no-data' => ! $this->protector->shouldDumpData(),
+            '--set-gtid-purged=OFF' => !$this->schemaState->connection->isMaria(),
+            '--no-create-db' => !$this->protector->shouldCreateDb(),
+            '--skip-comments' => !$this->protector->shouldDumpComments(),
+            '--skip-set-charset' => !$this->protector->shouldDumpCharsets(),
+            '--no-data' => !$this->protector->shouldDumpData(),
         ];
 
         $parameters = [
@@ -61,11 +61,11 @@ class MySqlSchemaStateProxy extends AbstractMySqlSchemaStateProxy
             '--tz-utc',
             '--column-statistics=0',
             '--result-file="${:LARAVEL_LOAD_PATH}"',
-            '--max-allowed-packet='.$this->protector->getMaxPacketLength(),
+            '--max-allowed-packet=' . $this->protector->getMaxPacketLength(),
             ...array_keys(array_filter($conditionalParameters)),
             '"${:LARAVEL_LOAD_DATABASE}"',
         ];
 
-        return $command.implode(' ', $parameters);
+        return $command . implode(' ', $parameters);
     }
 }
