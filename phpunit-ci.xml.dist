@@ -5,16 +5,6 @@
           <directory>tests/feature</directory>
       </testsuite>
   </testsuites>
-  <coverage>
-    <report>
-      <html outputDirectory="build/coverage"/>
-      <text outputFile="build/coverage.txt"/>
-      <clover outputFile="build/logs/clover.xml"/>
-    </report>
-  </coverage>
-  <logging>
-    <junit outputFile="build/report.junit.xml"/>
-  </logging>
   <php>
     <env name="PROTECTOR_PRIVATE_KEY" value="e195f1252346e31fe7b87e899f69a87d6fe99f38bd6e7c3cbdde411fcd9cc93e2c1d0ea6e0f8e207b38bef11bfcd5c0615c3cf4695876631b1da523a552b6022"/>
     <env name="PROTECTOR_PUBLIC_KEY" value="2c1d0ea6e0f8e207b38bef11bfcd5c0615c3cf4695876631b1da523a552b6022"/>
