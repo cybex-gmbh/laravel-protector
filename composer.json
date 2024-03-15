@@ -28,13 +28,13 @@
         "ext-pdo": "*",
         "ext-sodium": "*",
         "guzzlehttp/guzzle": "^7.4",
-        "illuminate/support": "^10.0|^11.0",
-        "laravel/framework": "^10.0|^11.0",
+        "illuminate/support": "^11.0",
+        "laravel/framework": "^11.0",
         "laravel/sanctum": "^4.0"
     },
     "require-dev": {
         "laravel/sail": "^1.26",
-        "orchestra/testbench": "^8.0|^9.0",
+        "orchestra/testbench": "^9.0",
         "phpunit/phpunit": "^10.5"
     },
     "autoload": {
