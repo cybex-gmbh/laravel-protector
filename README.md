@@ -271,9 +271,9 @@ laravel/sanctum ^2.4 in your app to lock its version.
 
 Likelihood of impact: low
 
-- Access to the formerly public methods getGitRevision(), getGitHeadDate() or getGitBranch() is now protected.
+- Access to the formerly public methods `getGitRevision()`, `getGitHeadDate()` or `getGitBranch()` is now protected.
 You now need to call getMetaData() and extract the information from the returned array.
-  
+
 ## Contributing
 
 Please see [CONTRIBUTING](CONTRIBUTING.md) for details.

@@ -1,14 +1,14 @@
 <?php
 
-namespace Cybex\Protector\Tests;
+namespace Cybex\Protector\Tests\feature;
 
-use BaseTest;
+use Cybex\Protector\Tests\TestCase;
 use LogicException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
-class ExceptionTest extends BaseTest
+class ExceptionTest extends TestCase
 {
     /**
      * @test

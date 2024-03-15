@@ -1,50 +1,41 @@
 <?php
 
+namespace Cybex\Protector\Tests\feature;
+
 use Cybex\Protector\Exceptions\FailedMysqlCommandException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
+use Cybex\Protector\Protector;
+use Cybex\Protector\Tests\TestCase;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Storage;
 
-class ImportDumpTest extends BaseTest
+class ImportDumpTest extends TestCase
 {
     protected Filesystem $disk;
-
-    protected string $baseDirectory;
+    protected static string $baseDirectory = 'dumps';
     protected string $filePath;
-    protected string $emptyDumpPath;
+    protected Protector $protector;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        Config::set('protector.baseDirectory', 'protector');
+        $this->protector = app('protector');
 
-        $this->disk = Storage::disk('local');
-        $this->baseDirectory = Config::get('protector.baseDirectory');
-        $this->filePath = $this->protector->createTempFilePath(
-            sprintf('%s%sdump.sql', $this->baseDirectory, DIRECTORY_SEPARATOR)
-        );
-        $this->emptyDumpPath = 'testDumps/dump.sql';
+        Config::set('protector.baseDirectory', static::$baseDirectory);
 
-        $this->shouldDownloadDump = 'Do you want to download and import a fresh dump from the server or an existing local dump?';
+        $this->disk = $this->getFakeDumpDisk();
+
+        $this->filePath = getcwd() . '/tests/dumps/dump.sql';
     }
 
-    protected function tearDown(): void
-    {
-        parent::tearDown();
-
-        Config::set('protector.baseDirectory', 'testDumps');
-        $this->disk->deleteDirectory(Config::get('protector.baseDirectory'));
-    }
-
-    public function provideDumpMetadata(): array
+    public static function provideDumpMetadata(): array
     {
         return [
             [
-                "protector/dump.sql",
+                static::$baseDirectory . "/dump.sql",
                 [
                     'meta' => [
                         'database' => 'protector-tests',
@@ -69,7 +60,7 @@ class ImportDumpTest extends BaseTest
                 ]
             ],
             [
-                "protector/dumpWithGit.sql",
+                static::$baseDirectory . "/dumpWithGit.sql",
                 [
                     'meta' => [
                         'database' => 'protector-tests',
@@ -94,44 +85,40 @@ class ImportDumpTest extends BaseTest
                 ]
             ],
             [
-                "protector/dumpWithoutMetadata.sql",
+                static::$baseDirectory . "/dumpWithoutMetadata.sql",
                 []
             ],
             [
-                "protector/dumpWithIncorrectMetadata.sql",
+                static::$baseDirectory . "/dumpWithIncorrectMetadata.sql",
                 false
             ],
         ];
     }
 
-    public function provideEmptyDumpsWhenReceivingTheLatestDumpName(): array
+    public static function provideEmptyDumpsWhenReceivingTheLatestDumpName(): array
     {
         return [
             [
-                ['dump.sql'],
-                'testDumps/dump.sql',
+                static::$baseDirectory . '/dump.sql',
                 false
             ],
             [
-                ['dump.sql', 'secondDump.sql' => 'dump.sql', 'thirdDump' => 'dump.sql'],
-                'testDumps/secondDump.sql',
+                static::$baseDirectory . '/secondDump.sql',
                 true
             ]
         ];
     }
 
-    public function provideEmptyDumpsForFlushingDumps(): array
+    public static function provideEmptyDumpsForFlushingDumps(): array
     {
         return [
             [
-                ['dump.sql'],
                 [],
                 null
             ],
             [
-                ['dump.sql', 'secondDump.sql' => 'dump.sql'],
-                ['testDumps/secondDump.sql'],
-                'testDumps/secondDump.sql'
+                [static::$baseDirectory . '/emptyDump.sql'],
+                static::$baseDirectory . '/emptyDump.sql'
             ]
         ];
     }
@@ -186,10 +173,8 @@ class ImportDumpTest extends BaseTest
      * @test
      * @dataProvider provideEmptyDumpsWhenReceivingTheLatestDumpName
      */
-    public function canReturnLatestFileName(array $fileNames, string $expectedFileName, bool $shouldModify)
+    public function canReturnLatestFileName(string $expectedFileName, bool $shouldModify)
     {
-        $this->provideTestDumps($fileNames);
-
         if ($shouldModify) {
             touch($this->disk->path($expectedFileName), time() + 60);
         }
@@ -205,8 +190,7 @@ class ImportDumpTest extends BaseTest
      */
     public function throwsExceptionIfNoFileExists()
     {
-        $this->provideTestDumps([]);
-
+        $this->clearDumpDirectory();
         $this->expectException(FileNotFoundException::class);
         $this->protector->getLatestDumpName();
     }
@@ -225,22 +209,18 @@ class ImportDumpTest extends BaseTest
      */
     public function failGetDumpMetaDataOnResponseHasNotEnoughLines()
     {
-        $this->provideTestDumps(['emptyDump.sql']);
-
-        $this->assertEquals(false, $this->protector->getDumpMetaData('testDumps/emptyDump.sql'));
+        $this->assertEquals(false, $this->protector->getDumpMetaData(static::$baseDirectory . '/emptyDump.sql'));
     }
 
     /**
      * @test
      * @dataProvider provideEmptyDumpsForFlushingDumps
      */
-    public function flushDumps($fileNames, $expected, $excludeDump)
+    public function flushDumps($expected, $excludeFromFlush)
     {
-        $this->provideTestDumps($fileNames);
+        $this->protector->flush($excludeFromFlush);
 
-        $this->protector->flush($excludeDump);
-
-        $baseDirectory = Config::get('protector.baseDirectory');
+        $baseDirectory = $this->protector->getBaseDirectory();
         $dumpsAfterFlushing = $this->disk->files($baseDirectory);
 
         $this->assertEquals($expected, $dumpsAfterFlushing);
