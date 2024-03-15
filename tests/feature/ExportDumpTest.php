@@ -22,8 +22,6 @@ class ExportDumpTest extends TestCase
     {
         parent::setUp();
 
-//        Config::set('protector.baseDirectory', 'protector');
-
         $this->disk = $this->getFakeDumpDisk();
 
         $this->baseDirectory = Config::get('protector.baseDirectory');
@@ -36,7 +34,6 @@ class ExportDumpTest extends TestCase
      */
     public function createDestinationFilePath()
     {
-//        Config::set('protector.baseDirectory', 'noDumps');
         $this->disk->deleteDirectory(Config::get('protector.baseDirectory'));
 
         $filePath            = $this->protector->createDestinationFilePath(__FUNCTION__);
@@ -51,8 +48,6 @@ class ExportDumpTest extends TestCase
      */
     public function createDestinationFilePathWithSubFolder()
     {
-//        Config::set('protector.baseDirectory', 'noDumps');
-
         $this->disk->deleteDirectory(Config::get('protector.baseDirectory'));
 
         $filePath            = $this->protector->createDestinationFilePath(__FUNCTION__, __FUNCTION__);

@@ -106,8 +106,6 @@ class ImportDumpCommandTest extends TestCase
      */
     public function canGetRemoteDumpWithFlushOptionEnabled()
     {
-//        $this->provideTestDumps(['dump.sql', 'secondDump.sql' => 'dump.sql', 'thirdDump.sql' => 'dump.sql']);
-
         Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
         Config::set('protector.routeMiddleware', []);
 
@@ -162,8 +160,6 @@ class ImportDumpCommandTest extends TestCase
      */
     public function canImportDumpOnOptionLatest()
     {
-//        $this->provideTestDumps(['dump.sql']);
-
         $this->artisan('protector:import --latest')->expectsConfirmation($this->shouldImportDump);
         $this->assertEquals(
             sprintf('%s%sdump.sql', $this->protector->getBaseDirectory(), DIRECTORY_SEPARATOR),
