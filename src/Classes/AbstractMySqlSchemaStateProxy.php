@@ -3,10 +3,8 @@
 namespace Cybex\Protector\Classes;
 
 use Cybex\Protector\Protector;
-use Exception;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Schema\MySqlSchemaState;
-use Illuminate\Database\Schema\SchemaState;
 use Symfony\Component\Process\Process;
 
 /**
@@ -19,7 +17,7 @@ abstract class AbstractMySqlSchemaStateProxy extends MySqlSchemaState
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function dump(Connection $connection, $path)
     {
@@ -27,7 +25,7 @@ abstract class AbstractMySqlSchemaStateProxy extends MySqlSchemaState
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function load($path)
     {

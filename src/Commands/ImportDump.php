@@ -16,8 +16,6 @@ use Illuminate\Support\Facades\App;
 
 /**
  * Class ImportDump
- *
- * @package Cybex\Protector\Commands
  */
 class ImportDump extends Command
 {
@@ -47,12 +45,12 @@ class ImportDump extends Command
 
     protected const DOWNLOAD_REMOTE_DUMP = 'Download remote dump';
     protected const IMPORT_EXISTING_LOCAL_DUMP = 'Import existing local dump';
+
     protected ?Protector $protector = null;
 
     /**
      * Execute the console command.
      *
-     * @return int
      * @throws InvalidEnvironmentException
      */
     public function handle(): int
@@ -119,8 +117,6 @@ class ImportDump extends Command
 
     /**
      * Reads the remote dump file and deletes all old dumps if the flush option is set.
-     *
-     * @return string|null
      */
     protected function getRemoteDump(): ?string
     {
@@ -220,9 +216,9 @@ class ImportDump extends Command
             }
 
             if (($metaData['meta']['connection'] ?? false) && Arr::exists(
-                    config('database.connections'),
-                    $metaData['meta']['connection']
-                )) {
+                config('database.connections'),
+                $metaData['meta']['connection']
+            )) {
                 $fileInformation = [
                     'path' => $directoryFile,
                     'file' => basename($directoryFile),
@@ -269,11 +265,11 @@ class ImportDump extends Command
     protected function importDump(string $importFilePath, ?bool $optionForce): void
     {
         if ($optionForce || $this->confirm(
-                    sprintf(
-                        'Are you sure that you want to import the dump into the database: %s?',
-                        $this->protector->getDatabaseName()
-                    )
-                )) {
+            sprintf(
+                'Are you sure that you want to import the dump into the database: %s?',
+                $this->protector->getDatabaseName()
+            )
+        )) {
             try {
                 $this->protector->importDump($importFilePath, Arr::except($this->options(), ['migrate']));
 
@@ -322,8 +318,6 @@ class ImportDump extends Command
 
     /**
      * Asks if an existing dump or a remote dump should be imported.
-     *
-     * @return bool
      */
     protected function userWantsRemoteDump(): bool
     {

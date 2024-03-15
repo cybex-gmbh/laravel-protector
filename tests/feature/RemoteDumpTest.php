@@ -16,7 +16,6 @@ use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 class RemoteDumpTest extends TestCase
 {
     protected Filesystem $disk;
-
     protected string $serverUrl;
     protected string $baseDirectory;
 
@@ -329,7 +328,7 @@ class RemoteDumpTest extends TestCase
     {
         $functionName = __FUNCTION__;
 
-        Config::set('protector.baseDirectory', fn() => $functionName);
+        Config::set('protector.baseDirectory', fn () => $functionName);
 
         $result = $this->runProtectedMethod('getConfigValueForKey', ['baseDirectory']);
 
@@ -338,6 +337,7 @@ class RemoteDumpTest extends TestCase
 
     /**
      * Sets the env key name for the private key.
+     *
      * @test
      */
     public function validateUsersPrivateKeyName()

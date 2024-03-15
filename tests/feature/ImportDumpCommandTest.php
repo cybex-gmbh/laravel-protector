@@ -14,7 +14,6 @@ use Illuminate\Support\Facades\Http;
 class ImportDumpCommandTest extends TestCase
 {
     protected Filesystem $disk;
-
     protected string $serverUrl;
     protected string $shouldDownloadDump;
     protected string $shouldImportDump;
@@ -43,7 +42,7 @@ class ImportDumpCommandTest extends TestCase
      */
     public function failOnProductionEnvironment()
     {
-        $this->app->detectEnvironment(fn() => 'production');
+        $this->app->detectEnvironment(fn () => 'production');
 
         $this->expectException(InvalidEnvironmentException::class);
 
