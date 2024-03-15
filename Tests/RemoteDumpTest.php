@@ -360,8 +360,10 @@ class RemoteDumpTest extends BaseTest
      */
     public function canCreateFilename()
     {
-        $fileName = $this->protector->createFilename();
         $structure = '%s %d-%d-%d %d-%d %x.sql';
+        config()->set('protector.fileName', $structure);
+
+        $fileName = $this->protector->createFilename();
 
         $this->assertIsString($fileName);
         $this->assertStringMatchesFormat($structure, $fileName);
