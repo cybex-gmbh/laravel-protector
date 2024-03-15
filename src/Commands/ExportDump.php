@@ -8,7 +8,6 @@ use Illuminate\Http\File;
 
 /**
  * Class ExportDump
- * @package Cybex\Protector\Commands;
  */
 class ExportDump extends Command
 {
@@ -33,8 +32,6 @@ class ExportDump extends Command
 
     /**
      * Execute the console command.
-     *
-     * @return int
      */
     public function handle(): int
     {

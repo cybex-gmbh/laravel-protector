@@ -14,8 +14,6 @@ class ProtectorServiceProvider extends ServiceProvider
 {
     /**
      * Bootstrap the application services.
-     *
-     * @return void
      */
     public function boot(): void
     {
@@ -29,7 +27,7 @@ class ProtectorServiceProvider extends ServiceProvider
 
         // Publish package config to app config space.
         $this->publishes([
-            __DIR__ . '/../config/protector.php' => config_path('protector.php'),
+            __DIR__.'/../config/protector.php' => config_path('protector.php'),
         ], 'protector.config');
 
         $this->publishMigrations();
@@ -37,13 +35,11 @@ class ProtectorServiceProvider extends ServiceProvider
 
     /**
      * Register the application services.
-     *
-     * @return void
      */
     public function register(): void
     {
         // Automatically apply the package configuration.
-        $this->mergeConfigFrom(__DIR__ . '/../config/protector.php', 'protector');
+        $this->mergeConfigFrom(__DIR__.'/../config/protector.php', 'protector');
 
         // Register the main class to use with the facade.
         $this->app->singleton('protector', function () {
