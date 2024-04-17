@@ -11,7 +11,7 @@ on:
 jobs:
     execute-tests:
         name: Setup testing environment and execute tests
-        uses: cybex-gmbh/github-workflows/.github/workflows/tests.yml@feature/tests-workflow
+        uses: cybex-gmbh/github-workflows/.github/workflows/tests.yml@main
         strategy:
             fail-fast: true
             matrix:
