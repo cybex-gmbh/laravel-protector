@@ -56,7 +56,6 @@ class Protector
     {
         $this->withConnectionName($connectionName)
             ->withDefaultMaxPacketLength()
-            ->withoutCreateDb()
             ->withoutTablespaces();
     }
 
