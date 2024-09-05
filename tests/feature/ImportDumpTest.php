@@ -2,6 +2,7 @@
 
 namespace Cybex\Protector\Tests\feature;
 
+use Cybex\Protector\Exceptions\FailedImportException;
 use Cybex\Protector\Exceptions\FailedMysqlCommandException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
@@ -165,7 +166,7 @@ class ImportDumpTest extends TestCase
 
         $this->protector->withConnectionName(null);
 
-        $this->expectException(FailedMysqlCommandException::class);
+        $this->expectException(FailedImportException::class);
         $this->protector->importDump($this->filePath);
     }
 
