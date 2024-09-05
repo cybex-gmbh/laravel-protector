@@ -85,33 +85,15 @@ class Protector
             throw new FileNotFoundException($sourceFilePath);
         }
 
-        $shellCommandDropCreateDatabase = sprintf(
-            'mysql -h%s -u%s -p%s -e %s 2> /dev/null',
-            escapeshellarg($this->connectionConfig['host']),
-            escapeshellarg($this->connectionConfig['username']),
-            escapeshellarg($this->connectionConfig['password']),
-            escapeshellarg(sprintf('drop database %1$s; create database %1$s;', $this->connectionConfig['database']))
-        );
+        /** @var Connection $connection */
+        $connection = DB::connection($this->connectionName);
+        $schemaState = $connection->getSchemaState();
+        $schemaStateProxy = $this->getProxyForSchemaState($schemaState);
 
-        $shellCommandImport = sprintf(
-            'mysql -h%s -u%s -p%s -D%s < %s 2> /dev/null',
-            escapeshellarg($this->connectionConfig['host']),
-            escapeshellarg($this->connectionConfig['username']),
-            escapeshellarg($this->connectionConfig['password']),
-            escapeshellarg($this->connectionConfig['database']),
-            escapeshellarg($sourceFilePath)
-        );
-
-        exec($shellCommandDropCreateDatabase, result_code: $resultCode);
-
-        if ($resultCode != 0) {
-            throw new FailedMysqlCommandException();
-        } else {
-            exec($shellCommandImport, result_code: $resultCode);
-
-            if ($resultCode != 0) {
-                throw new FailedMysqlCommandException();
-            }
+        try {
+            $schemaStateProxy->load($sourceFilePath);
+        } catch (Throwable $exception) {
+            throw new FailedImportException($exception->getMessage());
         }
 
         if (Arr::get($options, 'migrate')) {
