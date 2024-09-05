@@ -4,6 +4,7 @@ namespace Cybex\Protector\Tests\feature;
 
 use Cybex\Protector\Exceptions\FailedImportException;
 use Cybex\Protector\Exceptions\FailedMysqlCommandException;
+use Cybex\Protector\Exceptions\FailedWipeException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
@@ -166,8 +167,12 @@ class ImportDumpTest extends TestCase
 
         $this->protector->withConnectionName(null);
 
-        $this->expectException(FailedImportException::class);
+        $this->expectException(FailedWipeException::class);
         $this->protector->importDump($this->filePath);
+
+        // Without wiping the database, we expect the import to fail instead.
+        $this->expectException(FailedImportException::class);
+        $this->protector->importDump($this->filePath, ['no-wipe' => true]);
     }
 
     /**
