@@ -780,13 +780,14 @@ class Protector
         };
     }
 
-    /**
-     * @throws LogicException
-     */
     protected function wipeDatabase(Connection $connection): void
     {
-        $connection->getSchemaBuilder()->dropAllViews();
-        $connection->getSchemaBuilder()->dropAllTables();
-        $connection->getSchemaBuilder()->dropAllTypes();
+        try {
+            $connection->getSchemaBuilder()->dropAllViews();
+            $connection->getSchemaBuilder()->dropAllTables();
+            $connection->getSchemaBuilder()->dropAllTypes();
+        } catch (LogicException) {
+            // ignore logic exceptions.
+        }
     }
 }
