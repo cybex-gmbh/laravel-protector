@@ -9,6 +9,7 @@ use Cybex\Protector\Exceptions\FailedDumpGenerationException;
 use Cybex\Protector\Exceptions\FailedImportException;
 use Cybex\Protector\Exceptions\FailedMysqlCommandException;
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
+use Cybex\Protector\Exceptions\FailedWipeException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
@@ -34,6 +35,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use LogicException;
 use Psr\Http\Message\StreamInterface;
 use SodiumException;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -69,6 +71,7 @@ class Protector
      * @throws FileNotFoundException
      * @throws InvalidConfigurationException
      * @throws FailedImportException
+     * @throws FailedWipeException
      */
     public function importDump(string $sourceFilePath, array $options = []): void
     {
@@ -91,6 +94,15 @@ class Protector
         $connection = DB::connection($this->connectionName);
         $schemaState = $connection->getSchemaState();
         $schemaStateProxy = $this->getProxyForSchemaState($schemaState);
+
+        if (!Arr::get($options, 'no-wipe')) {
+            // Wipe the database before importing the dump.
+            try {
+                $this->wipeDatabase($connection);
+            } catch (Throwable $exception) {
+                throw new FailedWipeException($exception->getMessage());
+            }
+        }
 
         try {
             $schemaStateProxy->load($sourceFilePath);
@@ -766,5 +778,15 @@ class Protector
             //            SqliteSchemaState::class => app('SqliteSchemaStateProxy', [$schemaState, $this]),
             default => throw new UnsupportedDatabaseException('Unsupported database schema state: ' . class_basename($schemaState)),
         };
+    }
+
+    /**
+     * @throws LogicException
+     */
+    protected function wipeDatabase(Connection $connection): void
+    {
+        $connection->getSchemaBuilder()->dropAllViews();
+        $connection->getSchemaBuilder()->dropAllTables();
+        $connection->getSchemaBuilder()->dropAllTypes();
     }
 }
