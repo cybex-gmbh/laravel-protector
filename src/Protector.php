@@ -65,7 +65,6 @@ class Protector
     /**
      * Imports a specific SQL dump.
      *
-     * @throws FailedMysqlCommandException
      * @throws InvalidEnvironmentException
      * @throws InvalidConnectionException
      * @throws FileNotFoundException
@@ -312,8 +311,6 @@ class Protector
 
     /**
      * Generates an SQL dump from the current app database and returns the path to the file.
-     *
-     * @throws FailedMysqlCommandException
      */
     protected function generateDump(array $options = []): ?string
     {

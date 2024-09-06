@@ -3,7 +3,6 @@
 namespace Cybex\Protector\Tests\feature;
 
 use Cybex\Protector\Exceptions\FailedImportException;
-use Cybex\Protector\Exceptions\FailedMysqlCommandException;
 use Cybex\Protector\Exceptions\FailedWipeException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
