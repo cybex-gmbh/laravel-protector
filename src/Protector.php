@@ -7,7 +7,6 @@ use Cybex\Protector\Classes\PostgresSchemaStateProxy;
 use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
 use Cybex\Protector\Exceptions\FailedDumpGenerationException;
 use Cybex\Protector\Exceptions\FailedImportException;
-use Cybex\Protector\Exceptions\FailedMysqlCommandException;
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\FailedWipeException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
@@ -95,7 +94,6 @@ class Protector
         $schemaStateProxy = $this->getProxyForSchemaState($schemaState);
 
         if (!Arr::get($options, 'no-wipe')) {
-            // Wipe the database before importing the dump.
             try {
                 $this->wipeDatabase($connection);
             } catch (Throwable $exception) {

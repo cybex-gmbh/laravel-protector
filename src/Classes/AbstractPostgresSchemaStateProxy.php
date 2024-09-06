@@ -38,18 +38,21 @@ abstract class AbstractPostgresSchemaStateProxy extends PostgresSchemaState
     }
 
     /**
-     * Get the base dump command arguments for PostgreSQL as a string.
+     * Get the base dump command as a string.
      */
     protected function baseDumpCommand(): string
     {
         return 'pg_dump ' . implode(' ', $this->getBaseDumpArguments());
     }
 
+    /**
+     * Get the required base dump arguments as an array.
+     */
     protected function getBaseDumpArguments(): array
     {
         return [
-            '--no-owner',                               // do not output commands to set ownership of objects to match the original database
-            '--no-acl',                                 // do not output commands to set access privileges of objects to match the original database
+            '--no-owner',                               // do not output commands to set ownership of objects to match the original database.
+            '--no-acl',                                 // do not output commands to set access privileges of objects to match the original database.
             '--host="${:LARAVEL_LOAD_HOST}"',
             '--port="${:LARAVEL_LOAD_PORT}"',
             '--username="${:LARAVEL_LOAD_USER}"',
