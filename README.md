@@ -264,10 +264,9 @@ See [cybex-gmbh/collector](https://github.com/cybex-gmbh/collector) for an examp
 
 Likelihood of impact: high
 
-- If your app does not explicitly require the laravel/sanctum package, upgrading Protector to version 2.x may also 
+- If your app does not explicitly require the laravel/sanctum package, upgrading Protector to version 2.x will also 
 upgrade Sanctum to version 3.x. This will require you to follow its 
-[upgrade guide](https://github.com/laravel/sanctum/blob/3.x/UPGRADE.md). Alternatively you can explicitly require 
-laravel/sanctum ^2.4 in your app to lock its version.
+[upgrade guide](https://github.com/laravel/sanctum/blob/3.x/UPGRADE.md).
 
 Likelihood of impact: low
 
