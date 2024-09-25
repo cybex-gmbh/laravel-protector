@@ -5,9 +5,9 @@ namespace Cybex\Protector\Exceptions;
 use Exception;
 
 /**
- * Class FailedShellCommandException
+ * Class FailedWipeException
  *
- * Thrown if a shell command couldn't be executed properly.
+ * Thrown if the attempt to wipe the database failed.
  */
 class FailedWipeException extends Exception
 {
