@@ -22,8 +22,8 @@ trait HasConfiguration
     protected bool $createDb = true;
 
     /**
-     * Defines whether dumps should drop existing databases before creating them.
-     * (PostgreSQL only)
+     * Defines whether existing databases should be dropped before importing a dump.
+     * (PostgreSQL only, controls the --clean flag)
      */
     protected bool $dropDb = true;
 
