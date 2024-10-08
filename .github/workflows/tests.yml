@@ -8,13 +8,35 @@ on:
     pull_request:
     workflow_dispatch:
 
+env:
+    MYSQL_IMAGE: mysql:8.0
+    MYSQL_DB_OPTIONS: "--health-cmd=\"mysqladmin ping\" --health-interval=10s --health-timeout=5s --health-retries=3"
+    POSTGRES_IMAGE: postgres:17
+    POSTGRES_DB_OPTIONS: "--health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3"
+
 jobs:
-    execute-tests:
+    # Environment variables are not available in the matrix context, so we have to define them as outputs.
+    prepare:
+        name: Prepare environment
+        runs-on: ubuntu-latest
+        outputs:
+            MYSQL_IMAGE: ${{ env.MYSQL_IMAGE }}
+            MYSQL_DB_OPTIONS: ${{ env.MYSQL_DB_OPTIONS }}
+            POSTGRES_IMAGE: ${{ env.POSTGRES_IMAGE }}
+            POSTGRES_DB_OPTIONS: ${{ env.POSTGRES_DB_OPTIONS }}
+        steps:
+            # Placeholder because a job needs a step.
+            -   run: echo "null"
+
+    mysql-tests:
         name: Setup testing environment and execute tests
-        uses: cybex-gmbh/github-workflows/.github/workflows/tests.yml@main
+        needs: prepare
+        uses: cybex-gmbh/github-workflows/.github/workflows/tests.yml@feature/pass-db-image
         strategy:
             fail-fast: true
             matrix:
+                db-image: [ "${{ needs.prepare.outputs.MYSQL_IMAGE }}", "${{ needs.prepare.outputs.POSTGRES_IMAGE }}" ]
+                db-options: [ "${{ needs.prepare.outputs.MYSQL_DB_OPTIONS }}", "${{ needs.prepare.outputs.POSTGRES_DB_OPTIONS }}" ]
                 php: [ 8.1, 8.2, 8.3 ]
                 laravel: [ 9.*, 10.*, 11.* ]
                 dependency-version: [ prefer-stable ]
@@ -23,9 +45,15 @@ jobs:
                         laravel: 9.*
                     -   php: 8.1
                         laravel: 11.*
+                    -   db-image: "${{ needs.prepare.outputs.MYSQL_IMAGE }}"
+                        db-options: "${{ needs.prepare.outputs.POSTGRES_DB_OPTIONS }}"
+                    -   db-image: "${{ needs.prepare.outputs.POSTGRES_IMAGE }}"
+                        db-options: "${{ needs.prepare.outputs.MYSQL_DB_OPTIONS }}"
         with:
+            DATABASE_IMAGE: ${{ matrix.db-image }}
+            DATABASE_NAME: protector_test
+            DATABASE_OPTIONS: ${{ matrix.db-options }}
             PHP_VERSION: ${{ matrix.php }}
             LARAVEL_VERSION: ${{ matrix.laravel }}
             DEPENDENCY_VERSION: ${{ matrix.dependency-version }}
-            MYSQL_DATABASE: protector_test
             TEST_COMMANDS: vendor/bin/phpunit -c phpunit-ci.xml.dist
