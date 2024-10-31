@@ -1,5 +1,4 @@
 # For more information: https://laravel.com/docs/sail
-version: '3'
 services:
     app:
         container_name: ${DOCKER_CONTAINER_NAME:-protector_test}
