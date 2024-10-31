@@ -6,9 +6,9 @@ use Exception;
 use Throwable;
 
 /**
- * Class FailedShellCommandException
+ * Class EmptyBaseDirectoryException
  *
- * Thrown if a shell command couldn't be executed properly.
+ * Thrown if the dump folder is empty.
  *
  * @package Cybex\Protector\Exceptions
  */

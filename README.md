@@ -20,11 +20,11 @@ This package allows you to download, export and import your application's databa
 
 ## Supported databases
 
-- Protector only supports MySQL databases at this point.
-- MariaDB databases may work, but are currently not actively tested and supported.
+- Protector only supports MySQL, MariaDB and PostgreSQL databases at the moment.
 - Source and destination databases are currently not checked. Please make sure you run the same software in the same
   versions to prevent issues.
-- Because of different dump formats, pulling dumps from MariaDB and restoring them to MySQL will not work.
+- Because of different dump formats, pulling dumps from MariaDB and restoring them to MySQL will not work. The same
+  of course applies to cross-database operations between MySQL and PostgreSQL.
 
 ## Notes
 
@@ -273,6 +273,10 @@ Likelihood of impact: low
 - Access to the formerly public methods `getGitRevision()`, `getGitHeadDate()` or `getGitBranch()` is now protected.
 You now need to call getMetaData() and extract the information from the returned array.
 
+## Migration guide from Protector v2.x to v3.x
+
+No breaking changes are expected.
+
 ## Contributing
 
 Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
@@ -285,8 +289,12 @@ tracker.
 ## Credits
 
 - [Web Development team at Cybex GmbH - cybex-online.com](https://github.com/cybex-gmbh)
+- [Gael Connan](https://github.com/gael-connan-cybex)
+- [Jörn Heusinger](https://github.com/jheusinger)
+- [Fabian Holy](https://github.com/holyfabi)
+- [Oliver Matla](https://github.com/lupinitylabs)
 - [Marco Szulik](https://github.com/mszulik)
-- [All Contributors](../../contributors)
+- [All Contributors](https://github.com/cybex-gmbh/laravel-protector/graphs/contributors)
 
 ## License
 

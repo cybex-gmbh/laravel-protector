@@ -3,10 +3,12 @@
 namespace Cybex\Protector;
 
 use Cybex\Protector\Classes\MySqlSchemaStateProxy;
+use Cybex\Protector\Classes\PostgresSchemaStateProxy;
 use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
 use Cybex\Protector\Exceptions\FailedDumpGenerationException;
-use Cybex\Protector\Exceptions\FailedMysqlCommandException;
+use Cybex\Protector\Exceptions\FailedImportException;
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
+use Cybex\Protector\Exceptions\FailedWipeException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
@@ -19,6 +21,7 @@ use GuzzleHttp\Psr7\StreamWrapper;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Schema\MySqlSchemaState;
+use Illuminate\Database\Schema\PostgresSchemaState;
 use Illuminate\Database\Schema\SchemaState;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\Client\PendingRequest;
@@ -31,6 +34,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use LogicException;
 use Psr\Http\Message\StreamInterface;
 use SodiumException;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -46,27 +50,26 @@ class Protector
 
     /**
      * Cache for the runtime-metadata for a new dump.
-     *
-     * @var array
      */
     protected array $metaDataCache = [];
 
-    public function __construct(string $connectionName = null)
+    public function __construct(?string $connectionName = null)
     {
         $this->withConnectionName($connectionName)
-             ->withDefaultMaxPacketLength()
-             ->withoutCreateDb()
-             ->withoutTablespaces();
+            ->withDefaultMaxPacketLength()
+            ->withoutCreateDb()
+            ->withoutTablespaces();
     }
 
     /**
      * Imports a specific SQL dump.
      *
-     * @throws FailedMysqlCommandException
      * @throws InvalidEnvironmentException
      * @throws InvalidConnectionException
      * @throws FileNotFoundException
      * @throws InvalidConfigurationException
+     * @throws FailedImportException
+     * @throws FailedWipeException
      */
     public function importDump(string $sourceFilePath, array $options = []): void
     {
@@ -85,33 +88,23 @@ class Protector
             throw new FileNotFoundException($sourceFilePath);
         }
 
-        $shellCommandDropCreateDatabase = sprintf(
-            'mysql -h%s -u%s -p%s -e %s 2> /dev/null',
-            escapeshellarg($this->connectionConfig['host']),
-            escapeshellarg($this->connectionConfig['username']),
-            escapeshellarg($this->connectionConfig['password']),
-            escapeshellarg(sprintf('drop database %1$s; create database %1$s;', $this->connectionConfig['database']))
-        );
+        /** @var Connection $connection */
+        $connection = DB::connection($this->connectionName);
+        $schemaState = $connection->getSchemaState();
+        $schemaStateProxy = $this->getProxyForSchemaState($schemaState);
 
-        $shellCommandImport = sprintf(
-            'mysql -h%s -u%s -p%s -D%s < %s 2> /dev/null',
-            escapeshellarg($this->connectionConfig['host']),
-            escapeshellarg($this->connectionConfig['username']),
-            escapeshellarg($this->connectionConfig['password']),
-            escapeshellarg($this->connectionConfig['database']),
-            escapeshellarg($sourceFilePath)
-        );
-
-        exec($shellCommandDropCreateDatabase, result_code: $resultCode);
-
-        if ($resultCode != 0) {
-            throw new FailedMysqlCommandException();
-        } else {
-            exec($shellCommandImport, result_code: $resultCode);
-
-            if ($resultCode != 0) {
-                throw new FailedMysqlCommandException();
+        if (!Arr::get($options, 'no-wipe')) {
+            try {
+                $this->wipeDatabase($connection);
+            } catch (Throwable $exception) {
+                throw new FailedWipeException($exception->getMessage());
             }
+        }
+
+        try {
+            $schemaStateProxy->load($sourceFilePath);
+        } catch (Throwable $exception) {
+            throw new FailedImportException($exception->getMessage());
         }
 
         if (Arr::get($options, 'migrate')) {
@@ -234,8 +227,8 @@ class Protector
         $request = $this->getConfiguredHttpRequest();
 
         if ($isTelescopeRecording = class_exists(
-                \Laravel\Telescope\Telescope::class
-            ) && \Laravel\Telescope\Telescope::isRecording()) {
+            \Laravel\Telescope\Telescope::class
+        ) && \Laravel\Telescope\Telescope::isRecording()) {
             \Laravel\Telescope\Telescope::stopRecording();
         }
 
@@ -255,15 +248,15 @@ class Protector
             $httpCode = $response->status();
 
             throw match ($httpCode) {
-                401, 403 => new UnauthorizedHttpException('', $httpCode.' Unauthorized access'),
-                404 => new NotFoundHttpException('404 Not found: '.$serverUrl),
+                401, 403 => new UnauthorizedHttpException('', $httpCode . ' Unauthorized access'),
+                404 => new NotFoundHttpException('404 Not found: ' . $serverUrl),
                 500 => new FailedRemoteDatabaseFetchingException($response->header('message')),
-                default => new HttpException($httpCode, 'Status code '.$httpCode),
+                default => new HttpException($httpCode, 'Status code ' . $httpCode),
             };
         }
 
         $destinationFilePath = $this->getDumpDestinationFilePath($response->header('Content-Disposition'));
-        $stream              = $response->toPsrResponse()->getBody();
+        $stream = $response->toPsrResponse()->getBody();
 
         $this->writeDumpFile(
             $stream,
@@ -316,8 +309,6 @@ class Protector
 
     /**
      * Generates an SQL dump from the current app database and returns the path to the file.
-     *
-     * @throws FailedMysqlCommandException
      */
     protected function generateDump(array $options = []): ?string
     {
@@ -326,10 +317,10 @@ class Protector
         }
 
         /** @var Connection $connection */
-        $connection       = DB::connection($this->connectionName);
-        $schemaState      = $connection->getSchemaState();
+        $connection = DB::connection($this->connectionName);
+        $schemaState = $connection->getSchemaState();
         $schemaStateProxy = $this->getProxyForSchemaState($schemaState);
-        $tempFile         = tempnam('', 'protector');
+        $tempFile = tempnam('', 'protector');
 
         $schemaStateProxy->dump($connection, $tempFile);
 
@@ -399,19 +390,19 @@ class Protector
             $this->guardExecEnabled();
 
             $gitInformation = [
-                'gitRevision'     => $this->getGitRevision(),
-                'gitBranch'       => $this->getGitBranch(),
+                'gitRevision' => $this->getGitRevision(),
+                'gitBranch' => $this->getGitBranch(),
                 'gitRevisionDate' => $this->getGitHeadDate(),
             ];
         }
 
         return $this->metaDataCache = [
-            'database'        => $this->connectionConfig['database'],
-            'connection'      => $this->connectionName,
-            'gitRevision'     => $gitInformation['gitRevision'] ?? null,
-            'gitBranch'       => $gitInformation['gitBranch'] ?? null,
+            'database' => $this->connectionConfig['database'],
+            'connection' => $this->connectionName,
+            'gitRevision' => $gitInformation['gitRevision'] ?? null,
+            'gitBranch' => $gitInformation['gitBranch'] ?? null,
             'gitRevisionDate' => $gitInformation['gitRevisionDate'] ?? null,
-            'dumpedAtDate'    => now(),
+            'dumpedAtDate' => now(),
         ];
     }
 
@@ -433,7 +424,7 @@ class Protector
         fseek($fileHandle, 0, SEEK_END);
 
         $linesToRead = $lines;
-        $contents    = '';
+        $contents = '';
 
         // Only read file as long as file-pointer is not at start of the file and there are still lines to read open.
         while (ftell($fileHandle) && $linesToRead >= 0) {
@@ -444,7 +435,7 @@ class Protector
             fseek($fileHandle, -$seekLength, SEEK_CUR);
 
             // Get the next content-chunk by using the according length.
-            $contents = ($chunk = fread($fileHandle, $seekLength)).$contents;
+            $contents = ($chunk = fread($fileHandle, $seekLength)) . $contents;
 
             // Reset pointer to the position before reading the current chunk.
             fseek($fileHandle, -mb_strlen($chunk, 'UTF-8'), SEEK_CUR);
@@ -489,7 +480,7 @@ class Protector
      */
     public function generateFileDownloadResponse(
         Request $request,
-        string $connectionName = null
+        ?string $connectionName = null
     ): Response|StreamedResponse {
         $shouldEncrypt = $this->shouldEncrypt();
 
@@ -498,7 +489,7 @@ class Protector
             if ($this->withConnectionName($connectionName)) {
                 try {
                     $serverFilePath = $this->createDump();
-                    $publicKey      = $this->getPublicKey($request);
+                    $publicKey = $this->getPublicKey($request);
                 } catch (InvalidConnectionException|FailedDumpGenerationException|InvalidConfigurationException $exception) {
                     return response($exception->getMessage(), 500, ['message' => $exception->getMessage()]);
                 }
@@ -506,7 +497,7 @@ class Protector
                 $chunkSize = $this->getConfigValueForKey('chunkSize');
 
                 return response()->streamDownload(
-                    function () use ($publicKey, $request, $serverFilePath, $chunkSize, $shouldEncrypt) {
+                    function () use ($publicKey, $serverFilePath, $chunkSize, $shouldEncrypt) {
                         $inputHandle = fopen($serverFilePath, 'rb');
 
                         while (!feof($inputHandle)) {
@@ -525,14 +516,14 @@ class Protector
                     },
                     $this->createFilename(),
                     [
-                        'Content-Type'    => 'text/plain',
-                        'Pragma'          => 'no-cache',
-                        'Expires'         => gmdate(DATE_RFC7231, time() - 3600),
+                        'Content-Type' => 'text/plain',
+                        'Pragma' => 'no-cache',
+                        'Expires' => gmdate(DATE_RFC7231, time() - 3600),
                         // Encryption adds some overhead to the chunk, which has to be considered when decrypting it.
-                        'Chunk-Size'      => $shouldEncrypt ? $chunkSize + $this->determineEncryptionOverhead(
-                                $chunkSize,
-                                $publicKey
-                            ) : $chunkSize,
+                        'Chunk-Size' => $shouldEncrypt ? $chunkSize + $this->determineEncryptionOverhead(
+                            $chunkSize,
+                            $publicKey
+                        ) : $chunkSize,
                         'Sanctum-Enabled' => $shouldEncrypt,
                     ]
                 );
@@ -588,7 +579,7 @@ class Protector
         } elseif ($htaccessLogin) {
             // Add basic authentication to request.
             $credentials = explode(':', $htaccessLogin);
-            $request     = Http::withBasicAuth($credentials[0], $credentials[1]);
+            $request = Http::withBasicAuth($credentials[0], $credentials[1]);
         } else {
             // Protector cannot be used without any authentication.
             throw new InvalidConfigurationException(
@@ -606,9 +597,9 @@ class Protector
      */
     public function getLatestDumpName(): string
     {
-        $disk          = $this->getDisk();
+        $disk = $this->getDisk();
         $baseDirectory = $this->getConfigValueForKey('baseDirectory');
-        $files         = $disk->files($baseDirectory);
+        $files = $disk->files($baseDirectory);
 
         if (empty($files)) {
             throw new FileNotFoundException($disk->path($baseDirectory));
@@ -630,7 +621,7 @@ class Protector
 
         if ($decryptedString === false) {
             throw new InvalidConfigurationException(
-                "There was an error decrypting the provided string. This might be due to mismatching crypto keys."
+                'There was an error decrypting the provided string. This might be due to mismatching crypto keys.'
             );
         }
 
@@ -661,19 +652,19 @@ class Protector
      */
     public function createTempFilePath(string $diskFilePath): string
     {
-        $tempFilePath = tempnam('', 'protector');
+        $tempFilePath = tempnam('', 'protector') . '.sql';
 
         if ($tempFilePath === false) {
             throw new Exception('Could not create a temporary file for dump.');
         }
 
-        $handle       = fopen($tempFilePath, 'w');
+        $handle = fopen($tempFilePath, 'w');
 
         if ($handle === false) {
             throw new Exception('Could not open temporary file for writing.');
         }
 
-        $stream       = $this->getDisk()->readStream($diskFilePath);
+        $stream = $this->getDisk()->readStream($diskFilePath);
 
         if (!is_resource($stream)) {
             fclose($handle);
@@ -715,7 +706,7 @@ class Protector
     public function guardExecEnabled(): void
     {
         if (!function_exists('exec')) {
-            throw new ShellAccessDeniedException();
+            throw new ShellAccessDeniedException;
         }
     }
 
@@ -765,7 +756,7 @@ class Protector
 
     protected function determineEncryptionOverhead(int $chunkSize, string $publicKey): int
     {
-        $chunk          = str_repeat('0', $chunkSize);
+        $chunk = str_repeat('0', $chunkSize);
         $encryptedChunk = sodium_crypto_box_seal($chunk, $publicKey);
 
         return strlen($encryptedChunk) - $chunkSize;
@@ -778,9 +769,20 @@ class Protector
     {
         return match (get_class($schemaState)) {
             MySqlSchemaState::class => app(MySqlSchemaStateProxy::class, [$schemaState, $this]),
-//            PostgresSchemaState::class => app('PostgresSchemaStateProxy', [$schemaState, $this]),
-//            SqliteSchemaState::class => app('SqliteSchemaStateProxy', [$schemaState, $this]),
-            default => throw new UnsupportedDatabaseException('Unsupported database schema state: '.class_basename($schemaState)),
+            PostgresSchemaState::class => app(PostgresSchemaStateProxy::class, [$schemaState, $this]),
+            //            SqliteSchemaState::class => app('SqliteSchemaStateProxy', [$schemaState, $this]),
+            default => throw new UnsupportedDatabaseException('Unsupported database schema state: ' . class_basename($schemaState)),
         };
+    }
+
+    protected function wipeDatabase(Connection $connection): void
+    {
+        try {
+            $connection->getSchemaBuilder()->dropAllViews();
+            $connection->getSchemaBuilder()->dropAllTables();
+            $connection->getSchemaBuilder()->dropAllTypes();
+        } catch (LogicException) {
+            // ignore logic exceptions.
+        }
     }
 }

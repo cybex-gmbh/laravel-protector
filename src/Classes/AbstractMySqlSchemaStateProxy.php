@@ -34,7 +34,7 @@ abstract class AbstractMySqlSchemaStateProxy extends MySqlSchemaState
         $this->schemaState->load(...func_get_args());
     }
 
-    protected function executeDumpProcess(Process $process, $output, array $variables): Process
+    protected function executeDumpProcess(Process $process, $output, array $variables, int $depth = 0): Process
     {
         return $this->schemaState->executeDumpProcess(...func_get_args());
     }

@@ -8,7 +8,6 @@ use Illuminate\Http\File;
 
 /**
  * Class ExportDump
- * @package Cybex\Protector\Commands;
  */
 class ExportDump extends Command
 {
@@ -33,8 +32,6 @@ class ExportDump extends Command
 
     /**
      * Execute the console command.
-     *
-     * @return int
      */
     public function handle(): int
     {
@@ -59,7 +56,7 @@ class ExportDump extends Command
         $this->protector->getDisk()->putFileAs($directory, new File($tempFilePath), $fileName);
         unlink($tempFilePath);
 
-        $this->info(sprintf('Dump %s was created in %s', $fileName, $directory));
+        $this->info(sprintf('Dump <comment>%s</> was created in <comment>%s</>', $fileName, $this->protector->getDisk()->path($directory)));
 
         return self::SUCCESS;
     }
