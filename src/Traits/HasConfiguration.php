@@ -22,6 +22,12 @@ trait HasConfiguration
     protected bool $createDb = true;
 
     /**
+     * Defines whether existing databases should be dropped before importing a dump.
+     * (PostgreSQL only, controls the --clean flag)
+     */
+    protected bool $dropDb = true;
+
+    /**
      * The name of the .env key for the Protector DB Token.
      */
     protected string $authTokenKeyName = 'PROTECTOR_AUTH_TOKEN';
@@ -70,7 +76,6 @@ trait HasConfiguration
      * If true, the auto increment state will be stripped from the dump.
      */
     protected bool $removeAutoIncrementingState = false;
-
 
     /**
      * Sets the auth token for Laravel Sanctum authentication.
@@ -123,7 +128,7 @@ trait HasConfiguration
     /**
      * @throws InvalidConnectionException
      */
-    public function withConnectionName(string $connectionName = null): static
+    public function withConnectionName(?string $connectionName = null): static
     {
         $this->connectionName = $connectionName ?? config('database.default');
 
@@ -147,7 +152,6 @@ trait HasConfiguration
 
         return $this;
     }
-
 
     public function withMaxPacketLength(string $maxPacketLength): static
     {
@@ -257,6 +261,11 @@ trait HasConfiguration
     public function shouldCreateDb(): bool
     {
         return $this->createDb;
+    }
+
+    public function shouldDropDb(): bool
+    {
+        return $this->dropDb;
     }
 
     public function shouldDumpData(): bool

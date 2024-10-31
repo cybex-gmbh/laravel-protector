@@ -9,54 +9,23 @@ on:
     workflow_dispatch:
 
 jobs:
-    linux_tests:
-        runs-on: ubuntu-latest
-        services:
-            mysql:
-                image: mysql:8.0
-                env:
-                    MYSQL_ALLOW_EMPTY_PASSWORD: yes
-                    MYSQL_DATABASE: protector_test
-                ports:
-                    - 3306
-                options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+    execute-tests:
+        name: Setup testing environment and execute tests
+        uses: cybex-gmbh/github-workflows/.github/workflows/tests.yml@main
         strategy:
             fail-fast: true
             matrix:
-                php: [ 8.2, 8.3 ]
-                laravel: [ 11.* ]
+                php: [ 8.1, 8.2, 8.3 ]
+                laravel: [ 9.*, 10.*, 11.* ]
                 dependency-version: [ prefer-stable ]
-
-        name: PHP ${{ matrix.php }} with Laravel ${{ matrix.laravel }} (${{ matrix.dependency-version }})
-
-        steps:
-            -   name: Checkout code
-                uses: actions/checkout@v2
-
-            -   name: Setup PHP
-                uses: shivammathur/setup-php@v2
-                with:
-                    php-version: ${{ matrix.php }}
-                    extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, gd
-                    tools: composer:v2
-                    coverage: none
-
-            -   name: Get composer cache directory
-                id: composer-cache
-                run: echo "::set-output name=dir::$(composer config cache-files-dir)"
-
-            -   name: Cache composer dependencies
-                uses: actions/cache@v2
-                with:
-                    path: ${{ steps.composer-cache.outputs.dir }}
-                    key: dependencies-laravel-${{ matrix.laravel }}-php-${{ matrix.php }}-composer-${{ hashFiles('composer.json') }}
-                    restore-keys: dependencies-laravel-${{ matrix.laravel }}-php-${{ matrix.php }}-composer-
-
-            -   name: Install dependencies
-                run: |
-                    composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update --dev --no-progress
-                    composer update --${{ matrix.dependency-version }} --prefer-dist --no-interaction --no-progress
-            -   name: Execute tests
-                run: vendor/bin/phpunit -c phpunit-ci.xml.dist
-                env:
-                    DB_PORT: ${{ job.services.mysql.ports[3306] }}
+                exclude:
+                    -   php: 8.3
+                        laravel: 9.*
+                    -   php: 8.1
+                        laravel: 11.*
+        with:
+            PHP_VERSION: ${{ matrix.php }}
+            LARAVEL_VERSION: ${{ matrix.laravel }}
+            DEPENDENCY_VERSION: ${{ matrix.dependency-version }}
+            MYSQL_DATABASE: protector_test
+            TEST_COMMANDS: vendor/bin/phpunit -c phpunit-ci.xml.dist
