@@ -97,9 +97,23 @@ trait HasConfiguration
         return $this;
     }
 
+    public function withAutoIncrementingState(): static
+    {
+        $this->removeAutoIncrementingState = false;
+
+        return $this;
+    }
+
     public function withoutAutoIncrementingState(): static
     {
         $this->removeAutoIncrementingState = true;
+
+        return $this;
+    }
+
+    public function withCharsets(): static
+    {
+        $this->dumpCharsets = true;
 
         return $this;
     }
@@ -111,9 +125,23 @@ trait HasConfiguration
         return $this;
     }
 
+    public function withComments(): static
+    {
+        $this->dumpComments = true;
+
+        return $this;
+    }
+
     public function withoutComments(): static
     {
         $this->dumpComments = false;
+
+        return $this;
+    }
+
+    public function withData(): static
+    {
+        $this->dumpData = true;
 
         return $this;
     }
@@ -139,9 +167,45 @@ trait HasConfiguration
         return $this;
     }
 
+    public function withCreateDb(): static
+    {
+        $this->createDb = true;
+
+        return $this;
+    }
+
     public function withoutCreateDb(): static
     {
         $this->createDb = false;
+
+        return $this;
+    }
+
+    /**
+     * Defines that existing databases should be dropped before importing a dump.
+     * (PostgreSQL only, controls the --clean flag)
+     */
+    public function withDropDb(): static
+    {
+        $this->dropDb = true;
+
+        return $this;
+    }
+
+    /**
+     * Defines that existing databases should not be dropped before importing a dump.
+     * (PostgreSQL only, controls the --clean flag)
+     */
+    public function withoutDropDb(): static
+    {
+        $this->dropDb = false;
+
+        return $this;
+    }
+
+    public function withTablespaces(): static
+    {
+        $this->tablespaces = true;
 
         return $this;
     }
