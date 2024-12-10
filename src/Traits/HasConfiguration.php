@@ -277,4 +277,9 @@ trait HasConfiguration
     {
         return $this->removeAutoIncrementingState;
     }
+
+    public function shouldUseTablespaces(): bool
+    {
+        return $this->tablespaces;
+    }
 }
