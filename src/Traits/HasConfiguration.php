@@ -304,6 +304,11 @@ trait HasConfiguration
         return env($this->privateKeyName, '');
     }
 
+    public function getConnectionName(): string
+    {
+        return $this->connectionName;
+    }
+
     /**
      * Retrieves the server url of the dump endpoint.
      */

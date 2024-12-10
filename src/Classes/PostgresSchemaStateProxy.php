@@ -27,17 +27,20 @@ class PostgresSchemaStateProxy extends AbstractPostgresSchemaStateProxy
 
     protected function getBaseDumpArguments(): array
     {
-        $conditionalArguments = [
+        return [
+            ...parent::getBaseDumpArguments(),
+            ...array_keys(array_filter($this->getConditionalParameters())),
+        ];
+    }
+    
+    public function getConditionalParameters(): array
+    {
+        return [
             '--create' => $this->protector->shouldCreateDb(),
             '--clean' => $this->protector->shouldCreateDb() && $this->protector->shouldDropDb(),
             '--verbose' => $this->protector->shouldDumpComments(),
             '--schema-only' => !$this->protector->shouldDumpData(),
             '--no-tablespaces' => !$this->protector->shouldUseTablespaces(),
-        ];
-
-        return [
-            ...parent::getBaseDumpArguments(),
-            ...array_keys(array_filter($conditionalArguments)),
         ];
     }
 }
