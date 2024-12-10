@@ -24,8 +24,8 @@
     <env name="DB_CONNECTION" value="mysql"/>
     <env name="DB_HOST" value="laravel-protector-mysql_testing-1"/>
     <env name="DB_DATABASE" value="protector_test"/>
-    <env name="DB_USERNAME" value="forge"/>
-    <env name="DB_PASSWORD" value="forge"/>
+    <env name="DB_USERNAME" value="protector"/>
+    <env name="DB_PASSWORD" value="protector"/>
     <env name="APP_URL" value="http://protector.invalid"/>
   </php>
   <source>
