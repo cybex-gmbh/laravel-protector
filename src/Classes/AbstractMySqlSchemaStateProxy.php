@@ -58,4 +58,9 @@ abstract class AbstractMySqlSchemaStateProxy extends MySqlSchemaState
     {
         $this->schemaState->appendMigrationData(...func_get_args());
     }
+
+    public function getConditionalParameters(): array
+    {
+        return [];
+    }
 }
