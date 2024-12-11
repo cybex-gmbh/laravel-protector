@@ -23,7 +23,7 @@ trait HasConfiguration
 
     /**
      * Defines whether existing databases should be dropped before importing a dump.
-     * Only works if used together with the --create-db flag.
+     * Only works if used together with the $createDb option.
      * (PostgreSQL only, controls the --clean flag)
      */
     protected bool $dropDb = true;
@@ -184,7 +184,7 @@ trait HasConfiguration
 
     /**
      * Defines that existing databases should be dropped before importing a dump.
-     * Only works if used together with the --create-db flag.
+     * Only works if used together with the $createDb option.
      * (PostgreSQL only, controls the --clean flag)
      */
     public function withDropDb(): static
@@ -196,7 +196,7 @@ trait HasConfiguration
 
     /**
      * Defines that existing databases should not be dropped before importing a dump.
-     * Only works if used together with the --create-db flag.
+     * Only works if used together with the $createDb option
      * (PostgreSQL only, controls the --clean flag)
      */
     public function withoutDropDb(): static

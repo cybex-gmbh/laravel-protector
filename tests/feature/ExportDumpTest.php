@@ -184,7 +184,7 @@ class ExportDumpTest extends TestCase
     public static function provideForHasCorrectConfiguration(): array
     {
         return [
-            'all on' => [
+            'all options on' => [
                 'protectorOptions' => [
                     self::PROTECTOR_WITH_CREATE_DB,
                     self::PROTECTOR_WITH_DROP_DB,
@@ -211,11 +211,11 @@ class ExportDumpTest extends TestCase
                     ]
                 ])
             ],
-            'none' => [
+            'all options off' => [
                 'protectorOptions' => [],
                 'expected' => self::getExpected([])
             ],
-            'postgres clear all tables' => [
+            'postgres purge db' => [
                 'protectorOptions' => [
                     self::PROTECTOR_WITH_CREATE_DB,
                     self::PROTECTOR_WITH_DROP_DB
@@ -230,7 +230,7 @@ class ExportDumpTest extends TestCase
                     ],
                 ])
             ],
-            'create db on' => [
+            'create db' => [
                 'protectorOptions' => [
                     self::PROTECTOR_WITH_CREATE_DB
                 ],
@@ -243,13 +243,13 @@ class ExportDumpTest extends TestCase
                     ],
                 ])
             ],
-            'drop db on' => [
+            'drop db' => [
                 'protectorOptions' => [
                     self::PROTECTOR_WITH_DROP_DB
                 ],
                 'expected' => self::getExpected([])
             ],
-            'comments on' => [
+            'dump comments' => [
                 'protectorOptions' => [
                     self::PROTECTOR_WITH_COMMENTS
                 ],
@@ -262,7 +262,7 @@ class ExportDumpTest extends TestCase
                     ],
                 ])
             ],
-            'charsets on' => [
+            'dump charsets' => [
                 'protectorOptions' => [
                     self::PROTECTOR_WITH_CHARSETS
                 ],
@@ -272,7 +272,7 @@ class ExportDumpTest extends TestCase
                     ],
                 ])
             ],
-            'data on' => [
+            'dump data' => [
                 'protectorOptions' => [
                     self::PROTECTOR_WITH_DATA
                 ],
@@ -285,7 +285,7 @@ class ExportDumpTest extends TestCase
                     ],
                 ])
             ],
-            'tablespaces on' => [
+            'dump tablespaces' => [
                 'protectorOptions' => [
                     self::PROTECTOR_WITH_TABLESPACES
                 ],
