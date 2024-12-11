@@ -24,7 +24,7 @@ class ExportDumpTest extends TestCase
     const POSTGRES_VERBOSE = '--verbose';
     const POSTGRES_SCHEMA_ONLY = '--schema-only';
     const NO_TABLESPACES = '--no-tablespaces';
-    const MYSQL_SET_GTID_PURGED = '--set-gtid-purged=OFF';
+    const MYSQL_SKIP_GTID_INFO = '--set-gtid-purged=OFF';
     const MYSQL_NO_CREATE_DB = '--no-create-db';
     const MYSQL_SKIP_COMMENTS = '--skip-comments';
     const MYSQL_SKIP_SET_CHARSET = '--skip-set-charset';
@@ -44,7 +44,7 @@ class ExportDumpTest extends TestCase
             self::NO_TABLESPACES => true,
         ],
         'mysql' => [
-            self::MYSQL_SET_GTID_PURGED => true,
+            self::MYSQL_SKIP_GTID_INFO => true,
             self::MYSQL_NO_CREATE_DB => true,
             self::MYSQL_SKIP_COMMENTS => true,
             self::MYSQL_SKIP_SET_CHARSET => true,
@@ -202,7 +202,7 @@ class ExportDumpTest extends TestCase
                         self::NO_TABLESPACES => false,
                     ],
                     'mysql' => [
-                        self::MYSQL_SET_GTID_PURGED => true,
+                        self::MYSQL_SKIP_GTID_INFO => true,
                         self::MYSQL_NO_CREATE_DB => false,
                         self::MYSQL_SKIP_COMMENTS => false,
                         self::MYSQL_SKIP_SET_CHARSET => false,
