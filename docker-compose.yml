@@ -19,6 +19,7 @@ services:
             - '.:/var/www/html'
         networks:
             - internal
+            - shared
         depends_on:
             - mysql_testing
     mysql_testing:
@@ -39,3 +40,5 @@ services:
 networks:
     internal:
         internal: true
+    shared:
+        external: true

@@ -25,14 +25,6 @@ class PostgresSchemaStateProxy extends AbstractPostgresSchemaStateProxy
                 ]));
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public function load($path)
-    {
-        $this->schemaState->load(...func_get_args());
-    }
-
     protected function getBaseDumpArguments(): array
     {
         $conditionalArguments = [
@@ -40,6 +32,7 @@ class PostgresSchemaStateProxy extends AbstractPostgresSchemaStateProxy
             '--clean' => $this->protector->shouldCreateDb() && $this->protector->shouldDropDb(),
             '--verbose' => $this->protector->shouldDumpComments(),
             '--schema-only' => !$this->protector->shouldDumpData(),
+            '--no-tablespaces' => !$this->protector->shouldUseTablespaces(),
         ];
 
         return [

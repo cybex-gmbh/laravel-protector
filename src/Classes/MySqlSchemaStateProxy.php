@@ -33,14 +33,6 @@ class MySqlSchemaStateProxy extends AbstractMySqlSchemaStateProxy
     }
 
     /**
-     * @inheritDoc
-     */
-    public function load($path)
-    {
-        $this->schemaState->load(...func_get_args());
-    }
-
-    /**
      * Get the dump command for MySQL as a string.
      */
     protected function getCommandString(): string
@@ -53,6 +45,7 @@ class MySqlSchemaStateProxy extends AbstractMySqlSchemaStateProxy
             '--skip-comments'       => !$this->protector->shouldDumpComments(),
             '--skip-set-charset'    => !$this->protector->shouldDumpCharsets(),
             '--no-data'             => !$this->protector->shouldDumpData(),
+            '--no-tablespaces'      => !$this->protector->shouldUseTablespaces(),
         ];
 
         $parameters = [
