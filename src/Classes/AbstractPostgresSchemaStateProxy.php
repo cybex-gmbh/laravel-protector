@@ -59,4 +59,9 @@ abstract class AbstractPostgresSchemaStateProxy extends PostgresSchemaState
             '--dbname="${:LARAVEL_LOAD_DATABASE}"',
         ];
     }
+
+    public function getConditionalParameters(): array
+    {
+        return [];
+    }
 }
