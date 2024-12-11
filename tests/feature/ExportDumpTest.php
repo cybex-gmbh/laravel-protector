@@ -40,7 +40,7 @@ class ExportDumpTest extends TestCase
             self::POSTGRES_CREATE => false,
             self::POSTGRES_CLEAN => false,
             self::POSTGRES_VERBOSE => false,
-            self::POSTGRES_SCHEMA_ONLY => false,
+            self::POSTGRES_SCHEMA_ONLY => true,
             self::NO_TABLESPACES => true,
         ],
         'mysql' => [
@@ -278,7 +278,7 @@ class ExportDumpTest extends TestCase
                 ],
                 'expected' => self::getExpected([
                     'pgsql' => [
-                        self::POSTGRES_SCHEMA_ONLY => true,
+                        self::POSTGRES_SCHEMA_ONLY => false,
                     ],
                     'mysql' => [
                         self::MYSQL_NO_DATA => false,
