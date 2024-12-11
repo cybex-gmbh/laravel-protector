@@ -215,7 +215,7 @@ class ExportDumpTest extends TestCase
                 'protectorOptions' => [],
                 'expected' => self::getExpected([])
             ],
-            'clean on' => [
+            'postgres clear all tables' => [
                 'protectorOptions' => [
                     self::PROTECTOR_WITH_CREATE_DB,
                     self::PROTECTOR_WITH_DROP_DB
@@ -309,11 +309,7 @@ class ExportDumpTest extends TestCase
      */
     protected static function getExpected(array $deviations): array
     {
-        foreach (self::PROTECTOR_CONFIG_BASELINE as $driver => $options) {
-            $merged[$driver] = array_merge($options, $deviations[$driver] ?? []);
-        }
-
-        return $merged;
+        return array_replace_recursive(self::PROTECTOR_CONFIG_BASELINE, $deviations);
     }
 
     /**
