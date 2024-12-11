@@ -3,6 +3,7 @@
 namespace Cybex\Protector;
 
 use Cybex\Protector\Classes\MySqlSchemaStateProxy;
+use Cybex\Protector\Classes\PostgresSchemaStateProxy;
 use Cybex\Protector\Commands\CreateKeys;
 use Cybex\Protector\Commands\CreateToken;
 use Cybex\Protector\Commands\ExportDump;
@@ -53,6 +54,10 @@ class ProtectorServiceProvider extends ServiceProvider
         // Register the SchemaState proxy classes.
         $this->app->bind(MySqlSchemaStateProxy::class, function ($app, array $params) {
             return new MySqlSchemaStateProxy(...$params);
+        });
+
+        $this->app->bind(PostgresSchemaStateProxy::class, function ($app, array $params) {
+            return new PostgresSchemaStateProxy(...$params);
         });
     }
 

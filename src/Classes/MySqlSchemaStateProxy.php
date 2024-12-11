@@ -33,27 +33,11 @@ class MySqlSchemaStateProxy extends AbstractMySqlSchemaStateProxy
     }
 
     /**
-     * @inheritDoc
-     */
-    public function load($path)
-    {
-        $this->schemaState->load(...func_get_args());
-    }
-
-    /**
      * Get the dump command for MySQL as a string.
      */
     protected function getCommandString(): string
     {
         $command = 'mysqldump '.$this->schemaState->connectionString().' ';
-
-        $conditionalParameters = [
-            '--set-gtid-purged=OFF' => !$this->schemaState->connection->isMaria(),
-            '--no-create-db'        => !$this->protector->shouldCreateDb(),
-            '--skip-comments'       => !$this->protector->shouldDumpComments(),
-            '--skip-set-charset'    => !$this->protector->shouldDumpCharsets(),
-            '--no-data'             => !$this->protector->shouldDumpData(),
-        ];
 
         $parameters = [
             '--add-locks',
@@ -62,10 +46,22 @@ class MySqlSchemaStateProxy extends AbstractMySqlSchemaStateProxy
             '--column-statistics=0',
             '--result-file="${:LARAVEL_LOAD_PATH}"',
             '--max-allowed-packet='.$this->protector->getMaxPacketLength(),
-            ...array_keys(array_filter($conditionalParameters)),
+            ...array_keys(array_filter($this->getConditionalParameters())),
             '"${:LARAVEL_LOAD_DATABASE}"',
         ];
 
         return $command.implode(' ', $parameters);
+    }
+
+    public function getConditionalParameters(): array
+    {
+        return [
+            '--set-gtid-purged=OFF' => !$this->schemaState->connection->isMaria(),
+            '--no-create-db'        => !$this->protector->shouldCreateDb(),
+            '--skip-comments'       => !$this->protector->shouldDumpComments(),
+            '--skip-set-charset'    => !$this->protector->shouldDumpCharsets(),
+            '--no-data'             => !$this->protector->shouldDumpData(),
+            '--no-tablespaces'      => !$this->protector->shouldUseTablespaces(),
+        ];
     }
 }
