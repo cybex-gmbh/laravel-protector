@@ -278,7 +278,7 @@ class ExportDumpTest extends TestCase
                 ],
                 'expected' => self::getExpected([
                     'pgsql' => [
-                        self::POSTGRES_SCHEMA_ONLY => false,
+                        self::POSTGRES_SCHEMA_ONLY => true,
                     ],
                     'mysql' => [
                         self::MYSQL_NO_DATA => false,
