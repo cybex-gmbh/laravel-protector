@@ -213,7 +213,7 @@ class ExportDumpTest extends TestCase
             ],
             'all options off' => [
                 'protectorOptions' => [],
-                'expected' => self::getExpected([])
+                'expected' => self::getExpected()
             ],
             'postgres purge db' => [
                 'protectorOptions' => [
@@ -247,7 +247,7 @@ class ExportDumpTest extends TestCase
                 'protectorOptions' => [
                     self::PROTECTOR_WITH_DROP_DB
                 ],
-                'expected' => self::getExpected([])
+                'expected' => self::getExpected()
             ],
             'dump comments' => [
                 'protectorOptions' => [
@@ -307,7 +307,7 @@ class ExportDumpTest extends TestCase
      * @param array $deviations
      * @return array
      */
-    protected static function getExpected(array $deviations): array
+    protected static function getExpected(array $deviations = []): array
     {
         return array_replace_recursive(self::PROTECTOR_CONFIG_BASELINE, $deviations);
     }
