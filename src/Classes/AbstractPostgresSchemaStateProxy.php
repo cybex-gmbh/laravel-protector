@@ -11,9 +11,8 @@ use Illuminate\Database\Schema\PostgresSchemaState;
  */
 abstract class AbstractPostgresSchemaStateProxy extends PostgresSchemaState
 {
-    public function __construct(Connection $connection, protected PostgresSchemaState $schemaState, protected Protector $protector)
+    public function __construct(protected PostgresSchemaState $schemaState, protected Protector $protector)
     {
-        parent::__construct($connection);
     }
 
     /**
