@@ -52,9 +52,15 @@ jobs:
                         laravel: 11.*
                     -   db-image: "${{ needs.prepare.outputs.MYSQL_IMAGE }}"
                         db-options: "${{ needs.prepare.outputs.POSTGRES_DB_OPTIONS }}"
+                    -   db-image: "${{ needs.prepare.outputs.MYSQL_IMAGE }}"
+                        phpunit-config: "${{ needs.prepare.outputs.POSTGRES_PHPUNIT_CONFIG }}"
+                    -   db-options: "${{ needs.prepare.outputs.MYSQL_DB_OPTIONS }}"
                         phpunit-config: "${{ needs.prepare.outputs.POSTGRES_PHPUNIT_CONFIG }}"
                     -   db-image: "${{ needs.prepare.outputs.POSTGRES_IMAGE }}"
                         db-options: "${{ needs.prepare.outputs.MYSQL_DB_OPTIONS }}"
+                    -   db-image: "${{ needs.prepare.outputs.POSTGRES_IMAGE }}"
+                        phpunit-config: "${{ needs.prepare.outputs.MYSQL_PHPUNIT_CONFIG }}"
+                    -   db-options: "${{ needs.prepare.outputs.POSTGRES_DB_OPTIONS }}"
                         phpunit-config: "${{ needs.prepare.outputs.MYSQL_PHPUNIT_CONFIG }}"
         with:
             DATABASE_IMAGE: ${{ matrix.db-image }}
