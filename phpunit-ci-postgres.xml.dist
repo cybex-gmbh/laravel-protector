@@ -14,7 +14,7 @@
     <env name="DB_CONNECTION" value="pgsql"/>
     <env name="DB_HOST" value="127.0.0.1"/>
     <env name="DB_DATABASE" value="protector_test"/>
-    <env name="DB_USERNAME" value="root"/>
+    <env name="DB_USERNAME" value="postgres"/>
     <env name="DB_PASSWORD" value=""/>
     <env name="APP_URL" value="http://protector.invalid"/>
   </php>
