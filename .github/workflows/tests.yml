@@ -11,8 +11,10 @@ on:
 env:
     MYSQL_IMAGE: mysql:8.0
     MYSQL_DB_OPTIONS: "--health-cmd=\"mysqladmin ping\" --health-interval=10s --health-timeout=5s --health-retries=3"
+    MYSQL_PHPUNIT_CONFIG: "phpunit-ci-mysql.xml.dist"
     POSTGRES_IMAGE: postgres:17
     POSTGRES_DB_OPTIONS: "--health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3"
+    POSTGRES_PHPUNIT_CONFIG: "phpunit-ci-postgres.xml.dist"
 
 jobs:
     # Environment variables are not available in the matrix context, so we have to define them as outputs.
@@ -22,8 +24,10 @@ jobs:
         outputs:
             MYSQL_IMAGE: ${{ env.MYSQL_IMAGE }}
             MYSQL_DB_OPTIONS: ${{ env.MYSQL_DB_OPTIONS }}
+            MYSQL_PHPUNIT_CONFIG: ${{ env.MYSQL_PHPUNIT_CONFIG }}
             POSTGRES_IMAGE: ${{ env.POSTGRES_IMAGE }}
             POSTGRES_DB_OPTIONS: ${{ env.POSTGRES_DB_OPTIONS }}
+            POSTGRES_PHPUNIT_CONFIG: ${{ env.POSTGRES_PHPUNIT_CONFIG }}
         steps:
             # Placeholder because a job needs a step.
             -   run: echo "null"
@@ -37,6 +41,7 @@ jobs:
             matrix:
                 db-image: [ "${{ needs.prepare.outputs.MYSQL_IMAGE }}", "${{ needs.prepare.outputs.POSTGRES_IMAGE }}" ]
                 db-options: [ "${{ needs.prepare.outputs.MYSQL_DB_OPTIONS }}", "${{ needs.prepare.outputs.POSTGRES_DB_OPTIONS }}" ]
+                phpunit-config: [ "${{ needs.prepare.outputs.MYSQL_PHPUNIT_CONFIG }}", "${{ needs.prepare.outputs.POSTGRES_PHPUNIT_CONFIG }}" ]
                 php: [ 8.1, 8.2, 8.3 ]
                 laravel: [ 9.*, 10.*, 11.* ]
                 dependency-version: [ prefer-stable ]
@@ -47,8 +52,10 @@ jobs:
                         laravel: 11.*
                     -   db-image: "${{ needs.prepare.outputs.MYSQL_IMAGE }}"
                         db-options: "${{ needs.prepare.outputs.POSTGRES_DB_OPTIONS }}"
+                        phpunit-config: "${{ needs.prepare.outputs.POSTGRES_PHPUNIT_CONFIG }}"
                     -   db-image: "${{ needs.prepare.outputs.POSTGRES_IMAGE }}"
                         db-options: "${{ needs.prepare.outputs.MYSQL_DB_OPTIONS }}"
+                        phpunit-config: "${{ needs.prepare.outputs.MYSQL_PHPUNIT_CONFIG }}"
         with:
             DATABASE_IMAGE: ${{ matrix.db-image }}
             DATABASE_NAME: protector_test
@@ -56,4 +63,4 @@ jobs:
             PHP_VERSION: ${{ matrix.php }}
             LARAVEL_VERSION: ${{ matrix.laravel }}
             DEPENDENCY_VERSION: ${{ matrix.dependency-version }}
-            TEST_COMMANDS: vendor/bin/phpunit -c phpunit-ci.xml.dist
+            TEST_COMMANDS: vendor/bin/phpunit -c ${{ matrix.phpunit-config }}
