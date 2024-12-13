@@ -2,6 +2,11 @@
 
 All notable changes to `protector` will be documented in this file.
 
+## v3.1.1 - 2024-12-11
+
+- Fix an issue where the tablespaces configuration option was not applied
+- Protector configuration options can now be enabled and disabled. For all options take a look at the [HasConfiguration file](src/Traits/HasConfiguration.php)
+
 ## v3.1.0 - 2024-09-09
 
 - Add PostgreSQL support
