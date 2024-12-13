@@ -13,6 +13,7 @@ abstract class AbstractPostgresSchemaStateProxy extends PostgresSchemaState
 {
     public function __construct(protected PostgresSchemaState $schemaState, protected Protector $protector)
     {
+        parent::__construct($schemaState->connection);
     }
 
     /**
