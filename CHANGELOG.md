@@ -2,6 +2,10 @@
 
 All notable changes to `protector` will be documented in this file.
 
+## v3.1.2 - 2024-12-18
+
+- Fix an issue where dumping postgres databases failed. Configurations will now also be applied correctly to postgres database dumps
+
 ## v3.1.1 - 2024-12-11
 
 - Fix an issue where the tablespaces configuration option was not applied
