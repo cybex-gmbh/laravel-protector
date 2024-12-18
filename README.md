@@ -301,8 +301,6 @@ Run tests on PostgreSQL database:
 vendor/bin/phpunit -c phpunit-postgres.xml.dist
 ```
 
-```bash
-
 ## Contributing
 
 Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
