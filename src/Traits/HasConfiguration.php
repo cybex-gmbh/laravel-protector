@@ -54,7 +54,7 @@ trait HasConfiguration
     protected string $maxPacketLength;
 
     /**
-     * If set to false, the --no-tablespaces dump option will be used in MySQL.
+     * If set to false, the --no-tablespaces dump option will be used.
      */
     protected bool $tablespaces = true;
 
