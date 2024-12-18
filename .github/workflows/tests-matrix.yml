@@ -26,6 +26,10 @@ on:
                 description: The options to use for the database, such as health check.
                 required: true
                 type: string
+            DATABASE_CLIENT_VERSION:
+                description: The database client version to use.
+                required: false
+                type: string
 
 jobs:
     execute-test-matrix:
@@ -43,6 +47,7 @@ jobs:
         uses: cybex-gmbh/github-workflows/.github/workflows/tests.yml@feature/pass-db-image
         with:
             DATABASE_IMAGE: ${{ inputs.DATABASE_IMAGE }}
+            DATABASE_CLIENT_VERSION: ${{ inputs.DATABASE_CLIENT_VERSION }}
             DATABASE_NAME: protector_test
             DATABASE_HOST: ${{ inputs.DATABASE_HOST }}
             DATABASE_PORT: ${{ inputs.DATABASE_PORT }}

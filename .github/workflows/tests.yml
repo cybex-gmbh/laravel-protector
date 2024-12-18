@@ -24,6 +24,7 @@ jobs:
         uses: ./.github/workflows/tests-matrix.yml
         with:
             DATABASE_IMAGE: postgres:17
+            DATABASE_CLIENT_VERSION: 17
             DATABASE_PORT: 5432
             DATABASE_USERNAME: postgres
             DATABASE_CONNECTION: pgsql
