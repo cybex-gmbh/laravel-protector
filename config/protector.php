@@ -40,10 +40,10 @@ return [
     | Maximum Packet Length
     |--------------------------------------------------------------------------
     |
-    | Here you may customize the maximum packet length for the MySQL-Dump.
+    | Here you may customize the maximum packet length for the database dump.
     |
     */
-    'maxPacketLength' => '8M',
+    'maxPacketLength' => env('PROTECTOR_MAX_PACKET_LENGTH', '8M'),
 
     /*
     |--------------------------------------------------------------------------
@@ -54,8 +54,8 @@ return [
     | By default the default filesystem disk stated in your filesystems-config will be used.
     |
     */
-    'baseDirectory' => 'protector',
-    // 'diskName' => 'protector',
+    'baseDirectory' => env('PROTECTOR_BASE_DIRECTORY', 'protector'),
+    // 'diskName' => env('PROTECTOR_DISK_NAME', 'protector'),
 
     /*
     |--------------------------------------------------------------------------
@@ -79,7 +79,7 @@ return [
     | Here you may customize the route for the dump endpoint.
     |
     */
-    'dumpEndpointRoute' => '/protector/exportDump',
+    'dumpEndpointRoute' => env('PROTECTOR_DUMP_ENDPOINT_ROUTE', '/protector/exportDump'),
 
     /*
     |--------------------------------------------------------------------------
@@ -104,7 +104,7 @@ return [
     | By default the chunk size is set to 20MB.
     |
     */
-    'chunkSize' => 20 * 1024 * 1024,
+    'chunkSize' => env('PROTECTOR_CHUNK_SIZE', 20 * 1024 * 1024),
 
     /*
     |--------------------------------------------------------------------------
