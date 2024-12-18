@@ -1,0 +1,55 @@
+on:
+    workflow_call:
+        inputs:
+            DATABASE_IMAGE:
+                description: The Docker image to use for the database.
+                required: true
+                type: string
+            DATABASE_PORT:
+                description: The port of the database.
+                required: true
+                type: string
+            DATABASE_CONNECTION:
+                description: The database connection to use.
+                required: true
+                type: string
+            DATABASE_HOST:
+                description: The host of the database.
+                required: false
+                type: string
+                default: 127.0.0.1
+            DATABASE_USERNAME:
+                description: The username to use for the database.
+                required: true
+                type: string
+            DATABASE_OPTIONS:
+                description: The options to use for the database, such as health check.
+                required: true
+                type: string
+
+jobs:
+    execute-test-matrix:
+        strategy:
+            fail-fast: true
+            matrix:
+                php: [ 8.1, 8.2, 8.3 ]
+                laravel: [ 9.*, 10.*, 11.* ]
+                dependency-version: [ prefer-stable ]
+                exclude:
+                    -   php: 8.3
+                        laravel: 9.*
+                    -   php: 8.1
+                        laravel: 11.*
+        uses: cybex-gmbh/github-workflows/.github/workflows/tests.yml@feature/pass-db-image
+        with:
+            DATABASE_IMAGE: ${{ inputs.DATABASE_IMAGE }}
+            DATABASE_NAME: protector_test
+            DATABASE_HOST: ${{ inputs.DATABASE_HOST }}
+            DATABASE_PORT: ${{ inputs.DATABASE_PORT }}
+            DATABASE_CONNECTION: ${{ inputs.DATABASE_CONNECTION }}
+            DATABASE_USERNAME: ${{ inputs.DATABASE_USERNAME }}
+            DATABASE_OPTIONS: ${{ inputs.DATABASE_OPTIONS }}
+            PHP_VERSION: ${{ matrix.php }}
+            LARAVEL_VERSION: ${{ matrix.laravel }}
+            DEPENDENCY_VERSION: ${{ matrix.dependency-version }}
+            TEST_COMMANDS: vendor/bin/phpunit -c phpunit-ci.xml.dist
