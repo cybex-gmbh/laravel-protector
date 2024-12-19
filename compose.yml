@@ -37,6 +37,19 @@ services:
             test: [ "CMD", "mysqladmin", "ping", "-p${DB_PASSWORD}" ]
             retries: 3
             timeout: 5s
+    postgres_testing:
+        image: 'postgres:17'
+        environment:
+            POSTGRES_USER: '${DB_USERNAME}'
+            POSTGRES_PASSWORD: '${DB_PASSWORD}'
+            POSTGRES_DB: '${DB_DATABASE:-protector_test}'
+            POSTGRES_HOST_AUTH_METHOD: 'trust'
+        networks:
+            - internal
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready"]
+            retries: 3
+            timeout: 5s
 networks:
     internal:
         internal: true

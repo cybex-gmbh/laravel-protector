@@ -16,10 +16,10 @@ class PostgresSchemaStateProxy extends AbstractPostgresSchemaStateProxy
      */
     public function dump(Connection $connection, $path)
     {
-        $this->makeProcess($this->baseDumpCommand() . ' > ' . $path)
+        $this->schemaState->makeProcess($this->baseDumpCommand() . ' > ' . $path)
             ->mustRun(
-                $this->output,
-                array_merge($this->baseVariables($this->connection->getConfig()
+                $this->schemaState->output,
+                array_merge($this->baseVariables($this->schemaState->connection->getConfig()
                 ), [
                     'LARAVEL_LOAD_PATH' => $path,
                 ]));
@@ -32,7 +32,7 @@ class PostgresSchemaStateProxy extends AbstractPostgresSchemaStateProxy
             ...array_keys(array_filter($this->getConditionalParameters())),
         ];
     }
-    
+
     public function getConditionalParameters(): array
     {
         return [

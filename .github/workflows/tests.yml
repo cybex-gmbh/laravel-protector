@@ -9,23 +9,23 @@ on:
     workflow_dispatch:
 
 jobs:
-    execute-tests:
-        name: Setup testing environment and execute tests
-        uses: cybex-gmbh/github-workflows/.github/workflows/tests.yml@main
-        strategy:
-            fail-fast: true
-            matrix:
-                php: [ 8.1, 8.2, 8.3 ]
-                laravel: [ 9.*, 10.*, 11.* ]
-                dependency-version: [ prefer-stable ]
-                exclude:
-                    -   php: 8.3
-                        laravel: 9.*
-                    -   php: 8.1
-                        laravel: 11.*
+    mysql-tests:
+        name: MySQL
+        uses: ./.github/workflows/tests-matrix.yml
         with:
-            PHP_VERSION: ${{ matrix.php }}
-            LARAVEL_VERSION: ${{ matrix.laravel }}
-            DEPENDENCY_VERSION: ${{ matrix.dependency-version }}
-            MYSQL_DATABASE: protector_test
-            TEST_COMMANDS: vendor/bin/phpunit -c phpunit-ci.xml.dist
+            DATABASE_IMAGE: mysql:8.0
+            DATABASE_PORT: 3306
+            DATABASE_USERNAME: root
+            DATABASE_CONNECTION: mysql
+            DATABASE_OPTIONS: "--health-cmd=\"mysqladmin ping\" --health-interval=10s --health-timeout=5s --health-retries=3"
+
+    postgres-tests:
+        name: PostgreSQL
+        uses: ./.github/workflows/tests-matrix.yml
+        with:
+            DATABASE_IMAGE: postgres:17
+            DATABASE_CLIENT_VERSION: 17
+            DATABASE_PORT: 5432
+            DATABASE_USERNAME: postgres
+            DATABASE_CONNECTION: pgsql
+            DATABASE_OPTIONS: "--health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3"

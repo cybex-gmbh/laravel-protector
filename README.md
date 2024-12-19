@@ -277,6 +277,30 @@ You now need to call getMetaData() and extract the information from the returned
 
 No breaking changes are expected.
 
+## Development
+
+```bash
+sail up -d
+```
+
+```bash
+composer install
+```
+
+### Testing
+
+Run tests on MySQL database: 
+
+```bash
+vendor/bin/phpunit
+```
+
+Run tests on PostgreSQL database: 
+
+```bash
+vendor/bin/phpunit -c phpunit-postgres.xml.dist
+```
+
 ## Contributing
 
 Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
