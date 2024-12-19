@@ -304,7 +304,7 @@ class RemoteDumpTest extends TestCase
      */
     public function canReturnDatabaseName()
     {
-        Config::set('database.connections.mysql.database', __FUNCTION__);
+        Config::set(sprintf('database.connections.%s.database', env('DB_CONNECTION')), __FUNCTION__);
         $this->protector->withConnectionName();
 
         $this->assertEquals(__FUNCTION__, $this->protector->getDatabaseName());

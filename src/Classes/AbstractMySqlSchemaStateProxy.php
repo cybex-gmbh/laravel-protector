@@ -16,6 +16,7 @@ abstract class AbstractMySqlSchemaStateProxy extends MySqlSchemaState
 {
     public function __construct(protected MySqlSchemaState $schemaState, protected Protector $protector)
     {
+        parent::__construct($schemaState->connection);
     }
 
     /**
