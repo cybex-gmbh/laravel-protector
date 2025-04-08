@@ -280,7 +280,11 @@ No breaking changes are expected.
 ## Development
 
 ```bash
-sail up -d
+./sail up -d
+```
+
+```bash
+./sail shell
 ```
 
 ```bash
