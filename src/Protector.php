@@ -402,6 +402,7 @@ class Protector
             'gitRevision' => $gitInformation['gitRevision'] ?? null,
             'gitBranch' => $gitInformation['gitBranch'] ?? null,
             'gitRevisionDate' => $gitInformation['gitRevisionDate'] ?? null,
+            'maxPacketLength' => $this->getMaxPacketLength(),
             'dumpedAtDate' => now(),
         ];
     }
