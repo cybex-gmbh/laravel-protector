@@ -33,15 +33,15 @@
         "ext-pdo": "*",
         "ext-sodium": "*",
         "guzzlehttp/guzzle": "^7.4",
-        "illuminate/support": "^9.0|^10.0|^11.0",
-        "laravel/framework": "^9.0|^10.0|^11.0",
+        "illuminate/support": "^9.0|^10.0|^11.0|^12.0",
+        "laravel/framework": "^9.0|^10.0|^11.0|^12.0",
         "laravel/sanctum": "^3.2|^4.0"
     },
     "require-dev": {
         "laravel/pint": "^1.17",
         "laravel/sail": "^1.26",
-        "orchestra/testbench": "^7.0|^8.0|^9.0",
-        "phpunit/phpunit": "^9.5|^10.5"
+        "orchestra/testbench": "^7.0|^8.0|^9.0|^10",
+        "phpunit/phpunit": "^9.5|^10.5|^11.0"
     },
     "autoload": {
         "psr-4": {
