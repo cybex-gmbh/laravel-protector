@@ -2,6 +2,13 @@
 
 All notable changes to `protector` will be documented in this file.
 
+## v3.2.0 - 2025-04-08
+
+- Add Laravel 12 support
+- All protector resources can now be published at once using `php artisan vendor:publish --tag=protector`
+- The default config now allows setting most configuration values via the .env file
+- The max packet length for MySQL is now included in the metadata at the end of a dump file
+
 ## v3.1.2 - 2024-12-18
 
 - Fix an issue where dumping postgres databases failed. Configurations will now also be applied correctly to postgres database dumps
