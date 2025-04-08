@@ -31,7 +31,7 @@ class ProtectorServiceProvider extends ServiceProvider
         // Publish package config to app config space.
         $this->publishes([
             __DIR__ . '/../config/protector.php' => config_path('protector.php'),
-        ], 'protector.config');
+        ], ['protector', 'protector.config']);
 
         $this->publishMigrations();
     }
@@ -74,7 +74,7 @@ class ProtectorServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    protected function publishMigrations()
+    protected function publishMigrations(): void
     {
         if (class_exists('AddPublicKeyToUsersTable')) {
             return;
@@ -86,6 +86,6 @@ class ProtectorServiceProvider extends ServiceProvider
         $stub = sprintf('%s/../Migrations/%s', __DIR__, $migrationName);
         $target = $this->app->databasePath(sprintf('migrations/%s_%s', $timestamp, $migrationName));
 
-        $this->publishes([$stub => $target], 'protector.migrations');
+        $this->publishes([$stub => $target], ['protector', 'protector.migrations']);
     }
 }
