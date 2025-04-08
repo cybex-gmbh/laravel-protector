@@ -195,7 +195,13 @@ Publish the protector database migration, and optionally modify it to work with 
 php artisan vendor:publish --tag=protector.migrations
 ```
 
-Run the migration on the client and server repository.
+You may need to publish the [Laravel Sanctum](https://laravel.com/docs/master/sanctum) migration from Laravel 11 upwards.
+
+```bash
+php artisan vendor:publish --tag=sanctum-migrations
+```
+
+Run the migrations on the client and server repository.
 
 ```bash
 php artisan migrate
