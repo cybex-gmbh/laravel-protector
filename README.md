@@ -195,7 +195,7 @@ Publish the protector database migration, and optionally modify it to work with 
 php artisan vendor:publish --tag=protector.migrations
 ```
 
-You may need to publish the [Laravel Sanctum](https://laravel.com/docs/master/sanctum) migration from Laravel 11 upwards.
+Starting with Laravel 11, you may need to publish the [Laravel Sanctum](https://laravel.com/docs/master/sanctum) migration, to make the `personal_access_tokens` available.
 
 ```bash
 php artisan vendor:publish --tag=sanctum-migrations
