@@ -286,6 +286,12 @@ trait HasConfiguration
         return $this->connectionConfig['database'];
     }
 
+    /**
+     * Returns the maximum packet length specified in the config.
+     * The option 'max_allowed_packet' sets an upper limit on the size of any single message between the MySQL server and clients.
+     * This has to be set up on the client (here) and the MySQL server.
+     * This is not applicable to PostgreSQL.
+     */
     public function getMaxPacketLength(): string
     {
         return $this->maxPacketLength;
