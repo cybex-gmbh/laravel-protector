@@ -33,6 +33,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use LogicException;
 use Psr\Http\Message\StreamInterface;
@@ -52,6 +53,8 @@ class Protector
      * Cache for the runtime-metadata for a new dump.
      */
     protected array $metaDataCache = [];
+
+    protected array $requiredFunctionsCache;
 
     public function __construct(?string $connectionName = null)
     {
@@ -73,7 +76,7 @@ class Protector
      */
     public function importDump(string $sourceFilePath, array $options = []): void
     {
-        $this->guardExecEnabled();
+        $this->guardRequiredFunctionsEnabled();
 
         // Production environment is not allowed unless set in options.
         if (App::environment('production') && !Arr::get($options, 'allow-production')) {
@@ -145,7 +148,7 @@ class Protector
             throw new InvalidConnectionException('Connection is not configured properly.');
         }
 
-        $this->guardExecEnabled();
+        $this->guardRequiredFunctionsEnabled();
 
         return $this->generateDump($options) ?: throw new FailedDumpGenerationException('Dump could not be created.');
     }
@@ -227,8 +230,8 @@ class Protector
         $request = $this->getConfiguredHttpRequest();
 
         if ($isTelescopeRecording = class_exists(
-            \Laravel\Telescope\Telescope::class
-        ) && \Laravel\Telescope\Telescope::isRecording()) {
+                \Laravel\Telescope\Telescope::class
+            ) && \Laravel\Telescope\Telescope::isRecording()) {
             \Laravel\Telescope\Telescope::stopRecording();
         }
 
@@ -286,25 +289,48 @@ class Protector
     /**
      * Returns the current git-revision.
      */
-    protected function getGitRevision(): string
+    protected function getGitRevision(): ?string
     {
-        return @exec('git rev-parse HEAD');
+        return $this->executeCommand('git rev-parse HEAD');
     }
 
     /**
      * Returns the current git-revision date.
      */
-    protected function getGitHeadDate(): string
+    protected function getGitHeadDate(): ?string
     {
-        return @exec('git show -s --format=%ci HEAD');
+        return $this->executeCommand('git show -s --format=%ci HEAD');
     }
 
     /**
      * Returns the current git-branch.
      */
-    protected function getGitBranch(): string
+    protected function getGitBranch(): ?string
     {
-        return @exec('git rev-parse --abbrev-ref HEAD');
+        return $this->executeCommand('git rev-parse --abbrev-ref HEAD');
+    }
+
+    protected function executeCommand(string $command): ?string
+    {
+        // stdin, stdout, stderr.
+        $descriptors = [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']];
+
+        $process = proc_open($command, $descriptors, $pipes);
+
+        $output = stream_get_contents($pipes[1]);
+        $error = stream_get_contents($pipes[2]);
+
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        proc_close($process);
+
+        if ($error) {
+            Log::error(sprintf('Error executing command %s: %s', $command, $error));
+
+            return null;
+        }
+
+        return $output;
     }
 
     /**
@@ -339,9 +365,10 @@ class Protector
             );
 
             file_put_contents($tempFile, $metaData, FILE_APPEND);
-        } catch (Exception) {
-            unlink($tempFile);
+        } catch (Exception $exception) {
+            Log::error($exception);
 
+            unlink($tempFile);
             $tempFile = null;
         }
 
@@ -387,7 +414,7 @@ class Protector
         $gitInformation = [];
 
         if ($this->isUnderGitVersionControl()) {
-            $this->guardExecEnabled();
+            $this->guardRequiredFunctionsEnabled();
 
             $gitInformation = [
                 'gitRevision' => $this->getGitRevision(),
@@ -482,7 +509,8 @@ class Protector
     public function generateFileDownloadResponse(
         Request $request,
         ?string $connectionName = null
-    ): Response|StreamedResponse {
+    ): Response|StreamedResponse
+    {
         $shouldEncrypt = $this->shouldEncrypt();
 
         // Only proceed when either Laravel Sanctum is turned off or the user's token is valid.
@@ -492,7 +520,13 @@ class Protector
                     $serverFilePath = $this->createDump();
                     $publicKey = $this->getPublicKey($request);
                 } catch (InvalidConnectionException|FailedDumpGenerationException|InvalidConfigurationException $exception) {
+                    Log::error($exception);
+
                     return response($exception->getMessage(), 500, ['message' => $exception->getMessage()]);
+                } catch (ShellAccessDeniedException $exception) {
+                    Log::error($exception);
+
+                    return response($exception->httpResponse, 500, ['message' => $exception->httpResponse]);
                 }
 
                 $chunkSize = $this->getConfigValueForKey('chunkSize');
@@ -522,9 +556,9 @@ class Protector
                         'Expires' => gmdate(DATE_RFC7231, time() - 3600),
                         // Encryption adds some overhead to the chunk, which has to be considered when decrypting it.
                         'Chunk-Size' => $shouldEncrypt ? $chunkSize + $this->determineEncryptionOverhead(
-                            $chunkSize,
-                            $publicKey
-                        ) : $chunkSize,
+                                $chunkSize,
+                                $publicKey
+                            ) : $chunkSize,
                         'Sanctum-Enabled' => $shouldEncrypt,
                     ]
                 );
@@ -700,15 +734,28 @@ class Protector
     }
 
     /**
-     * Throws an exception if Exec is deactivated.
+     * Throws an exception if required shell functions are deactivated.
      *
      * @throws ShellAccessDeniedException
      */
-    public function guardExecEnabled(): void
+    public function guardRequiredFunctionsEnabled(): void
     {
-        if (!function_exists('exec')) {
-            throw new ShellAccessDeniedException;
+        $this->requiredFunctionsCache ??= [
+            'proc_open' => $this->checkFunctionExists('proc_open'),
+            'proc_close' => $this->checkFunctionExists('proc_close'),
+        ];
+
+        if (in_array(false, $this->requiredFunctionsCache, strict: true)) {
+            throw new ShellAccessDeniedException($this->requiredFunctionsCache);
         }
+    }
+
+    /**
+     * Wraps function_exists to allow mocking in tests.
+     */
+    protected function checkFunctionExists(string $functionName): bool
+    {
+        return function_exists($functionName);
     }
 
     /**
@@ -738,7 +785,8 @@ class Protector
         string $destinationFilePath,
         int $chunkSize,
         bool $sanctumEnabled
-    ): void {
+    ): void
+    {
         $resource = StreamWrapper::getResource($stream);
 
         $outputHandle = fopen($this->getDisk()->path($destinationFilePath), 'wb');

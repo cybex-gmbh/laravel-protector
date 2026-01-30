@@ -37,7 +37,7 @@ class ExportDump extends Command
     {
         $this->protector = app('protector');
 
-        $this->protector->guardExecEnabled();
+        $this->protector->guardRequiredFunctionsEnabled();
 
         $fileName = $this->option('file') ?: $this->protector->createFilename();
         $directory = $this->protector->getBaseDirectory();
