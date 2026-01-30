@@ -22,7 +22,7 @@
     <env name="PROTECTOR_DECRYPTED_MESSAGE" value="hello world"/>
     <env name="PROTECTOR_AUTH_TOKEN" value="1|bxa5BBNo7lXxgtRY4DN775JdAtQSAlN4UfgRnFhz"/>
     <env name="DB_CONNECTION" value="pgsql"/>
-    <env name="DB_HOST" value="laravel-protector-postgres_testing-1"/>
+    <env name="DB_HOST" value="postgres_testing"/>
     <env name="DB_DATABASE" value="protector_test"/>
     <env name="DB_USERNAME" value="protector"/>
     <env name="DB_PASSWORD" value="protector"/>
