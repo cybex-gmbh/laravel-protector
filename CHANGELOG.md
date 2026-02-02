@@ -2,6 +2,10 @@
 
 All notable changes to `protector` will be documented in this file.
 
+## v3.2.1 - 2026-02-02
+
+- Laravel 9 tests have been removed due to vulnerabilities
+
 ## v3.2.0 - 2025-04-08
 
 - Add Laravel 12 support
