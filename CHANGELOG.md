@@ -4,6 +4,7 @@ All notable changes to `protector` will be documented in this file.
 
 ## v3.2.1 - 2026-02-02
 
+- Internal shell calls now use the same method as used for dumping databases
 - An example app with the package installed has been added for easier testing
 
 ## v3.2.0 - 2025-04-08
