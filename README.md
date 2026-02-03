@@ -297,6 +297,11 @@ No breaking changes are expected.
 composer install
 ```
 
+> [!NOTE]
+> We disable composer security checking for this package, as vulnerabilities would block the development.
+> The project requiring our package should be responsible for evaluating possible vulnerabilities. 
+> For more information, see the [composer documentation](https://getcomposer.org/doc/06-config.md#block-insecure).
+
 ### Testing
 
 Run tests on MySQL database:
