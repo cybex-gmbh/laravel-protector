@@ -2,7 +2,9 @@
 
 namespace Cybex\Protector\Traits;
 
+use Cybex\Protector\Classes\Metadata\Providers\DefaultMetadataProvider;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
+use Illuminate\Support\Collection;
 
 trait HasConfiguration
 {
@@ -74,9 +76,14 @@ trait HasConfiguration
     protected bool $dumpData = true;
 
     /**
-     * If true, the auto increment state will be stripped from the dump.
+     * If true, the auto-increment state will be stripped from the dump.
      */
     protected bool $removeAutoIncrementingState = false;
+
+    /**
+     * The metadata provider classes for the dump metadata.
+     */
+    protected array $metadataProviders;
 
     /**
      * Sets the auth token for Laravel Sanctum authentication.
@@ -359,5 +366,17 @@ trait HasConfiguration
     public function shouldUseTablespaces(): bool
     {
         return $this->tablespaces;
+    }
+
+    public function getMetadataProviders(): Collection
+    {
+        $additionalMetadataProviders = collect($this->metadataProviders ?? $this->getConfigValueForKey('metadataProviders'));
+
+        return $additionalMetadataProviders->prepend(DefaultMetadataProvider::class);
+    }
+
+    public function setMetadataProviders(array $metadataProviders): void
+    {
+        $this->metadataProviders = $metadataProviders;
     }
 }

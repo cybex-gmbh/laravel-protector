@@ -42,7 +42,12 @@ This package allows you to download, export and import your application's databa
     * [Setup for storing the local database](#setup-for-storing-the-local-database)
     * [Setup for importing the database of a remote server](#setup-for-importing-the-database-of-a-remote-server)
     * [Setup for collecting backups from multiple servers](#setup-for-collecting-backups-from-multiple-servers)
-* [Migration guide from Protector v1.x to v2.x](#migration-guide-from-protector-v1x-to-v2x)
+* [Configuration](#configuration)
+    * [Dump metadata](#dump-metadata)
+* [Upgrade Guides](#upgrade-guides)
+    * [Upgrade guide from Protector v1.x to v2.x](#upgrade-guide-from-protector-v1x-to-v2x)
+    * [Upgrade guide from Protector v2.x to v3.x](#upgrade-guide-from-protector-v2x-to-v3x)
+* [Development](#development)
 
 ## Usage
 
@@ -269,7 +274,37 @@ according user on each target server.
 
 See [cybex-gmbh/collector](https://github.com/cybex-gmbh/collector) for an example implementation.
 
-## Migration guide from Protector v1.x to v2.x
+## Configuration
+
+The `protector.php` config file sets global settings for all new `Protector` instances.
+
+`Protector` instances can also be configured individually, using various `set`-methods. For all available options, take a look at
+the [HasConfiguration trait](src/Traits/HasConfiguration.php).
+
+### Dump metadata
+
+Customize the metadata appended to a dump by adding providers to the `metadataProviders` array in your `config/protector.php` file:
+
+```php
+'metadataProviders' => [
+    \Cybex\Protector\Classes\Metadata\Providers\EnvMetadataProvider::class,
+    \Cybex\Protector\Classes\Metadata\Providers\GitMetadataProvider::class,
+    \Path\To\Your\CustomMetadataProvider::class,
+],
+```
+
+Available metadata providers:
+
+1. `DefaultMetadataProvider`: Appended by default. Adds general information about the dump, such as the database connection and dumped at date.
+2. `EnvMetadataProvider`: Adds information based on an .env value. The default .env key used for this is `PROTECTOR_ADDITIONAL_METADATA`.
+3. `GitMetadataProvider`: Adds information about the Git repository, such as the current branch and revision.
+
+> [!NOTE]
+> You can create your own metadata providers by implementing the `Cybex\Protector\Contracts\MetadataProvider` interface.
+
+## Upgrade guides
+
+### Upgrade guide from Protector v1.x to v2.x
 
 Likelihood of impact: high
 
@@ -282,7 +317,7 @@ Likelihood of impact: low
 - Access to the formerly public methods `getGitRevision()`, `getGitHeadDate()` or `getGitBranch()` is now protected.
   You now need to call getMetaData() and extract the information from the returned array.
 
-## Migration guide from Protector v2.x to v3.x
+### Upgrade guide from Protector v2.x to v3.x
 
 No breaking changes are expected.
 
