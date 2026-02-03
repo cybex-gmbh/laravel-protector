@@ -1,6 +1,6 @@
 <?php
 
-namespace Cybex\Protector\Classes;
+namespace Cybex\Protector\Classes\SchemaState\Postgres;
 
 use Illuminate\Database\Connection;
 
@@ -14,7 +14,7 @@ class PostgresSchemaStateProxy extends AbstractPostgresSchemaStateProxy
     /**
      * {@inheritDoc}
      */
-    public function dump(Connection $connection, $path)
+    public function dump(Connection $connection, $path): void
     {
         $this->schemaState->makeProcess($this->baseDumpCommand() . ' > ' . $path)
             ->mustRun(

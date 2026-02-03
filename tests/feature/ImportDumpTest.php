@@ -204,17 +204,17 @@ class ImportDumpTest extends TestCase
      * @test
      * @dataProvider provideDumpMetadata
      */
-    public function verifyDumpDateMetaData($filePath, $expectedMetaData)
+    public function verifyDumpDateMetadata($filePath, $expectedMetadata)
     {
-        $this->assertEquals($expectedMetaData, $this->protector->getDumpMetaData($filePath));
+        $this->assertEquals($expectedMetadata, $this->protector->getDumpMetadata($filePath));
     }
 
     /**
      * @test
      */
-    public function failGetDumpMetaDataOnResponseHasNotEnoughLines()
+    public function failGetDumpMetadataOnResponseHasNotEnoughLines()
     {
-        $this->assertEquals(false, $this->protector->getDumpMetaData(static::$baseDirectory . '/emptyDump.sql'));
+        $this->assertEquals(false, $this->protector->getDumpMetadata(static::$baseDirectory . '/emptyDump.sql'));
     }
 
     /**

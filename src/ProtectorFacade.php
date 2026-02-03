@@ -4,9 +4,6 @@ namespace Cybex\Protector;
 
 use Illuminate\Support\Facades\Facade;
 
-/**
- * @see \Cybex\Protector\Skeleton\SkeletonClass
- */
 class ProtectorFacade extends Facade
 {
     /**

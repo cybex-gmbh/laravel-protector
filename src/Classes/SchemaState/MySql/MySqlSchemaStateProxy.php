@@ -1,6 +1,6 @@
 <?php
 
-namespace Cybex\Protector\Classes;
+namespace Cybex\Protector\Classes\SchemaState\MySql;
 
 use Illuminate\Database\Connection;
 
@@ -14,7 +14,7 @@ class MySqlSchemaStateProxy extends AbstractMySqlSchemaStateProxy
     /**
      * @inheritDoc
      */
-    public function dump(Connection $connection, $path)
+    public function dump(Connection $connection, $path): void
     {
         $this->executeDumpProcess(
             $this->schemaState->makeProcess(

@@ -1,6 +1,6 @@
 <?php
 
-namespace Cybex\Protector\Classes;
+namespace Cybex\Protector\Classes\SchemaState\Postgres;
 
 use Cybex\Protector\Protector;
 use Illuminate\Database\Connection;
@@ -19,7 +19,7 @@ abstract class AbstractPostgresSchemaStateProxy extends PostgresSchemaState
     /**
      * {@inheritDoc}
      */
-    public function dump(Connection $connection, $path)
+    public function dump(Connection $connection, $path): void
     {
         $this->schemaState->dump(...func_get_args());
     }
@@ -27,7 +27,7 @@ abstract class AbstractPostgresSchemaStateProxy extends PostgresSchemaState
     /**
      * {@inheritDoc}
      */
-    public function load($path)
+    public function load($path): void
     {
         $this->schemaState->load(...func_get_args());
     }

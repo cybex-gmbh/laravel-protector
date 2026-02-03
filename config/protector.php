@@ -115,5 +115,31 @@ return [
     | The default is 120 seconds.
     |
     */
-    'httpTimeout' => env('PROTECTOR_HTTP_TIMEOUT', 120)
+    'httpTimeout' => env('PROTECTOR_HTTP_TIMEOUT', 120),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Metadata Providers
+    |--------------------------------------------------------------------------
+    |
+    | Here you may configure the metadata providers that will be used to generate
+    | the metadata which is appended to the end of each dump file.
+    |
+    | Metadata related to the database connection will always be added.
+    |
+    */
+    'metadataProviders' => [
+        \Cybex\Protector\Classes\Metadata\Providers\EnvMetadataProvider::class,
+        \Cybex\Protector\Classes\Metadata\Providers\GitMetadataProvider::class,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Additional Env Metadata
+    |--------------------------------------------------------------------------
+    |
+    | This .env value will be used by the EnvMetadataProvider to add additional metadata to the dump file.
+    |
+    */
+    'additionalEnvMetadata' => env('PROTECTOR_ADDITIONAL_METADATA')
 ];
