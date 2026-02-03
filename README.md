@@ -4,9 +4,6 @@
 
 This package allows you to download, export and import your application's database backups.
 
-> [!NOTE]
-> We can only test Laravel versions up from 10, due to [PKSA-8qx3-n5y5-vvnd](https://packagist.org/security-advisories/PKSA-8qx3-n5y5-vvnd).
-
 ## Common usage scenarios
 
 - Store your local database in a file

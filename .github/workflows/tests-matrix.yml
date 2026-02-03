@@ -37,16 +37,20 @@ jobs:
             fail-fast: true
             matrix:
                 php: [ 8.1, 8.2, 8.3, 8.4 ]
-                laravel: [ 10.*, 11.*, 12.* ]
+                laravel: [ 9.*, 10.*, 11.*, 12.* ]
                 dependency-version: [ prefer-stable ]
                 exclude:
+                    -   php: 8.3
+                        laravel: 9.*
+                    -   php: 8.4
+                        laravel: 9.*
                     -   php: 8.4
                         laravel: 10.*
                     -   php: 8.1
                         laravel: 11.*
                     -   php: 8.1
                         laravel: 12.*
-        uses: cybex-gmbh/github-workflows/.github/workflows/tests.yml@main
+        uses: cybex-gmbh/github-workflows/.github/workflows/tests.yml@feature/disable-composer-audit
         with:
             DATABASE_IMAGE: ${{ inputs.DATABASE_IMAGE }}
             DATABASE_CLIENT_VERSION: ${{ inputs.DATABASE_CLIENT_VERSION }}
@@ -60,3 +64,6 @@ jobs:
             LARAVEL_VERSION: ${{ matrix.laravel }}
             DEPENDENCY_VERSION: ${{ matrix.dependency-version }}
             TEST_COMMANDS: vendor/bin/phpunit -c phpunit-ci.xml.dist
+            # We disable composer audits, as vulnerabilities would block the development of this package, even when we are not explicitly requiring anything on our own.
+            # The project requiring our package should be responsible for evaluating possible vulnerabilities.
+            DISABLE_COMPOSER_AUDIT: true
