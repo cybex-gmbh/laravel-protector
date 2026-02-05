@@ -14,10 +14,14 @@ use Throwable;
  */
 class ShellAccessDeniedException extends Exception
 {
-    public function __construct($message = '', $code = 0, Throwable $previous = null)
+    public string $httpResponse = 'Configuration error on the server';
+
+    public function __construct(array $functions, $code = 0, Throwable $previous = null)
     {
+        $missingFunctions = implode(', ', array_keys($functions, filter_value: false, strict: true));
+
         parent::__construct(
-            $message ?: 'Shell commands are disabled on your server, exec() must be enabled.',
+            sprintf('Required shell commands are disabled on your server, the following functions are not available: %s', $missingFunctions),
             $code,
             $previous
         );

@@ -60,7 +60,7 @@ class ImportDump extends Command
     {
         $this->protector = app('protector');
 
-        $this->protector->guardExecEnabled();
+        $this->protector->guardRequiredFunctionsEnabled();
 
         $optionDump = $this->option('dump');
         $optionFile = $this->option('file');
@@ -270,11 +270,11 @@ class ImportDump extends Command
     protected function importDump(string $importFilePath, ?bool $optionForce): void
     {
         if ($optionForce || $this->confirm(
-                    sprintf(
-                        'Are you sure that you want to import the dump into the database: %s?',
-                        $this->protector->getDatabaseName()
-                    )
-                )) {
+                sprintf(
+                    'Are you sure that you want to import the dump into the database: %s?',
+                    $this->protector->getDatabaseName()
+                )
+            )) {
             try {
                 $this->protector->importDump($importFilePath, Arr::except($this->options(), ['migrate']));
 

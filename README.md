@@ -4,6 +4,9 @@
 
 This package allows you to download, export and import your application's database backups.
 
+> [!IMPORTANT]
+> This package will not work if you have disabled "proc_open" in your PHP configuration.
+
 ## Common usage scenarios
 
 - Store your local database in a file
