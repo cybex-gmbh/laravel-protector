@@ -1,7 +1,13 @@
 # For more information: https://laravel.com/docs/sail
+
+x-db-common-values:
+    db-name: &db-name '${DB_DATABASE}'
+    db-user: &db-user '${DB_USERNAME}'
+    db-pass: &db-pass '${DB_PASSWORD}'
+
 services:
     app:
-        container_name: ${DOCKER_CONTAINER_NAME:-protector_test}
+        container_name: ${COMPOSE_PROJECT_NAME}
         build:
             context: ./docker/${DOCKER_PHP_VERSION:-8.2}
             dockerfile: Dockerfile
@@ -16,7 +22,8 @@ services:
             XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
             XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
         volumes:
-            - '.:/var/www/html'
+            - '.:/var/www/package'
+            - './exampleApp:/var/www/html'
         networks:
             - internal
             - shared
@@ -25,11 +32,11 @@ services:
     mysql_testing:
         image: 'mysql/mysql-server:8.0'
         environment:
-            MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
+            MYSQL_DATABASE: *db-name
+            MYSQL_USER: *db-user
+            MYSQL_PASSWORD: *db-pass
+            MYSQL_ROOT_PASSWORD: *db-pass
             MYSQL_ROOT_HOST: "%"
-            MYSQL_DATABASE: '${DB_DATABASE:-protector_test}'
-            MYSQL_USER: '${DB_USERNAME}'
-            MYSQL_PASSWORD: '${DB_PASSWORD}'
             MYSQL_ALLOW_EMPTY_PASSWORD: 1
         networks:
             - internal
@@ -40,14 +47,14 @@ services:
     postgres_testing:
         image: 'postgres:17'
         environment:
-            POSTGRES_USER: '${DB_USERNAME}'
-            POSTGRES_PASSWORD: '${DB_PASSWORD}'
-            POSTGRES_DB: '${DB_DATABASE:-protector_test}'
+            POSTGRES_DB: *db-name
+            POSTGRES_USER: *db-user
+            POSTGRES_PASSWORD: *db-pass
             POSTGRES_HOST_AUTH_METHOD: 'trust'
         networks:
             - internal
         healthcheck:
-            test: ["CMD-SHELL", "pg_isready"]
+            test: [ "CMD-SHELL", "pg_isready" ]
             retries: 3
             timeout: 5s
 networks:

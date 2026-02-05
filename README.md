@@ -4,6 +4,9 @@
 
 This package allows you to download, export and import your application's database backups.
 
+> [!IMPORTANT]
+> This package will not work if you have disabled "proc_open" in your PHP configuration.
+
 ## Common usage scenarios
 
 - Store your local database in a file
@@ -23,8 +26,8 @@ This package allows you to download, export and import your application's databa
 - Protector only supports MySQL, MariaDB and PostgreSQL databases at the moment.
 - Source and destination databases are currently not checked. Please make sure you run the same software in the same
   versions to prevent issues.
-- Because of different dump formats, pulling dumps from MariaDB and restoring them to MySQL will not work. The same
-  of course applies to cross-database operations between MySQL and PostgreSQL.
+- Because of different dump formats, pulling dumps from MariaDB and restoring them to MySQL will not work.
+  The same, of course, applies to cross-database operations between MySQL and PostgreSQL.
 
 ## Notes
 
@@ -33,12 +36,12 @@ This package allows you to download, export and import your application's databa
 ## Table of contents
 
 * [Usage](#usage)
-  * [Export to file](#export-to-file)
-  * [Import](#import)
+    * [Export to file](#export-to-file)
+    * [Import](#import)
 * [Setup instructions](#setup-instructions)
-  * [Setup for storing the local database](#setup-for-storing-the-local-database)
-  * [Setup for importing the database of a remote server](#setup-for-importing-the-database-of-a-remote-server)
-  * [Setup for collecting backups from multiple servers](#setup-for-collecting-backups-from-multiple-servers)
+    * [Setup for storing the local database](#setup-for-storing-the-local-database)
+    * [Setup for importing the database of a remote server](#setup-for-importing-the-database-of-a-remote-server)
+    * [Setup for collecting backups from multiple servers](#setup-for-collecting-backups-from-multiple-servers)
 * [Migration guide from Protector v1.x to v2.x](#migration-guide-from-protector-v1x-to-v2x)
 
 ## Usage
@@ -121,7 +124,7 @@ Find below three common scenarios of usage. These are not mutually exclusive.
 
 ### Setup for storing the local database
 
-If you only want to store a copy of your local database to a disk, the setup is pretty simple.
+If you only want to store a copy of your local database to a disk, the setup is pretty straightforward.
 
 #### Installing protector in your local Laravel project
 
@@ -165,8 +168,8 @@ php artisan protector:export --file=storage/database.sql
 
 ### Setup for importing the database of a remote server
 
-This package can run on both servers and client machines of the same software repository. You set up authorized
-developers on the server, and give them the key for their local machine.
+This package can run on both servers and client machines of the same software repository.
+You set up authorized developers on the server and give them the key for their local machine.
 
 #### Installing protector in your Laravel project
 
@@ -189,7 +192,7 @@ class User extends Authenticatable
 }
 ```
 
-Publish the protector database migration, and optionally modify it to work with your project.
+Publish the protector database migration and optionally modify it to work with your project.
 
 ```bash
 php artisan vendor:publish --tag=protector.migrations
@@ -270,20 +273,27 @@ See [cybex-gmbh/collector](https://github.com/cybex-gmbh/collector) for an examp
 
 Likelihood of impact: high
 
-- If your app does not explicitly require the laravel/sanctum package, upgrading Protector to version 2.x will also 
-upgrade Sanctum to version 3.x. This will require you to follow its 
-[upgrade guide](https://github.com/laravel/sanctum/blob/3.x/UPGRADE.md).
+- If your app does not explicitly require the laravel/sanctum package, upgrading Protector to version 2.x will also
+  upgrade Sanctum to version 3.x. This will require you to follow its
+  [upgrade guide](https://github.com/laravel/sanctum/blob/3.x/UPGRADE.md).
 
 Likelihood of impact: low
 
 - Access to the formerly public methods `getGitRevision()`, `getGitHeadDate()` or `getGitBranch()` is now protected.
-You now need to call getMetaData() and extract the information from the returned array.
+  You now need to call getMetaData() and extract the information from the returned array.
 
 ## Migration guide from Protector v2.x to v3.x
 
 No breaking changes are expected.
 
 ## Development
+
+There is an example app with the Laravel Protector package installed.
+
+The file structure in the container is as follows:
+
+- /var/www/html: example app
+- /var/www/package: Protector package
 
 ```bash
 ./sail up -d
@@ -297,15 +307,28 @@ No breaking changes are expected.
 composer install
 ```
 
+> [!NOTE]
+> We disable composer security checking for this package, as vulnerabilities would block the development.
+> The project requiring our package should be responsible for evaluating possible vulnerabilities. 
+> For more information, see the [composer documentation](https://getcomposer.org/doc/06-config.md#block-insecure).
+
+Specific to the example app, for demo data:
+
+```bash
+php artisan migrate --seed
+```
+
 ### Testing
 
-Run tests on MySQL database: 
+Make sure you are in the package directory.
+
+Run tests on the MySQL database:
 
 ```bash
 vendor/bin/phpunit
 ```
 
-Run tests on PostgreSQL database: 
+Run tests on the PostgreSQL database:
 
 ```bash
 vendor/bin/phpunit -c phpunit-postgres.xml.dist
@@ -317,7 +340,7 @@ Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 
 ### Security
 
-If you discover any security related issues, please email webdevelopment@cybex-online.com instead of using the issue
+If you discover any security-related issues, please email webdevelopment@cybex-online.com instead of using the issue
 tracker.
 
 ## Credits

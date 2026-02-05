@@ -5,7 +5,6 @@ namespace Cybex\Protector\Tests;
 use Cybex\Protector\Protector;
 use Cybex\Protector\ProtectorServiceProvider;
 use Illuminate\Contracts\Filesystem\Filesystem;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use Orchestra\Testbench\TestCase as OrchestraTestCase;
 use ReflectionClass;
