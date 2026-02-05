@@ -317,15 +317,15 @@ class Protector
 
         $process = proc_open($command, $descriptors, $pipes);
 
-        $output = stream_get_contents($pipes[1]);
-        $error = stream_get_contents($pipes[2]);
+        $output = trim(stream_get_contents($pipes[1]));
+        $error = trim(stream_get_contents($pipes[2]));
 
         fclose($pipes[1]);
         fclose($pipes[2]);
         proc_close($process);
 
         if ($error) {
-            Log::warning(sprintf('%s::%s - Error "%s" when executing command "%s"', $this::class, __FUNCTION__, trim($error), $command));
+            Log::warning(sprintf('%s::%s - Error "%s" when executing command "%s"', $this::class, __FUNCTION__, $error, $command));
 
             return null;
         }
