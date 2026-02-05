@@ -325,7 +325,7 @@ class Protector
         proc_close($process);
 
         if ($error) {
-            Log::warning(sprintf('%s::%s - Error executing command %s: %s', $this::class, __FUNCTION__,$command, $error));
+            Log::warning(sprintf('%s::%s - Error "%s" when executing command "%s"', $this::class, __FUNCTION__, $error, $command));
 
             return null;
         }
