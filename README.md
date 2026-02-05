@@ -33,12 +33,12 @@ This package allows you to download, export and import your application's databa
 ## Table of contents
 
 * [Usage](#usage)
-  * [Export to file](#export-to-file)
-  * [Import](#import)
+    * [Export to file](#export-to-file)
+    * [Import](#import)
 * [Setup instructions](#setup-instructions)
-  * [Setup for storing the local database](#setup-for-storing-the-local-database)
-  * [Setup for importing the database of a remote server](#setup-for-importing-the-database-of-a-remote-server)
-  * [Setup for collecting backups from multiple servers](#setup-for-collecting-backups-from-multiple-servers)
+    * [Setup for storing the local database](#setup-for-storing-the-local-database)
+    * [Setup for importing the database of a remote server](#setup-for-importing-the-database-of-a-remote-server)
+    * [Setup for collecting backups from multiple servers](#setup-for-collecting-backups-from-multiple-servers)
 * [Migration guide from Protector v1.x to v2.x](#migration-guide-from-protector-v1x-to-v2x)
 
 ## Usage
@@ -270,14 +270,14 @@ See [cybex-gmbh/collector](https://github.com/cybex-gmbh/collector) for an examp
 
 Likelihood of impact: high
 
-- If your app does not explicitly require the laravel/sanctum package, upgrading Protector to version 2.x will also 
-upgrade Sanctum to version 3.x. This will require you to follow its 
-[upgrade guide](https://github.com/laravel/sanctum/blob/3.x/UPGRADE.md).
+- If your app does not explicitly require the laravel/sanctum package, upgrading Protector to version 2.x will also
+  upgrade Sanctum to version 3.x. This will require you to follow its
+  [upgrade guide](https://github.com/laravel/sanctum/blob/3.x/UPGRADE.md).
 
 Likelihood of impact: low
 
 - Access to the formerly public methods `getGitRevision()`, `getGitHeadDate()` or `getGitBranch()` is now protected.
-You now need to call getMetaData() and extract the information from the returned array.
+  You now need to call getMetaData() and extract the information from the returned array.
 
 ## Migration guide from Protector v2.x to v3.x
 
@@ -297,15 +297,20 @@ No breaking changes are expected.
 composer install
 ```
 
+> [!NOTE]
+> We disable composer security checking for this package, as vulnerabilities would block the development.
+> The project requiring our package should be responsible for evaluating possible vulnerabilities. 
+> For more information, see the [composer documentation](https://getcomposer.org/doc/06-config.md#block-insecure).
+
 ### Testing
 
-Run tests on MySQL database: 
+Run tests on MySQL database:
 
 ```bash
 vendor/bin/phpunit
 ```
 
-Run tests on PostgreSQL database: 
+Run tests on PostgreSQL database:
 
 ```bash
 vendor/bin/phpunit -c phpunit-postgres.xml.dist
