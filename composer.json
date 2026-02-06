@@ -55,7 +55,7 @@
     },
     "scripts": {
         "test": "vendor/bin/phpunit",
-        "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
+        "test-postgres": "vendor/bin/phpunit -c phpunit-postgres.xml.dist"
     },
     "config": {
         "sort-packages": true,
