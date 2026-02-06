@@ -11,6 +11,7 @@ Adjustments:
   - The package migrations have been published.
 - The DatabaseSeeder has been updated to provide a user with a `Protector Public Key` and a `Protector Auth Token`, matching the provided .env values.
 - The package's test database is used as the default database for this scaffold.
+- Composer scripts have been added to run the package's tests (see `composer.json` config below).
 
 The app is able to execute all package-related commands, including "downloading" a dump from a "remote" server (the `Protector Server URL` points to localhost).
 
@@ -23,6 +24,12 @@ The app is able to execute all package-related commands, including "downloading"
         ...
         "cybex/laravel-protector": "@dev",
         ...
+    },
+    ...
+    "scripts": {
+        ...
+        "test": "../package/vendor/bin/phpunit -c ../package/phpunit.xml.dist",
+        "test-postgres": "../package/vendor/bin/phpunit -c ../package/phpunit-postgres.xml.dist"
     },
     ...
     "repositories": [

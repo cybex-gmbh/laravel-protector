@@ -69,7 +69,9 @@
         ],
         "pre-package-uninstall": [
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
-        ]
+        ],
+        "test": "../package/vendor/bin/phpunit -c ../package/phpunit.xml.dist",
+        "test-postgres": "../package/vendor/bin/phpunit -c ../package/phpunit-postgres.xml.dist"
     },
     "extra": {
         "laravel": {

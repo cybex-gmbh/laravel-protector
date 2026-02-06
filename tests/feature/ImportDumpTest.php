@@ -29,7 +29,7 @@ class ImportDumpTest extends TestCase
 
         $this->disk = $this->getFakeDumpDisk();
 
-        $this->filePath = getcwd() . '/tests/dumps/dump.sql';
+        $this->filePath = __DIR__ . '/../dumps/dump.sql';
     }
 
     public static function provideDumpMetadata(): array
