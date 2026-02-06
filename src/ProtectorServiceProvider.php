@@ -2,8 +2,8 @@
 
 namespace Cybex\Protector;
 
-use Cybex\Protector\Classes\MySqlSchemaStateProxy;
-use Cybex\Protector\Classes\PostgresSchemaStateProxy;
+use Cybex\Protector\Classes\SchemaState\MySql\MySqlSchemaStateProxy;
+use Cybex\Protector\Classes\SchemaState\Postgres\PostgresSchemaStateProxy;
 use Cybex\Protector\Commands\CreateKeys;
 use Cybex\Protector\Commands\CreateToken;
 use Cybex\Protector\Commands\ExportDump;
