@@ -75,7 +75,7 @@ class TestCase extends OrchestraTestCase
         $disk = $this->getDumpDisk();
         $baseDirectory = $this->protector->getBaseDirectory();
 
-        foreach (glob(getcwd() . '/tests/dumps/*.sql') as $filename) {
+        foreach (glob(__DIR__ . '/dumps/*.sql') as $filename) {
             Storage::disk('local')->putFileAs($baseDirectory, $filename, basename($filename));
         }
 

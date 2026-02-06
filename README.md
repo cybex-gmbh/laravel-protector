@@ -355,8 +355,6 @@ php artisan migrate --seed
 
 ### Testing
 
-Make sure you are in the package directory.
-
 Run tests on the MySQL database:
 
 ```bash
@@ -367,12 +365,6 @@ Run tests on the PostgreSQL database:
 
 ```bash
 composer test-postgres
-```
-
-Generate code coverage report:
-
-```bash
-composer test-coverage
 ```
 
 ## Contributing
