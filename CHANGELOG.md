@@ -2,6 +2,11 @@
 
 All notable changes to `protector` will be documented in this file.
 
+## v3.2.2 - 2026-02-10
+
+- The metadata which is appended at the end of a dump file can now be customized,
+  see the [Dump Metadata README section](README.md#dump-metadata) for more information
+
 ## v3.2.1 - 2026-02-02
 
 - Internal shell calls now use the same method as used for dumping databases
@@ -55,7 +60,8 @@ All notable changes to `protector` will be documented in this file.
 
 ## v1.1.0 - 2021-08-04
 
-- Migrations now need to be explicitly published, as they are optional for some use cases and because they might need to be modified. Run `php artisan vendor:publish --tag=protector.migrations` to publish the protector migration to your `database/migrations` folder.
+- Migrations now need to be explicitly published, as they are optional for some use cases and because they might need to be modified.
+  Run `php artisan vendor:publish --tag=protector.migrations` to publish the protector migration to your `database/migrations` folder.
 - Removed the Guzzle dependency, as it is already required by Laravel.
 
 ## v1.0.1 - 2021-08-02
