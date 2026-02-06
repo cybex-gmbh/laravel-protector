@@ -360,13 +360,19 @@ Make sure you are in the package directory.
 Run tests on the MySQL database:
 
 ```bash
-vendor/bin/phpunit
+composer test
 ```
 
 Run tests on the PostgreSQL database:
 
 ```bash
-vendor/bin/phpunit -c phpunit-postgres.xml.dist
+composer test-postgres
+```
+
+Generate code coverage report:
+
+```bash
+composer test-coverage
 ```
 
 ## Contributing
