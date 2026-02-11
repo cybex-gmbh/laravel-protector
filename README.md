@@ -276,10 +276,16 @@ See [cybex-gmbh/collector](https://github.com/cybex-gmbh/collector) for an examp
 
 ## Configuration
 
-The `protector.php` config file sets global settings for all new `Protector` instances.
+The `protector.php` config file sets initial settings for the `Protector` instance.
 
-`Protector` instances can also be configured individually, using various `set`-methods. For all available options, take a look at
+Additional settings can be configured on the `Protector` instance. For all available options, take a look at
 the [HasConfiguration trait](src/Traits/HasConfiguration.php).
+
+For example, to configure a specific auth token and server URL: 
+
+```php
+Protector::withAuthToken($authToken)->withServerUrl($serverUrl);
+```
 
 ### Dump metadata
 

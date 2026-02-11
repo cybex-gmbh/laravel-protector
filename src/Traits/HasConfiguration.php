@@ -261,6 +261,13 @@ trait HasConfiguration
         return $this;
     }
 
+    public function withMetadataProviders(array $metadataProviders): static
+    {
+        $this->metadataProviders = $metadataProviders;
+
+        return $this;
+    }
+
     /**
      * Retrieves the auth token for Laravel Sanctum authentication.
      */
@@ -333,6 +340,13 @@ trait HasConfiguration
         return $this->serverUrl ?: $this->getConfigValueForKey('remoteEndpoint.serverUrl');
     }
 
+    public function getMetadataProviders(): Collection
+    {
+        $additionalMetadataProviders = collect($this->metadataProviders ?? $this->getConfigValueForKey('metadataProviders'));
+
+        return $additionalMetadataProviders->prepend(DefaultMetadataProvider::class);
+    }
+
     public function shouldDumpCharsets(): bool
     {
         return $this->dumpCharsets;
@@ -366,17 +380,5 @@ trait HasConfiguration
     public function shouldUseTablespaces(): bool
     {
         return $this->tablespaces;
-    }
-
-    public function getMetadataProviders(): Collection
-    {
-        $additionalMetadataProviders = collect($this->metadataProviders ?? $this->getConfigValueForKey('metadataProviders'));
-
-        return $additionalMetadataProviders->prepend(DefaultMetadataProvider::class);
-    }
-
-    public function setMetadataProviders(array $metadataProviders): void
-    {
-        $this->metadataProviders = $metadataProviders;
     }
 }

@@ -46,10 +46,10 @@ class ProtectorServiceProvider extends ServiceProvider
         // Automatically apply the package configuration.
         $this->mergeConfigFrom(__DIR__ . '/../config/protector.php', 'protector');
 
-        // Register the main class to use with the facade.
-        $this->app->singleton('protector', function () {
-            return new Protector;
-        });
+        // Register the Protector class as a singleton and bind the alias.
+        // Scoped to the request lifecycle to ensure a new instance is created for each request (e.g. for Octane).
+        $this->app->scoped(Protector::class, Protector::class);
+        $this->app->bind('protector', Protector::class);
 
         // Register the SchemaState proxy classes.
         $this->app->bind(MySqlSchemaStateProxy::class, function ($app, array $params) {

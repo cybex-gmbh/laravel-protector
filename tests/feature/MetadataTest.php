@@ -47,7 +47,7 @@ class MetadataTest extends TestCase
     {
         Config::set('protector.metadataProviders', []);
 
-        $this->protector->setMetadataProviders([GitMetadataProvider::class]);
+        $this->protector->withMetadataProviders([GitMetadataProvider::class]);
 
         $this->assertContains(GitMetadataProvider::class, $this->protector->getMetadataProviders());
     }

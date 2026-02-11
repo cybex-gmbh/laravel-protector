@@ -3,7 +3,6 @@
 namespace Cybex\Protector\Classes\Metadata\Providers;
 
 use Cybex\Protector\Contracts\MetadataProvider;
-use Cybex\Protector\Protector;
 
 class EnvMetadataProvider implements MetadataProvider
 {
@@ -11,7 +10,7 @@ class EnvMetadataProvider implements MetadataProvider
 
     protected ?string $envMetadata;
 
-    public function __construct(protected Protector $protector)
+    public function __construct()
     {
         $this->envMetadata = config('protector.additionalEnvMetadata');
     }

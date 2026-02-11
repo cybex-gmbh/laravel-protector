@@ -79,7 +79,7 @@ class MetadataHandler
     {
         return $this->protector->getMetadataProviders()
             ->map(function ($providerClass) {
-                $provider = app()->makeWith($providerClass, [Protector::class => $this->protector]);
+                $provider = app($providerClass);
 
                 if (!is_a($provider, MetadataProvider::class)) {
                     throw new InvalidMetadataProviderException(invalidProvider: $providerClass);

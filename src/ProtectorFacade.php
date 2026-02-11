@@ -4,6 +4,9 @@ namespace Cybex\Protector;
 
 use Illuminate\Support\Facades\Facade;
 
+/**
+ * @mixin Protector
+ */
 class ProtectorFacade extends Facade
 {
     /**

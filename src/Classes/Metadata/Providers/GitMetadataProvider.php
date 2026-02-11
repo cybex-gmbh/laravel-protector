@@ -3,17 +3,12 @@
 namespace Cybex\Protector\Classes\Metadata\Providers;
 
 use Cybex\Protector\Contracts\MetadataProvider;
-use Cybex\Protector\Protector;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
 class GitMetadataProvider implements MetadataProvider
 {
     public const METADATA_KEY = 'git';
-
-    public function __construct(protected Protector $protector)
-    {
-    }
 
     /**
      * @inheritDoc

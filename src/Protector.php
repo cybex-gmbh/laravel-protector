@@ -158,7 +158,7 @@ class Protector
      */
     public function getDumpMetadata(string $dumpFile): bool|array
     {
-        return app()->makeWith(MetadataHandler::class, [$this])->getDumpMetadata($dumpFile);
+        return app(MetadataHandler::class)->getDumpMetadata($dumpFile);
     }
 
     /**
@@ -324,7 +324,7 @@ class Protector
             return $this->metadataCache;
         }
 
-        return $this->metadataCache = app()->makeWith(MetadataHandler::class, [$this])->getMetadata();
+        return $this->metadataCache = app(MetadataHandler::class)->getMetadata();
     }
 
     /**
