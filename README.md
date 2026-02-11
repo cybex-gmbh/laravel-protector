@@ -281,7 +281,7 @@ The `protector.php` config file sets initial settings for the `Protector` instan
 Additional settings can be configured on the `Protector` instance. For all available options, take a look at
 the [HasConfiguration trait](src/Traits/HasConfiguration.php).
 
-For example, to configure a specific auth token and server URL: 
+For example, to configure a specific auth token and server URL:
 
 ```php
 Protector::withAuthToken($authToken)->withServerUrl($serverUrl);
@@ -301,13 +301,22 @@ Customize the metadata appended to a dump by adding providers to the `metadataPr
 
 Available metadata providers:
 
-1. `DefaultMetadataProvider`: Appended by default. Adds general information about the dump, such as the database connection and dumped at date.
+1. `DatabaseMetadataProvider`: Adds general information about the dump, such as the database connection and dumped at date.
 2. `EnvMetadataProvider`: Adds information based on an .env value. The default .env key used for this is `PROTECTOR_ADDITIONAL_METADATA`.
 3. `GitMetadataProvider`: Adds information about the Git repository, such as the current branch and revision.
+4. `JsonMetadataProvider`: Adds information from a JSON file. The default file path used for this is `protector_metadata.json`.
 
 > [!NOTE]
 > You can create your own metadata providers by implementing the `Cybex\Protector\Contracts\MetadataProvider` interface.
 > Duplicate provider keys will be merged in the final metadata array, so choose a unique key.
+
+> [!TIP]
+> An example of using the JsonMetadataProvider would be to add custom metadata from a CI/CD pipeline.
+> For example, in a GitHub Actions workflow, you could add a step that writes Git information to `protector_metadata.json`
+>
+> ```bash
+>  jq -n --arg revision $(git rev-parse HEAD) --arg branch $(git rev-parse --abbrev-ref HEAD) --arg revisionDate "$(git show -s --format=%ci HEAD)" '{gitRevision: $revision, gitBranch: $branch, gitRevisionDate: $revisionDate}'
+> ```
 
 ## Upgrade guides
 
@@ -351,7 +360,7 @@ composer install
 
 > [!NOTE]
 > We disable composer security checking for this package, as vulnerabilities would block the development.
-> The project requiring our package should be responsible for evaluating possible vulnerabilities. 
+> The project requiring our package should be responsible for evaluating possible vulnerabilities.
 > For more information, see the [composer documentation](https://getcomposer.org/doc/06-config.md#block-insecure).
 
 Specific to the example app, for demo data:

@@ -5,6 +5,7 @@ namespace Cybex\Protector\Tests\feature;
 use Cybex\Protector\Classes\Metadata\Providers\DatabaseMetadataProvider;
 use Cybex\Protector\Classes\Metadata\Providers\EnvMetadataProvider;
 use Cybex\Protector\Classes\Metadata\Providers\GitMetadataProvider;
+use Cybex\Protector\Classes\Metadata\Providers\JsonFileMetadataProvider;
 use Cybex\Protector\Contracts\MetadataProvider;
 use Cybex\Protector\Exceptions\InvalidMetadataProviderException;
 use Cybex\Protector\Protector;
@@ -112,6 +113,37 @@ class MetadataTest extends TestCase
 
 
         $this->assertArrayNotHasKey('env', $this->protector->getMetadata());
+    }
+
+    /**
+     * @test
+     */
+    public function includesJsonFileMetadataIfFileExists()
+    {
+        $filePath = base_path('protector_metadata.json');
+
+        Config::set('protector.metadataProviders', [JsonFileMetadataProvider::class]);
+        Config::set('protector.metadataJsonFilePath', basename($filePath));
+
+        File::put($filePath, json_encode(['foo' => 'bar']));
+
+        $this->assertArrayHasKey('jsonFile', $this->protector->getMetadata());
+        $this->assertEquals(['foo' => 'bar'], $this->protector->getMetadata()['jsonFile']);
+    }
+
+    /**
+     * @test
+     */
+    public function excludeJsonFileMetadataIfFileNotExists()
+    {
+        $filePath = base_path('protector_metadata.json');
+
+        Config::set('protector.metadataProviders', [JsonFileMetadataProvider::class]);
+        Config::set('protector.metadataJsonFilePath', basename($filePath));
+
+        File::delete($filePath);
+
+        $this->assertArrayNotHasKey('jsonFile', $this->protector->getMetadata());
     }
 
     /**
