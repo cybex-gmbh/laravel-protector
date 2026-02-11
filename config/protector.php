@@ -129,6 +129,7 @@ return [
     |
     */
     'metadataProviders' => [
+        \Cybex\Protector\Classes\Metadata\Providers\DatabaseMetadataProvider::class,
         \Cybex\Protector\Classes\Metadata\Providers\EnvMetadataProvider::class,
         \Cybex\Protector\Classes\Metadata\Providers\GitMetadataProvider::class,
     ],

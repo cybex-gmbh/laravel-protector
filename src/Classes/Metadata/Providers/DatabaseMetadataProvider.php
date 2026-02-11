@@ -5,7 +5,7 @@ namespace Cybex\Protector\Classes\Metadata\Providers;
 use Cybex\Protector\Contracts\MetadataProvider;
 use Cybex\Protector\Protector;
 
-class DefaultMetadataProvider implements MetadataProvider
+class DatabaseMetadataProvider implements MetadataProvider
 {
     public function __construct(protected Protector $protector)
     {
@@ -16,7 +16,7 @@ class DefaultMetadataProvider implements MetadataProvider
      */
     public function getKey(): string
     {
-        return 'default';
+        return 'database';
     }
 
     /**

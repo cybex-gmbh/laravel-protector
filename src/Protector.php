@@ -296,9 +296,9 @@ class Protector
 
         [$appUrl, $database, $connection, $date] = [
             parse_url(config('app.url'), PHP_URL_HOST),
-            $metadata['default']['database'] ?? '',
-            $metadata['default']['connection'] ?? '',
-            $metadata['default']['dumpedAtDate'],
+            $metadata['database']['database'] ?? '',
+            $metadata['database']['connection'] ?? '',
+            $metadata['database']['dumpedAtDate'],
         ];
 
         return sprintf(

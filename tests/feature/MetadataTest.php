@@ -2,7 +2,7 @@
 
 namespace Cybex\Protector\Tests\feature;
 
-use Cybex\Protector\Classes\Metadata\Providers\DefaultMetadataProvider;
+use Cybex\Protector\Classes\Metadata\Providers\DatabaseMetadataProvider;
 use Cybex\Protector\Classes\Metadata\Providers\EnvMetadataProvider;
 use Cybex\Protector\Classes\Metadata\Providers\GitMetadataProvider;
 use Cybex\Protector\Contracts\MetadataProvider;
@@ -27,17 +27,7 @@ class MetadataTest extends TestCase
         $metadata = $this->protector->getMetadata();
 
         $this->assertIsArray($metadata);
-        $this->assertEquals($dumpDate, $metadata['default']['dumpedAtDate']);
-    }
-
-    /**
-     * @test
-     */
-    public function includesDatabaseMetadataProviderByDefault()
-    {
-        Config::set('protector.metadataProviders', []);
-
-        $this->assertContains(DefaultMetadataProvider::class, $this->protector->getMetadataProviders());
+        $this->assertEquals($dumpDate, $metadata['database']['dumpedAtDate']);
     }
 
     /**
@@ -145,12 +135,12 @@ class MetadataTest extends TestCase
      */
     public function canConfigureMultipleMetadataProviders()
     {
-        Config::set('protector.metadataProviders', [TestCustomFooMetadataProvider::class, GitMetadataProvider::class]);
+        Config::set('protector.metadataProviders', [DatabaseMetadataProvider::class, TestCustomFooMetadataProvider::class, GitMetadataProvider::class]);
         File::shouldReceive('exists')->with(base_path('.git'))->andReturn(true);
 
         $metadata = $this->protector->getMetadata();
 
-        $this->assertArrayHasKey('default', $metadata);
+        $this->assertArrayHasKey('database', $metadata);
         $this->assertArrayHasKey('custom', $metadata);
         $this->assertArrayHasKey('git', $metadata);
     }
@@ -199,8 +189,8 @@ class MetadataTest extends TestCase
 
         $this->assertArrayHasKey($fooMetadataProvider->getKey(), $this->protector->getMetadata());
         $this->assertArrayHasKey($barMetadataProvider->getKey(), $this->protector->getMetadata());
-        $this->assertContains('foo', $this->protector->getMetadata()[$fooMetadataProvider->getKey()]);
-        $this->assertContains('bar', $this->protector->getMetadata()[$barMetadataProvider->getKey()]);
+        $this->assertArrayHasKey('foo', $this->protector->getMetadata()[$fooMetadataProvider->getKey()]);
+        $this->assertArrayHasKey('bar', $this->protector->getMetadata()[$barMetadataProvider->getKey()]);
     }
 }
 
