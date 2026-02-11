@@ -307,6 +307,7 @@ Available metadata providers:
 
 > [!NOTE]
 > You can create your own metadata providers by implementing the `Cybex\Protector\Contracts\MetadataProvider` interface.
+> Duplicate provider keys will be merged in the final metadata array, so choose a unique key.
 
 ## Upgrade guides
 

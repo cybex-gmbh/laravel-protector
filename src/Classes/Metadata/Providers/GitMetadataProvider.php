@@ -8,7 +8,13 @@ use Illuminate\Support\Facades\Log;
 
 class GitMetadataProvider implements MetadataProvider
 {
-    public const METADATA_KEY = 'git';
+    /**
+     * @inheritDoc
+     */
+    public function getKey(): string
+    {
+        return 'git';
+    }
 
     /**
      * @inheritDoc
@@ -21,14 +27,12 @@ class GitMetadataProvider implements MetadataProvider
     /**
      * @inheritDoc
      */
-    public function getMetadata(): array
+    public function getMetadata(): array|string
     {
         return [
-            static::METADATA_KEY => [
-                'revision' => $this->getGitRevision(),
-                'branch' => $this->getGitBranch(),
-                'revisionDate' => $this->getGitHeadDate(),
-            ]
+            'revision' => $this->getGitRevision(),
+            'branch' => $this->getGitBranch(),
+            'revisionDate' => $this->getGitHeadDate(),
         ];
     }
 

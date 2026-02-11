@@ -6,13 +6,19 @@ use Cybex\Protector\Contracts\MetadataProvider;
 
 class EnvMetadataProvider implements MetadataProvider
 {
-    public const METADATA_KEY = 'env';
-
     protected ?string $envMetadata;
 
     public function __construct()
     {
         $this->envMetadata = config('protector.additionalEnvMetadata');
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getKey(): string
+    {
+        return 'env';
     }
 
     /**
@@ -26,10 +32,8 @@ class EnvMetadataProvider implements MetadataProvider
     /**
      * @inheritDoc
      */
-    public function getMetadata(): array
+    public function getMetadata(): array|string
     {
-        return [
-            static::METADATA_KEY => $this->envMetadata
-        ];
+        return $this->envMetadata;
     }
 }

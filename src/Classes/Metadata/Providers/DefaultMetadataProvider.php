@@ -7,10 +7,16 @@ use Cybex\Protector\Protector;
 
 class DefaultMetadataProvider implements MetadataProvider
 {
-    public const METADATA_KEY = 'default';
-
     public function __construct(protected Protector $protector)
     {
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getKey(): string
+    {
+        return 'default';
     }
 
     /**
@@ -24,15 +30,13 @@ class DefaultMetadataProvider implements MetadataProvider
     /**
      * @inheritDoc
      */
-    public function getMetadata(): array
+    public function getMetadata(): array|string
     {
         return [
-            static::METADATA_KEY => [
-                'database' => $this->protector->getDatabaseName(),
-                'connection' => $this->protector->getConnectionName(),
-                'maxPacketLength' => $this->protector->getMaxPacketLength(),
-                'dumpedAtDate' => now(),
-            ]
+            'database' => $this->protector->getDatabaseName(),
+            'connection' => $this->protector->getConnectionName(),
+            'maxPacketLength' => $this->protector->getMaxPacketLength(),
+            'dumpedAtDate' => now(),
         ];
     }
 }

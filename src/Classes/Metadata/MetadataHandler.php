@@ -23,7 +23,7 @@ class MetadataHandler
 
         foreach ($this->getProviders() as $provider) {
             if ($provider->shouldAppend()) {
-                $metadata = array_merge($metadata, $provider->getMetadata());
+                $metadata = array_merge_recursive($metadata, [$provider->getKey() => $provider->getMetadata()]);
             }
         }
 

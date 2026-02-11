@@ -129,15 +129,15 @@ class MetadataTest extends TestCase
      */
     public function canConfigureCustomMetadataProviderWithDependencies()
     {
-        $metadataProviders = [TestCustomMetadataProvider::class];
+        $metadataProviders = [TestCustomFooMetadataProvider::class];
         Config::set('protector.metadataProviders', $metadataProviders);
 
         $metadata = $this->protector->getMetadata();
 
         $this->assertArrayHasKey('custom', $metadata);
         $this->assertEquals($metadataProviders, $metadata['custom']['foo']);
-        $this->assertInstanceOf(Protector::class, app(TestCustomMetadataProvider::class)->protector);
-        $this->assertInstanceOf(Config::class, app(TestCustomMetadataProvider::class)->config);
+        $this->assertInstanceOf(Protector::class, app(TestCustomFooMetadataProvider::class)->protector);
+        $this->assertInstanceOf(Config::class, app(TestCustomFooMetadataProvider::class)->config);
     }
 
     /**
@@ -145,7 +145,7 @@ class MetadataTest extends TestCase
      */
     public function canConfigureMultipleMetadataProviders()
     {
-        Config::set('protector.metadataProviders', [TestCustomMetadataProvider::class, GitMetadataProvider::class]);
+        Config::set('protector.metadataProviders', [TestCustomFooMetadataProvider::class, GitMetadataProvider::class]);
         File::shouldReceive('exists')->with(base_path('.git'))->andReturn(true);
 
         $metadata = $this->protector->getMetadata();
@@ -186,14 +186,33 @@ class MetadataTest extends TestCase
 
         $this->protector->getMetadata();
     }
+
+    /**
+     * @test
+     */
+    public function ensureDuplicateProviderKeysAreMerged(): void
+    {
+        Config::set('protector.metadataProviders', [TestCustomFooMetadataProvider::class, TestCustomBarMetadataProvider::class]);
+
+        $fooMetadataProvider = app(TestCustomFooMetadataProvider::class);
+        $barMetadataProvider = app(TestCustomBarMetadataProvider::class);
+
+        $this->assertArrayHasKey($fooMetadataProvider->getKey(), $this->protector->getMetadata());
+        $this->assertArrayHasKey($barMetadataProvider->getKey(), $this->protector->getMetadata());
+        $this->assertContains('foo', $this->protector->getMetadata()[$fooMetadataProvider->getKey()]);
+        $this->assertContains('bar', $this->protector->getMetadata()[$barMetadataProvider->getKey()]);
+    }
 }
 
-class TestCustomMetadataProvider implements MetadataProvider
+class TestCustomFooMetadataProvider implements MetadataProvider
 {
-    public const METADATA_KEY = 'custom';
-
     public function __construct(public Protector $protector, public Config $config)
     {
+    }
+
+    public function getKey(): string
+    {
+        return 'custom';
     }
 
     public function shouldAppend(): bool
@@ -201,12 +220,34 @@ class TestCustomMetadataProvider implements MetadataProvider
         return true;
     }
 
-    public function getMetadata(): array
+    public function getMetadata(): array|string
     {
         return [
-            static::METADATA_KEY => [
-                'foo' => $this->config::get('protector.metadataProviders')
-            ]
+            'foo' => $this->config::get('protector.metadataProviders')
+        ];
+    }
+}
+
+class TestCustomBarMetadataProvider implements MetadataProvider
+{
+    public function __construct()
+    {
+    }
+
+    public function getKey(): string
+    {
+        return 'custom';
+    }
+
+    public function shouldAppend(): bool
+    {
+        return true;
+    }
+
+    public function getMetadata(): array|string
+    {
+        return [
+            'bar' => 'test'
         ];
     }
 }
