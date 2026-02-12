@@ -4,7 +4,6 @@ namespace Cybex\Protector\Classes\Metadata;
 
 use Cybex\Protector\Contracts\MetadataProvider;
 use Cybex\Protector\Exceptions\FileNotFoundException;
-use Cybex\Protector\Exceptions\InvalidMetadataProviderException;
 use Cybex\Protector\Protector;
 use Illuminate\Support\Collection;
 
@@ -73,20 +72,17 @@ class MetadataHandler
 
     /**
      * @return Collection<MetadataProvider>
-     * @throws InvalidMetadataProviderException
      */
     protected function getProviders(): Collection
     {
-        return $this->protector->getMetadataProviders()
-            ->map(function ($providerClass) {
-                $provider = app($providerClass);
+        return $this->protector
+            ->getMetadataProviders()
+            ->map($this->makeProvider(...));
+    }
 
-                if (!is_a($provider, MetadataProvider::class)) {
-                    throw new InvalidMetadataProviderException(invalidProvider: $providerClass);
-                }
-
-                return $provider;
-            });
+    protected function makeProvider($providerClass): MetadataProvider
+    {
+        return app($providerClass);
     }
 
     /**

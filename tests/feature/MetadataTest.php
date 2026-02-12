@@ -7,12 +7,12 @@ use Cybex\Protector\Classes\Metadata\Providers\EnvMetadataProvider;
 use Cybex\Protector\Classes\Metadata\Providers\GitMetadataProvider;
 use Cybex\Protector\Classes\Metadata\Providers\JsonFileMetadataProvider;
 use Cybex\Protector\Contracts\MetadataProvider;
-use Cybex\Protector\Exceptions\InvalidMetadataProviderException;
 use Cybex\Protector\Protector;
 use Cybex\Protector\Tests\TestCase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
+use TypeError;
 
 class MetadataTest extends TestCase
 {
@@ -202,7 +202,7 @@ class MetadataTest extends TestCase
      */
     public function failsWhenProviderNotImplementingInterfaceIsConfigured(): void
     {
-        $this->expectException(InvalidMetadataProviderException::class);
+        $this->expectException(TypeError::class);
 
         Config::set('protector.metadataProviders', [File::class]);
 
