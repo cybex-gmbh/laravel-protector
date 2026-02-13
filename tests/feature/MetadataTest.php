@@ -53,9 +53,7 @@ class MetadataTest extends TestCase
     public function includesMetadataIfShouldAppend()
     {
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [GitMetadataProvider::class]);
-
-        $mock = $this->partialMock(GitMetadataProvider::class, fn($mock) => $mock->shouldReceive('shouldAppend')->andReturn(true));
-        app()->offsetSet(GitMetadataProvider::class, $mock);
+        $this->partialMock(GitMetadataProvider::class, fn($mock) => $mock->shouldReceive('shouldAppend')->andReturn(true));
 
         $this->assertArrayHasKey('git', $this->protector->getMetadata());
     }
@@ -66,9 +64,7 @@ class MetadataTest extends TestCase
     public function excludesMetadataIfShouldNotAppend()
     {
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [GitMetadataProvider::class]);
-
-        $mock = $this->partialMock(GitMetadataProvider::class, fn($mock) => $mock->shouldReceive('shouldAppend')->andReturn(false));
-        app()->offsetSet(GitMetadataProvider::class, $mock);
+        $this->partialMock(GitMetadataProvider::class, fn($mock) => $mock->shouldReceive('shouldAppend')->andReturn(false));
 
         $this->assertArrayNotHasKey('git', $this->protector->getMetadata());
     }
@@ -114,7 +110,6 @@ class MetadataTest extends TestCase
     {
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [EnvMetadataProvider::class]);
         Config::set(static::METADATA_ENV_VALUE_CONFIG_KEY, null);
-
 
         $this->assertArrayNotHasKey('env', $this->protector->getMetadata());
     }
