@@ -5,7 +5,6 @@ namespace Cybex\Protector\Tests\feature;
 use Cybex\Protector\Tests\TestCase;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use PDOException;
@@ -95,44 +94,9 @@ class ExportDumpTest extends TestCase
     /**
      * @test
      */
-    public function canCreateDumpMetaData()
-    {
-        $dumpDate = now();
-
-        Carbon::setTestNow($dumpDate);
-
-        $metaData = $this->protector->getMetaData();
-
-        $this->assertIsArray($metaData);
-        $this->assertEquals($dumpDate, $metaData['dumpedAtDate']);
-    }
-
-    /**
-     * @test
-     */
-    public function canCreateDumpMetaDataUsingCache()
-    {
-        $metaData = $this->protector->getMetaData();
-
-        $metaData['hello'] = 'world';
-
-        $this->setProtectedProperty('metaDataCache', $metaData);
-
-        $cachedMetaData = $this->protector->getMetaData();
-
-        $this->assertEquals($metaData, $cachedMetaData);
-
-        $newMetaData = $this->protector->getMetaData(refresh: true);
-
-        $this->assertNotEquals($metaData, $newMetaData);
-    }
-
-    /**
-     * @test
-     */
     public function failGeneratingDumpWhenTryingToConnectToDatabase()
     {
-        // Provide an database connection to a non-existing database.
+        // Provide a database connection to a non-existing database.
         Config::set('database.connections.invalid', [
             'driver' => 'mysql',
             'url' => env('DATABASE_URL'),
