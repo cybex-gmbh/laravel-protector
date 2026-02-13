@@ -10,7 +10,7 @@ class EnvMetadataProvider implements MetadataProvider
 
     public function __construct()
     {
-        $this->envMetadata = config('protector.additionalEnvMetadata');
+        $this->envMetadata = config('protector.metadata.envValue');
     }
 
     /**

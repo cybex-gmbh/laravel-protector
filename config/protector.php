@@ -117,39 +117,41 @@ return [
     */
     'httpTimeout' => env('PROTECTOR_HTTP_TIMEOUT', 120),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Metadata Providers
-    |--------------------------------------------------------------------------
-    |
-    | Here you may configure the metadata providers that will be used to generate
-    | the metadata which is appended to the end of each dump file.
-    |
-    */
-    'metadataProviders' => [
-        \Cybex\Protector\Classes\Metadata\Providers\DatabaseMetadataProvider::class,
-        \Cybex\Protector\Classes\Metadata\Providers\EnvMetadataProvider::class,
-        \Cybex\Protector\Classes\Metadata\Providers\GitMetadataProvider::class,
-        \Cybex\Protector\Classes\Metadata\Providers\JsonFileMetadataProvider::class,
+    'metadata' => [
+        /*
+        |--------------------------------------------------------------------------
+        | Metadata Providers
+        |--------------------------------------------------------------------------
+        |
+        | Here you may configure the metadata providers that will be used to generate
+        | the metadata which is appended to the end of each dump file.
+        |
+        */
+        'providers' => [
+            \Cybex\Protector\Classes\Metadata\Providers\DatabaseMetadataProvider::class,
+            \Cybex\Protector\Classes\Metadata\Providers\EnvMetadataProvider::class,
+            \Cybex\Protector\Classes\Metadata\Providers\GitMetadataProvider::class,
+            \Cybex\Protector\Classes\Metadata\Providers\JsonFileMetadataProvider::class,
+        ],
+
+        /*
+        |--------------------------------------------------------------------------
+        | Metadata from ENV value
+        |--------------------------------------------------------------------------
+        |
+        | This .env value will be used by the EnvMetadataProvider to add additional metadata to the dump file.
+        |
+        */
+        'envValue' => env('PROTECTOR_ADDITIONAL_METADATA'),
+
+        /*
+        |--------------------------------------------------------------------------
+        | Metadata from JSON File
+        |--------------------------------------------------------------------------
+        |
+        | This JSON file will be used by the JsonFileMetadataProvider to add additional metadata to the dump file.
+        |
+        */
+        'jsonFilePath' => 'protector_metadata.json',
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Additional Env Metadata
-    |--------------------------------------------------------------------------
-    |
-    | This .env value will be used by the EnvMetadataProvider to add additional metadata to the dump file.
-    |
-    */
-    'additionalEnvMetadata' => env('PROTECTOR_ADDITIONAL_METADATA'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Metadata JSON file path
-    |--------------------------------------------------------------------------
-    |
-    | This JSON file will be used by the JsonFileMetadataProvider to add additional metadata to the dump file.
-    |
-    */
-    'metadataJsonFilePath' => 'protector_metadata.json',
 ];

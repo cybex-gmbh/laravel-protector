@@ -11,7 +11,7 @@ class JsonFileMetadataProvider implements MetadataProvider
 
     public function __construct()
     {
-        $this->jsonFilePath = base_path(config('protector.metadataJsonFilePath'));
+        $this->jsonFilePath = base_path(config('protector.metadata.jsonFilePath'));
     }
 
     /**

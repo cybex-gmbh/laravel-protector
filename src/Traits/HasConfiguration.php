@@ -341,7 +341,7 @@ trait HasConfiguration
 
     public function getMetadataProviders(): Collection
     {
-        return collect($this->metadataProviders ?? $this->getConfigValueForKey('metadataProviders'));
+        return collect($this->metadataProviders ?? $this->getConfigValueForKey('metadata.providers'));
     }
 
     public function shouldDumpCharsets(): bool
