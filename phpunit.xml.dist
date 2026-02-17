@@ -4,7 +4,7 @@
          displayDetailsOnPhpunitDeprecations="false">
     <testsuites>
         <testsuite name="Feature">
-            <directory>tests/feature</directory>
+            <directory>tests/Feature</directory>
         </testsuite>
     </testsuites>
     <coverage>

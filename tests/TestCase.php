@@ -11,8 +11,6 @@ use ReflectionClass;
 use ReflectionMethod;
 use ReflectionProperty;
 
-//use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
-
 class TestCase extends OrchestraTestCase
 {
     /**
