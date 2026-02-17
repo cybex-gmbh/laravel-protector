@@ -339,6 +339,10 @@ trait HasConfiguration
         return $this->serverUrl ?: $this->getConfigValueForKey('remoteEndpoint.serverUrl');
     }
 
+    /**
+     * The metadata provider classes can be configured on the protector instance, else we return the config default.
+     * @return Collection
+     */
     public function getMetadataProviders(): Collection
     {
         return collect($this->metadataProviders ?? $this->getConfigValueForKey('metadata.providers'));

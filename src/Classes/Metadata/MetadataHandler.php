@@ -71,6 +71,7 @@ class MetadataHandler
     }
 
     /**
+     * The metadata provider classes can be configured on the protector instance, we make the actual provider classes here.
      * @return Collection<MetadataProvider>
      */
     protected function getProviders(): Collection
