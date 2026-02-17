@@ -139,19 +139,19 @@ return [
         | Metadata from ENV value
         |--------------------------------------------------------------------------
         |
-        | This .env value will be used by the EnvMetadataProvider to add additional metadata to the dump file.
+        | This .env value will be used by the EnvMetadataProvider to add metadata to the dump file.
         |
         */
-        'envValue' => env('PROTECTOR_ADDITIONAL_METADATA'),
+        'envValue' => env('PROTECTOR_METADATA'),
 
         /*
         |--------------------------------------------------------------------------
         | Metadata from JSON File
         |--------------------------------------------------------------------------
         |
-        | This JSON file will be used by the JsonFileMetadataProvider to add additional metadata to the dump file.
+        | This JSON file will be used by the JsonFileMetadataProvider to add metadata to the dump file.
         |
         */
-        'jsonFilePath' => 'protector_metadata.json',
+        'jsonFilePath' => env('PROTECTOR_METADATA_JSON_FILE_PATH', 'protector_metadata.json'),
     ],
 ];
