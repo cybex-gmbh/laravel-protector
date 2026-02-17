@@ -315,7 +315,7 @@ Available metadata providers:
 > For example, in a GitHub Actions workflow, you could add a step that writes Git information to `protector_metadata.json`
 >
 > ```bash
->  jq -n --arg revision $(git rev-parse HEAD) --arg branch $(git rev-parse --abbrev-ref HEAD) --arg revisionDate "$(git show -s --format=%ci HEAD)" '{gitRevision: $revision, gitBranch: $branch, gitRevisionDate: $revisionDate}'
+> jq -n --arg repo ${{ github.repository }} --arg branch ${{ github.ref_name }} --arg revision ${{ github.sha }} --arg buildDate "$(date --iso-8601=seconds --utc)" '{gitRepo: $repo, gitBranch: $branch, gitRevision: $revision, buildDate: $buildDate}' > protector_metadata.json
 > ```
 
 ## Upgrade guides
