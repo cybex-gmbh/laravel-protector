@@ -35,7 +35,6 @@ class DatabaseMetadataProvider implements MetadataProvider
         return [
             'database' => $this->protector->getDatabaseName(),
             'connection' => $this->protector->getConnectionName(),
-            'maxPacketLength' => $this->protector->getMaxPacketLength(),
             'dumpedAtDate' => now(),
             'dumpParameters' => $this->protector->getSchemaStateParameters(),
         ];

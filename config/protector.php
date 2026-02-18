@@ -130,6 +130,7 @@ return [
         |
         */
         'providers' => [
+            \Cybex\Protector\Classes\Metadata\Providers\ProtectorMetadataProvider::class,
             \Cybex\Protector\Classes\Metadata\Providers\EnvMetadataProvider::class,
             \Cybex\Protector\Classes\Metadata\Providers\GitMetadataProvider::class,
             \Cybex\Protector\Classes\Metadata\Providers\JsonFileMetadataProvider::class,
