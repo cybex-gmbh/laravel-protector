@@ -2,6 +2,7 @@
 
 namespace Cybex\Protector\Tests\Feature;
 
+use Carbon\Carbon;
 use Cybex\Protector\Exceptions\FailedImportException;
 use Cybex\Protector\Exceptions\FailedWipeException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
@@ -39,24 +40,17 @@ class ImportDumpTest extends TestCase
                 static::$baseDirectory . "/dump.sql",
                 [
                     'meta' => [
-                        'database' => 'protector-tests',
-                        'connection' => 'mysql',
-                        'gitRevision' => '',
-                        'gitBranch' => '',
-                        'gitRevisionDate' => '',
-                        'dumpedAtDate' => [
-                            'seconds' => 24,
-                            'minutes' => 43,
-                            'hours' => 12,
-                            'mday' => 29,
-                            'wday' => 3,
-                            'mon' => 6,
-                            'year' => 2022,
-                            'yday' => 179,
-                            'weekday' => 'Wednesday',
-                            'month' => 'June',
-                            0 => 1656506604
-                        ]
+                        'database' => [
+                            'database' => 'protector-tests',
+                            'connection' => 'mysql',
+                            'maxPacketLength' => '8M',
+                            'dumpedAtDate' => Carbon::parse('2022-06-29 12:43:24')->toDateTimeString(),
+                        ],
+                        'git' => [
+                            'revision' => '',
+                            'branch' => '',
+                            'revisionDate' => '',
+                        ],
                     ]
                 ]
             ],
@@ -64,24 +58,18 @@ class ImportDumpTest extends TestCase
                 static::$baseDirectory . "/dumpWithGit.sql",
                 [
                     'meta' => [
-                        'database' => 'protector-tests',
-                        'connection' => 'mysql',
-                        'gitRevision' => '2aae6c35c94fcfb415dbe95f408b9ce91ee846ed',
-                        'gitBranch' => 'feature/tests',
-                        'gitRevisionDate' => '2022-07-12 08:00:00 +0200',
-                        'dumpedAtDate' => [
-                            'seconds' => 24,
-                            'minutes' => 43,
-                            'hours' => 12,
-                            'mday' => 29,
-                            'wday' => 3,
-                            'mon' => 6,
-                            'year' => 2022,
-                            'yday' => 179,
-                            'weekday' => 'Wednesday',
-                            'month' => 'June',
-                            0 => 1656506604
-                        ]
+                        'git' => [
+                            'revision' => '2aae6c35c94fcfb415dbe95f408b9ce91ee846ed',
+                            'branch' => 'feature/tests',
+                            'revisionDate' => '2022-07-12 08:00:00 +0200',
+
+                        ],
+                        'database' => [
+                            'database' => 'protector-tests',
+                            'connection' => 'mysql',
+                            'maxPacketLength' => '8M',
+                            'dumpedAtDate' => Carbon::parse('2022-06-29 12:43:24')->toDateTimeString(),
+                        ],
                     ]
                 ]
             ],

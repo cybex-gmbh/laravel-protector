@@ -2,6 +2,7 @@
 
 namespace Cybex\Protector\Commands;
 
+use Carbon\Carbon;
 use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
@@ -220,45 +221,30 @@ class ImportDump extends Command
                 continue;
             }
 
-            if (($metadata['meta']['connection'] ?? false) && Arr::exists(
-                    config('database.connections'),
-                    $metadata['meta']['connection']
-                )) {
+            // Legacy format is a flat array.
+            $isLegacyDump = !is_array($metadata['meta']['database']);
+
+            $database = Arr::get($metadata, $isLegacyDump ? 'meta.database' : 'meta.database.database');
+            $connection = Arr::get($metadata, $isLegacyDump ? 'meta.connection' : 'meta.database.connection');
+            $dumpedAtDateString = Arr::get($metadata, $isLegacyDump ? 'meta.dumpedAtDate' : 'meta.database.dumpedAtDate');
+
+            if (Arr::exists(config('database.connections'), $connection)) {
+                $dumpedAtDate = $dumpedAtDateString ? Carbon::parse($dumpedAtDateString) : null;
+
                 $fileInformation = [
                     'path' => $directoryFile,
                     'file' => basename($directoryFile),
-                    'database' => Arr::get($metadata, 'meta.database', null),
-                    'connection' => Arr::get($metadata, 'meta.connection', null),
-                    'date' => Arr::get(
-                        $metadata,
-                        'meta.date',
-                        sprintf(
-                            '%4d-%2d-%2d',
-                            Arr::get($metadata, 'meta.dumpedAtDate.year', '0000'),
-                            Arr::get($metadata, 'meta.dumpedAtDate.mon', '00'),
-                            Arr::get($metadata, 'meta.dumpedAtDate.mday', '00')
-                        )
-                    ),
-                    'time' => Arr::get(
-                        $metadata,
-                        'meta.time',
-                        sprintf(
-                            '%2d-%2d-%2d',
-                            Arr::get($metadata, 'meta.dumpedAtDate.hours', '00'),
-                            Arr::get($metadata, 'meta.dumpedAtDate.minutes', '00'),
-                            Arr::get($metadata, 'meta.dumpedAtDate.seconds', '00')
-                        )
-                    ),
-                    'gitRevision' => Arr::get($metadata, 'meta.gitRevision', null),
-                    'gitBranch' => Arr::get($metadata, 'meta.gitBranch', null),
+                    'database' => $database,
+                    'connection' => $connection,
+                    'date' => $dumpedAtDate?->format('Y-m-d'),
+                    'time' => $dumpedAtDate?->format('H:i:s'),
+                    'dateTime' => $dumpedAtDate?->format('Y-m-d H:i:s'),
                 ];
+
+                $matchingFiles->push($fileInformation);
+            } else {
+                $this->warn(sprintf('Skipping file "%s" because the connection "%s" is not valid.', $directoryFile, $connection));
             }
-
-            $fileInformation['dateTime'] = trim(
-                sprintf('%s %s', $fileInformation['date'], $fileInformation['time'])
-            );
-
-            $matchingFiles->push($fileInformation);
         }
 
         return $matchingFiles;

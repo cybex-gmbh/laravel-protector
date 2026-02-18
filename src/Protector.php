@@ -295,7 +295,7 @@ class Protector
         [$appUrl, $database, $connection, $date] = [
             parse_url(config('app.url'), PHP_URL_HOST),
             $this->connectionConfig['database'],
-            $this->connectionConfig['connection'],
+            $this->connectionName,
             now(),
         ];
 
