@@ -292,13 +292,11 @@ class Protector
      */
     public function createFilename(): string
     {
-        $metadata = $this->getMetadata();
-
         [$appUrl, $database, $connection, $date] = [
             parse_url(config('app.url'), PHP_URL_HOST),
-            $metadata['database']['database'] ?? '',
-            $metadata['database']['connection'] ?? '',
-            $metadata['database']['dumpedAtDate'],
+            $this->connectionConfig['database'],
+            $this->connectionConfig['connection'],
+            now(),
         ];
 
         return sprintf(
