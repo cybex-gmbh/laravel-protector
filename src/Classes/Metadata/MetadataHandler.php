@@ -35,14 +35,14 @@ class MetadataHandler
     public function getDumpMetadata(string $dumpFile): bool|array
     {
         $desiredMetaLines = [
-            'options',
             'meta',
         ];
 
-        $lines = $this->tail($dumpFile, count($desiredMetaLines));
+        // We add some extra lines to be sure we get all metadata, even if there are some empty lines at the end of the file.
+        $lines = $this->tail($dumpFile, count($desiredMetaLines) + 3);
 
         // Response has not enough lines.
-        if (count($lines) < count($desiredMetaLines)) {
+        if (count(array_filter($lines)) < count($desiredMetaLines)) {
             return false;
         }
 

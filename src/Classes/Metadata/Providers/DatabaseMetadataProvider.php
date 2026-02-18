@@ -37,6 +37,7 @@ class DatabaseMetadataProvider implements MetadataProvider
             'connection' => $this->protector->getConnectionName(),
             'maxPacketLength' => $this->protector->getMaxPacketLength(),
             'dumpedAtDate' => now(),
+            'dumpParameters' => $this->protector->getSchemaStateParameters(),
         ];
     }
 }

@@ -42,18 +42,28 @@ class MySqlSchemaStateProxy extends AbstractMySqlSchemaStateProxy
 
         $command = 'mysqldump ' . $this->schemaState->connectionString($clientVersion) . ' ';
 
-        $parameters = [
+        return $command . implode(' ', $this->getParameters());
+    }
+
+    public function getParameters(): array
+    {
+        return [
+            ...$this->getBaseParameters(),
+            ...array_keys(array_filter($this->getConditionalParameters())),
+        ];
+    }
+
+    public function getBaseParameters(): array
+    {
+        return [
             '--add-locks',
             '--routines',
             '--tz-utc',
             '--column-statistics=0',
             '--result-file="${:LARAVEL_LOAD_PATH}"',
             '--max-allowed-packet=' . $this->protector->getMaxPacketLength(),
-            ...array_keys(array_filter($this->getConditionalParameters())),
             '"${:LARAVEL_LOAD_DATABASE}"',
         ];
-
-        return $command . implode(' ', $parameters);
     }
 
     public function getConditionalParameters(): array

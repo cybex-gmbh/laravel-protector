@@ -12,6 +12,12 @@ use Symfony\Component\Process\Process;
  */
 abstract class AbstractMySqlSchemaStateProxy extends MySqlSchemaState
 {
+    abstract public function getParameters(): array;
+
+    abstract public function getBaseParameters(): array;
+
+    abstract public function getConditionalParameters(): array;
+
     public function __construct(protected MySqlSchemaState $schemaState, protected Protector $protector)
     {
         parent::__construct($schemaState->connection);
@@ -56,10 +62,5 @@ abstract class AbstractMySqlSchemaStateProxy extends MySqlSchemaState
     protected function appendMigrationData(string $path): void
     {
         $this->schemaState->appendMigrationData(...func_get_args());
-    }
-
-    public function getConditionalParameters(): array
-    {
-        return [];
     }
 }
