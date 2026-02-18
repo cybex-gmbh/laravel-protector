@@ -5,6 +5,9 @@
 - [Release Notes](CHANGELOG.md#v400---2026-xx-xx)
 - [GitHub diff](https://github.com/cybex-gmbh/laravel-protector/compare/v3.2.1...v4.0.0)
 
+Dump metadata has received a new structure. Legacy dumps with old metadata are still supported. However, if you have code that relies on the old metadata structure, you will need
+to adjust it to work with the new structure. See below for details.
+
 ### Protector dump metadata
 
 > [!NOTE]
@@ -65,6 +68,10 @@ Now, `getMetadata()` returns (assuming the default configuration is used and the
 > Impact: Calls to Protector::getDumpMetaData() will fail
 
 The method was renamed from `getDumpMetaData()` to `getDumpMetadata()`.
+
+For new dumps, the returned array will no longer contain the `options` key.
+Dump parameters are now part of the metadata, accessible under the `meta.database.dumpParameters` key.
+Legacy dumps will still contain the `options` key.
 
 ### Protector::isUnderGitVersionControl()
 
