@@ -44,9 +44,6 @@ This package allows you to download, export and import your application's databa
     * [Setup for collecting backups from multiple servers](#setup-for-collecting-backups-from-multiple-servers)
 * [Configuration](#configuration)
     * [Dump metadata](#dump-metadata)
-* [Upgrade Guides](#upgrade-guides)
-    * [Upgrade guide from Protector v1.x to v2.x](#upgrade-guide-from-protector-v1x-to-v2x)
-    * [Upgrade guide from Protector v2.x to v3.x](#upgrade-guide-from-protector-v2x-to-v3x)
 * [Development](#development)
 
 ## Usage
@@ -317,25 +314,6 @@ Available metadata providers:
 > ```bash
 > jq -n --arg repo ${{ github.repository }} --arg branch ${{ github.ref_name }} --arg revision ${{ github.sha }} --arg buildDate "$(date --iso-8601=seconds --utc)" '{gitRepo: $repo, gitBranch: $branch, gitRevision: $revision, buildDate: $buildDate}' > protector_metadata.json
 > ```
-
-## Upgrade guides
-
-### Upgrade guide from Protector v1.x to v2.x
-
-Likelihood of impact: high
-
-- If your app does not explicitly require the laravel/sanctum package, upgrading Protector to version 2.x will also
-  upgrade Sanctum to version 3.x. This will require you to follow its
-  [upgrade guide](https://github.com/laravel/sanctum/blob/3.x/UPGRADE.md).
-
-Likelihood of impact: low
-
-- Access to the formerly public methods `getGitRevision()`, `getGitHeadDate()` or `getGitBranch()` is now protected.
-  You now need to call getMetaData() and extract the information from the returned array.
-
-### Upgrade guide from Protector v2.x to v3.x
-
-No breaking changes are expected.
 
 ## Development
 
