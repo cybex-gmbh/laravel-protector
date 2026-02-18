@@ -37,7 +37,10 @@ class MySqlSchemaStateProxy extends AbstractMySqlSchemaStateProxy
      */
     protected function getCommandString(): string
     {
-        $command = 'mysqldump ' . $this->schemaState->connectionString() . ' ';
+        // Laravel added a required parameter in v12.52.0.
+        $clientVersion = method_exists($this, 'detectClientVersion') ? $this->detectClientVersion() : [];
+
+        $command = 'mysqldump ' . $this->schemaState->connectionString($clientVersion) . ' ';
 
         $parameters = [
             '--add-locks',
