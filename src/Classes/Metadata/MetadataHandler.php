@@ -35,6 +35,7 @@ class MetadataHandler
     public function getDumpMetadata(string $dumpFile): bool|array
     {
         $desiredMetaLines = [
+            'options',
             'meta',
         ];
 

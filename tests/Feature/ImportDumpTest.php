@@ -39,6 +39,9 @@ class ImportDumpTest extends TestCase
             [
                 static::$baseDirectory . "/dump.sql",
                 [
+                    'options' => [
+                        'no-data' => false,
+                    ],
                     'meta' => [
                         'database' => [
                             'database' => 'protector-tests',
@@ -57,6 +60,9 @@ class ImportDumpTest extends TestCase
             [
                 static::$baseDirectory . "/dumpWithGit.sql",
                 [
+                    'options' => [
+                        'no-data' => false,
+                    ],
                     'meta' => [
                         'git' => [
                             'revision' => '2aae6c35c94fcfb415dbe95f408b9ce91ee846ed',
