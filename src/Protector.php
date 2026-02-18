@@ -49,11 +49,6 @@ class Protector
 {
     use HasConfiguration;
 
-    /**
-     * Cache for the runtime-metadata for a new dump.
-     */
-    protected array $metadataCache = [];
-
     protected array $requiredFunctionsCache;
 
     protected array $schemaStateParameters;
@@ -323,13 +318,9 @@ class Protector
     /**
      * Returns the metadata for a new dump.
      */
-    public function getMetadata(bool $refresh = false): array
+    public function getMetadata(): array
     {
-        if (!$refresh && $this->metadataCache) {
-            return $this->metadataCache;
-        }
-
-        return $this->metadataCache = app(MetadataHandler::class)->getMetadata();
+        return app(MetadataHandler::class)->getMetadata();
     }
 
     /**

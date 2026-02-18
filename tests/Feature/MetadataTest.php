@@ -189,26 +189,6 @@ class MetadataTest extends TestCase
     /**
      * @test
      */
-    public function canCreateDumpMetadataUsingCache()
-    {
-        $metadata = $this->protector->getMetadata();
-
-        $metadata['hello'] = 'world';
-
-        $this->setProtectedProperty('metadataCache', $metadata);
-
-        $cachedMetadata = $this->protector->getMetadata();
-
-        $this->assertEquals($metadata, $cachedMetadata);
-
-        $newMetadata = $this->protector->getMetadata(refresh: true);
-
-        $this->assertNotEquals($metadata, $newMetadata);
-    }
-
-    /**
-     * @test
-     */
     public function failsWhenProviderNotImplementingInterfaceIsConfigured(): void
     {
         $this->expectException(TypeError::class);
