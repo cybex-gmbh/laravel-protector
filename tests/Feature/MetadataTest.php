@@ -50,6 +50,16 @@ class MetadataTest extends TestCase
     /**
      * @test
      */
+    public function includesDatabaseMetadataProviderByDefault()
+    {
+        Config::set('protector.metadataProviders', []);
+
+        $this->assertContains(DatabaseMetadataProvider::class, $this->protector->getMetadataProviders());
+    }
+
+    /**
+     * @test
+     */
     public function includesMetadataIfShouldAppend()
     {
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [GitMetadataProvider::class]);
@@ -166,7 +176,7 @@ class MetadataTest extends TestCase
      */
     public function canConfigureMultipleMetadataProviders()
     {
-        Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [DatabaseMetadataProvider::class, TestCustomFooMetadataProvider::class, GitMetadataProvider::class]);
+        Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [TestCustomFooMetadataProvider::class, GitMetadataProvider::class]);
         File::shouldReceive('exists')->with(base_path('.git'))->andReturn(true);
 
         $metadata = $this->protector->getMetadata();

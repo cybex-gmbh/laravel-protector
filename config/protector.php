@@ -126,9 +126,10 @@ return [
         | Here you may configure the metadata providers that will be used to generate
         | the metadata which is appended to the end of each dump file.
         |
+        | Metadata related to the database connection will always be added by the DatabaseMetadataProvider.
+        |
         */
         'providers' => [
-            \Cybex\Protector\Classes\Metadata\Providers\DatabaseMetadataProvider::class,
             \Cybex\Protector\Classes\Metadata\Providers\EnvMetadataProvider::class,
             \Cybex\Protector\Classes\Metadata\Providers\GitMetadataProvider::class,
             \Cybex\Protector\Classes\Metadata\Providers\JsonFileMetadataProvider::class,

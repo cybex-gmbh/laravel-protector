@@ -2,6 +2,7 @@
 
 namespace Cybex\Protector\Traits;
 
+use Cybex\Protector\Classes\Metadata\Providers\DatabaseMetadataProvider;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Illuminate\Support\Collection;
 
@@ -345,7 +346,9 @@ trait HasConfiguration
      */
     public function getMetadataProviders(): Collection
     {
-        return collect($this->metadataProviders ?? $this->getConfigValueForKey('metadata.providers'));
+        $additionalMetadataProviders = collect($this->metadataProviders ?? $this->getConfigValueForKey('metadata.providers'));
+
+        return $additionalMetadataProviders->prepend(DatabaseMetadataProvider::class);
     }
 
     public function shouldDumpCharsets(): bool
