@@ -42,7 +42,7 @@ class MySqlSchemaStateProxy extends AbstractMySqlSchemaStateProxy
 
         $command = 'mysqldump ' . $this->schemaState->connectionString($clientVersion) . ' ';
 
-        return $command . implode(' ', $this->getParameters());
+        return $command . implode(' ', $this->getParameters()) . ' "${:LARAVEL_LOAD_DATABASE}"';
     }
 
     public function getParameters(): array
@@ -62,7 +62,6 @@ class MySqlSchemaStateProxy extends AbstractMySqlSchemaStateProxy
             '--column-statistics=0',
             '--result-file="${:LARAVEL_LOAD_PATH}"',
             '--max-allowed-packet=' . $this->protector->getMaxPacketLength(),
-            '"${:LARAVEL_LOAD_DATABASE}"',
         ];
     }
 
