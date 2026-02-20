@@ -2,8 +2,9 @@
 
 namespace Cybex\Protector;
 
-use Cybex\Protector\Classes\MySqlSchemaStateProxy;
-use Cybex\Protector\Classes\PostgresSchemaStateProxy;
+use Cybex\Protector\Classes\Metadata\MetadataHandler;
+use Cybex\Protector\Classes\SchemaState\MySql\MySqlSchemaStateProxy;
+use Cybex\Protector\Classes\SchemaState\Postgres\PostgresSchemaStateProxy;
 use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
 use Cybex\Protector\Exceptions\FailedDumpGenerationException;
 use Cybex\Protector\Exceptions\FailedImportException;
@@ -31,7 +32,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -49,12 +49,9 @@ class Protector
 {
     use HasConfiguration;
 
-    /**
-     * Cache for the runtime-metadata for a new dump.
-     */
-    protected array $metaDataCache = [];
-
     protected array $requiredFunctionsCache;
+
+    protected array $schemaStateParameters;
 
     public function __construct(?string $connectionName = null)
     {
@@ -91,21 +88,16 @@ class Protector
             throw new FileNotFoundException($sourceFilePath);
         }
 
-        /** @var Connection $connection */
-        $connection = DB::connection($this->connectionName);
-        $schemaState = $connection->getSchemaState();
-        $schemaStateProxy = $this->getProxyForSchemaState($schemaState);
-
         if (!Arr::get($options, 'no-wipe')) {
             try {
-                $this->wipeDatabase($connection);
+                $this->wipeDatabase(DB::connection($this->connectionName));
             } catch (Throwable $exception) {
                 throw new FailedWipeException($exception->getMessage());
             }
         }
 
         try {
-            $schemaStateProxy->load($sourceFilePath);
+            $this->getProxyForSchemaState()->load($sourceFilePath);
         } catch (Throwable $exception) {
             throw new FailedImportException($exception->getMessage());
         }
@@ -119,6 +111,20 @@ class Protector
                 echo $output->fetch();
             }
         }
+    }
+
+
+    /**
+     * Gets the current schema state parameters.
+     * These may change between calls, as the protector could be reconfigured to use a different connection and thus a different schema state proxy.
+     *
+     * @return array
+     */
+    public function getSchemaStateParameters(): array
+    {
+        $this->getProxyForSchemaState();
+
+        return $this->schemaStateParameters;
     }
 
     /**
@@ -154,44 +160,11 @@ class Protector
     }
 
     /**
-     * Returns the appended Meta-Data from a file.
+     * Returns the appended metadata from a file.
      */
-    public function getDumpMetaData(string $dumpFile): bool|array
+    public function getDumpMetadata(string $dumpFile): bool|array
     {
-        $desiredMetaLines = [
-            'options',
-            'meta',
-        ];
-
-        $lines = $this->tail($dumpFile, count($desiredMetaLines));
-
-        // Response has not enough lines.
-        if (count($lines) < count($desiredMetaLines)) {
-            return false;
-        }
-
-        $data = [];
-
-        foreach ($lines as $line) {
-            $matches = [];
-
-            // Check if the structure is correct.
-            if (preg_match('/^-- (?<type>[a-z0-9]+):(?<data>.+)$/i', $line, $matches)) {
-                // Check if the given type is a desired result for meta-data.
-                if (in_array($matches['type'], $desiredMetaLines)) {
-                    $decodedData = json_decode($matches['data'], true);
-
-                    // We store json-encoded arrays, if we do not get an array back, that means something went wrong.
-                    if (!is_array($decodedData)) {
-                        return false;
-                    }
-
-                    $data[$matches['type']] = $decodedData;
-                }
-            }
-        }
-
-        return $data;
+        return app(MetadataHandler::class)->getDumpMetadata($dumpFile);
     }
 
     /**
@@ -279,61 +252,6 @@ class Protector
     }
 
     /**
-     * Returns whether the app is under git version control based on a filesystem check.
-     */
-    public function isUnderGitVersionControl(): bool
-    {
-        return File::exists(base_path('.git'));
-    }
-
-    /**
-     * Returns the current git-revision.
-     */
-    protected function getGitRevision(): ?string
-    {
-        return $this->executeCommand('git rev-parse HEAD');
-    }
-
-    /**
-     * Returns the current git-revision date.
-     */
-    protected function getGitHeadDate(): ?string
-    {
-        return $this->executeCommand('git show -s --format=%ci HEAD');
-    }
-
-    /**
-     * Returns the current git-branch.
-     */
-    protected function getGitBranch(): ?string
-    {
-        return $this->executeCommand('git rev-parse --abbrev-ref HEAD');
-    }
-
-    protected function executeCommand(string $command): ?string
-    {
-        // stdin, stdout, stderr.
-        $descriptors = [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']];
-
-        $process = proc_open($command, $descriptors, $pipes);
-
-        $output = trim(stream_get_contents($pipes[1]));
-        $error = trim(stream_get_contents($pipes[2]));
-
-        fclose($pipes[1]);
-        fclose($pipes[2]);
-        proc_close($process);
-
-        if ($error) {
-            Log::warning(sprintf('%s::%s - Error "%s" when executing command "%s"', $this::class, __FUNCTION__, $error, $command));
-
-            return null;
-        }
-
-        return $output;
-    }
-
-    /**
      * Generates an SQL dump from the current app database and returns the path to the file.
      */
     protected function generateDump(array $options = []): ?string
@@ -342,13 +260,10 @@ class Protector
             $this->withoutData();
         }
 
-        /** @var Connection $connection */
-        $connection = DB::connection($this->connectionName);
-        $schemaState = $connection->getSchemaState();
-        $schemaStateProxy = $this->getProxyForSchemaState($schemaState);
+        $schemaStateProxy = $this->getProxyForSchemaState();
         $tempFile = tempnam('', 'protector');
 
-        $schemaStateProxy->dump($connection, $tempFile);
+        $schemaStateProxy->dump(DB::connection($this->connectionName), $tempFile);
 
         if (!filesize($tempFile)) {
             unlink($tempFile);
@@ -357,14 +272,13 @@ class Protector
         }
 
         try {
-            // Append some import/export-meta-data to the end.
-            $metaData = sprintf(
-                "\n-- options:%s\n-- meta:%s",
-                json_encode($options, JSON_UNESCAPED_UNICODE),
-                json_encode($this->getMetaData(), JSON_UNESCAPED_UNICODE)
+            // Append some import/export-metadata to the end.
+            $metadata = sprintf(
+                "\n-- meta:%s",
+                json_encode($this->getMetadata(), JSON_UNESCAPED_UNICODE)
             );
 
-            file_put_contents($tempFile, $metaData, FILE_APPEND);
+            file_put_contents($tempFile, $metadata, FILE_APPEND);
         } catch (Exception $exception) {
             Log::error($exception);
 
@@ -380,12 +294,11 @@ class Protector
      */
     public function createFilename(): string
     {
-        $metadata = $this->getMetaData();
         [$appUrl, $database, $connection, $date] = [
-            parse_url(env('APP_URL'), PHP_URL_HOST),
-            $metadata['database'] ?? '',
-            $metadata['connection'] ?? '',
-            $metadata['dumpedAtDate'],
+            parse_url(config('app.url'), PHP_URL_HOST),
+            $this->connectionConfig['database'],
+            $this->getConnectionName(),
+            now(),
         ];
 
         return sprintf(
@@ -403,77 +316,11 @@ class Protector
     }
 
     /**
-     * Returns the existing Meta-Data for a new dump.
+     * Returns the metadata for a new dump.
      */
-    public function getMetaData(bool $refresh = false): array
+    public function getMetadata(): array
     {
-        if (!$refresh && $this->metaDataCache) {
-            return $this->metaDataCache;
-        }
-
-        $gitInformation = [];
-
-        if ($this->isUnderGitVersionControl()) {
-            $this->guardRequiredFunctionsEnabled();
-
-            $gitInformation = [
-                'gitRevision' => $this->getGitRevision(),
-                'gitBranch' => $this->getGitBranch(),
-                'gitRevisionDate' => $this->getGitHeadDate(),
-            ];
-        }
-
-        return $this->metaDataCache = [
-            'database' => $this->connectionConfig['database'],
-            'connection' => $this->connectionName,
-            'gitRevision' => $gitInformation['gitRevision'] ?? null,
-            'gitBranch' => $gitInformation['gitBranch'] ?? null,
-            'gitRevisionDate' => $gitInformation['gitRevisionDate'] ?? null,
-            'maxPacketLength' => $this->getMaxPacketLength(),
-            'dumpedAtDate' => now(),
-        ];
-    }
-
-    /**
-     * Returns the last x lines from a file in correct order.
-     *
-     * @throws FileNotFoundException
-     */
-    protected function tail(string $file, int $lines, int $buffer = 1024): array
-    {
-        // Open file-handle.
-        $fileHandle = $this->getDisk()->readStream($file);
-
-        if (!is_resource($fileHandle)) {
-            throw new FileNotFoundException($file);
-        }
-
-        // Jump to last character.
-        fseek($fileHandle, 0, SEEK_END);
-
-        $linesToRead = $lines;
-        $contents = '';
-
-        // Only read file as long as file-pointer is not at start of the file and there are still lines to read open.
-        while (ftell($fileHandle) && $linesToRead >= 0) {
-            // Get the max length for reading, in case the buffer is longer than the remaining file-length.
-            $seekLength = min(ftell($fileHandle), $buffer);
-
-            // Set the pointer to a position in front of the current pointer.
-            fseek($fileHandle, -$seekLength, SEEK_CUR);
-
-            // Get the next content-chunk by using the according length.
-            $contents = ($chunk = fread($fileHandle, $seekLength)) . $contents;
-
-            // Reset pointer to the position before reading the current chunk.
-            fseek($fileHandle, -mb_strlen($chunk, 'UTF-8'), SEEK_CUR);
-
-            // Decrease count of lines to read by the amount of new-lines given in the current chunk.
-            $linesToRead -= substr_count($chunk, "\n");
-        }
-
-        // Get the last x lines from file.
-        return array_slice(explode("\n", $contents), -$lines);
+        return app(MetadataHandler::class)->getMetadata();
     }
 
     /**
@@ -814,14 +661,21 @@ class Protector
     /**
      * @throws UnsupportedDatabaseException
      */
-    protected function getProxyForSchemaState($schemaState): SchemaState
+    protected function getProxyForSchemaState(): SchemaState
     {
-        return match (get_class($schemaState)) {
+        $connection = DB::connection($this->connectionName);
+        $schemaState = $connection->getSchemaState();
+
+        $schemaStateProxy = match (get_class($schemaState)) {
             MySqlSchemaState::class => app(MySqlSchemaStateProxy::class, [$schemaState, $this]),
             PostgresSchemaState::class => app(PostgresSchemaStateProxy::class, [$schemaState, $this]),
             //            SqliteSchemaState::class => app('SqliteSchemaStateProxy', [$schemaState, $this]),
             default => throw new UnsupportedDatabaseException('Unsupported database schema state: ' . class_basename($schemaState)),
         };
+
+        $this->schemaStateParameters = $schemaStateProxy->getParameters();
+
+        return $schemaStateProxy;
     }
 
     protected function wipeDatabase(Connection $connection): void

@@ -186,4 +186,4 @@ TABLES;
 -- Dump completed on 2022-06-29 12:43:25
 
 -- options:{"no-data":false}
--- meta:{"invalid","dumpedAtDate":{"seconds":24,"minutes":43,"hours":12,"mday":29,"wday":3,"mon":6,"year":2022,"yday":179,"weekday":"Wednesday","month":"June","0":1656506604}}
+-- meta:{"invalid","dumpedAtDate":2022-06-29 12:43:24}

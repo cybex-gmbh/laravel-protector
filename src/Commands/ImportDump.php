@@ -2,6 +2,7 @@
 
 namespace Cybex\Protector\Commands;
 
+use Carbon\Carbon;
 use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
@@ -197,14 +198,14 @@ class ImportDump extends Command
     /**
      * Reads the metadata and returns a list of the available dumps.
      */
-    public function getMetaDataForFiles(array $directoryFiles): Collection
+    public function getMetadataForFiles(array $directoryFiles): Collection
     {
         $matchingFiles = collect();
 
         foreach ($directoryFiles as $directoryFile) {
-            $metaData = $this->protector->getDumpMetaData($directoryFile);
+            $metadata = $this->protector->getDumpMetadata($directoryFile);
 
-            if ($this->option('ignore-connection-filter') || (!is_array($metaData) || empty($metaData))) {
+            if ($this->option('ignore-connection-filter') || (!is_array($metadata) || empty($metadata))) {
                 $matchingFiles->push([
                     'path' => $directoryFile,
                     'file' => basename($directoryFile),
@@ -220,45 +221,30 @@ class ImportDump extends Command
                 continue;
             }
 
-            if (($metaData['meta']['connection'] ?? false) && Arr::exists(
-                    config('database.connections'),
-                    $metaData['meta']['connection']
-                )) {
+            // Legacy format is a flat array.
+            $isLegacyDump = !is_array($metadata['meta']['database']);
+
+            $database = Arr::get($metadata, $isLegacyDump ? 'meta.database' : 'meta.database.database');
+            $connection = Arr::get($metadata, $isLegacyDump ? 'meta.connection' : 'meta.database.connection');
+            $dumpedAtDateString = Arr::get($metadata, $isLegacyDump ? 'meta.dumpedAtDate' : 'meta.database.dumpedAtDate');
+
+            if (Arr::exists(config('database.connections'), $connection)) {
+                $dumpedAtDate = $dumpedAtDateString ? Carbon::parse($dumpedAtDateString) : null;
+
                 $fileInformation = [
                     'path' => $directoryFile,
                     'file' => basename($directoryFile),
-                    'database' => Arr::get($metaData, 'meta.database', null),
-                    'connection' => Arr::get($metaData, 'meta.connection', null),
-                    'date' => Arr::get(
-                        $metaData,
-                        'meta.date',
-                        sprintf(
-                            '%4d-%2d-%2d',
-                            Arr::get($metaData, 'meta.dumpedAtDate.year', '0000'),
-                            Arr::get($metaData, 'meta.dumpedAtDate.mon', '00'),
-                            Arr::get($metaData, 'meta.dumpedAtDate.mday', '00')
-                        )
-                    ),
-                    'time' => Arr::get(
-                        $metaData,
-                        'meta.time',
-                        sprintf(
-                            '%2d-%2d-%2d',
-                            Arr::get($metaData, 'meta.dumpedAtDate.hours', '00'),
-                            Arr::get($metaData, 'meta.dumpedAtDate.minutes', '00'),
-                            Arr::get($metaData, 'meta.dumpedAtDate.seconds', '00')
-                        )
-                    ),
-                    'gitRevision' => Arr::get($metaData, 'meta.gitRevision', null),
-                    'gitBranch' => Arr::get($metaData, 'meta.gitBranch', null),
+                    'database' => $database,
+                    'connection' => $connection,
+                    'date' => $dumpedAtDate?->format('Y-m-d'),
+                    'time' => $dumpedAtDate?->format('H:i:s'),
+                    'dateTime' => $dumpedAtDate?->format('Y-m-d H:i:s'),
                 ];
+
+                $matchingFiles->push($fileInformation);
+            } else {
+                $this->warn(sprintf('Skipping file "%s" because the connection "%s" is not valid.', $directoryFile, $connection));
             }
-
-            $fileInformation['dateTime'] = trim(
-                sprintf('%s %s', $fileInformation['date'], $fileInformation['time'])
-            );
-
-            $matchingFiles->push($fileInformation);
         }
 
         return $matchingFiles;
@@ -298,7 +284,7 @@ class ImportDump extends Command
      */
     public function getConnectionFiles(?string $connectionName = null): Collection
     {
-        $sortedFiles = $this->getMetaDataForFiles($this->protector->getDumpFiles())->sortByDesc('dateTime');
+        $sortedFiles = $this->getMetadataForFiles($this->protector->getDumpFiles())->sortByDesc('dateTime');
 
         if ($sortedFiles->isEmpty()) {
             throw new EmptyBaseDirectoryException();

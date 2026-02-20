@@ -1,7 +1,8 @@
 <?php
 
-namespace Cybex\Protector\Tests\feature;
+namespace Cybex\Protector\Tests\Feature;
 
+use Carbon\Carbon;
 use Cybex\Protector\Exceptions\FailedImportException;
 use Cybex\Protector\Exceptions\FailedWipeException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
@@ -38,50 +39,43 @@ class ImportDumpTest extends TestCase
             [
                 static::$baseDirectory . "/dump.sql",
                 [
+                    'options' => [
+                        'no-data' => false,
+                    ],
                     'meta' => [
-                        'database' => 'protector-tests',
-                        'connection' => 'mysql',
-                        'gitRevision' => '',
-                        'gitBranch' => '',
-                        'gitRevisionDate' => '',
-                        'dumpedAtDate' => [
-                            'seconds' => 24,
-                            'minutes' => 43,
-                            'hours' => 12,
-                            'mday' => 29,
-                            'wday' => 3,
-                            'mon' => 6,
-                            'year' => 2022,
-                            'yday' => 179,
-                            'weekday' => 'Wednesday',
-                            'month' => 'June',
-                            0 => 1656506604
-                        ]
+                        'database' => [
+                            'database' => 'protector-tests',
+                            'connection' => 'mysql',
+                            'maxPacketLength' => '8M',
+                            'dumpedAtDate' => Carbon::parse('2022-06-29 12:43:24')->toDateTimeString(),
+                        ],
+                        'git' => [
+                            'revision' => '',
+                            'branch' => '',
+                            'revisionDate' => '',
+                        ],
                     ]
                 ]
             ],
             [
                 static::$baseDirectory . "/dumpWithGit.sql",
                 [
+                    'options' => [
+                        'no-data' => false,
+                    ],
                     'meta' => [
-                        'database' => 'protector-tests',
-                        'connection' => 'mysql',
-                        'gitRevision' => '2aae6c35c94fcfb415dbe95f408b9ce91ee846ed',
-                        'gitBranch' => 'feature/tests',
-                        'gitRevisionDate' => '2022-07-12 08:00:00 +0200',
-                        'dumpedAtDate' => [
-                            'seconds' => 24,
-                            'minutes' => 43,
-                            'hours' => 12,
-                            'mday' => 29,
-                            'wday' => 3,
-                            'mon' => 6,
-                            'year' => 2022,
-                            'yday' => 179,
-                            'weekday' => 'Wednesday',
-                            'month' => 'June',
-                            0 => 1656506604
-                        ]
+                        'git' => [
+                            'revision' => '2aae6c35c94fcfb415dbe95f408b9ce91ee846ed',
+                            'branch' => 'feature/tests',
+                            'revisionDate' => '2022-07-12 08:00:00 +0200',
+
+                        ],
+                        'database' => [
+                            'database' => 'protector-tests',
+                            'connection' => 'mysql',
+                            'maxPacketLength' => '8M',
+                            'dumpedAtDate' => Carbon::parse('2022-06-29 12:43:24')->toDateTimeString(),
+                        ],
                     ]
                 ]
             ],
@@ -204,17 +198,17 @@ class ImportDumpTest extends TestCase
      * @test
      * @dataProvider provideDumpMetadata
      */
-    public function verifyDumpDateMetaData($filePath, $expectedMetaData)
+    public function verifyDumpDateMetadata($filePath, $expectedMetadata)
     {
-        $this->assertEquals($expectedMetaData, $this->protector->getDumpMetaData($filePath));
+        $this->assertEquals($expectedMetadata, $this->protector->getDumpMetadata($filePath));
     }
 
     /**
      * @test
      */
-    public function failGetDumpMetaDataOnResponseHasNotEnoughLines()
+    public function failGetDumpMetadataOnResponseHasNotEnoughLines()
     {
-        $this->assertEquals(false, $this->protector->getDumpMetaData(static::$baseDirectory . '/emptyDump.sql'));
+        $this->assertEquals(false, $this->protector->getDumpMetadata(static::$baseDirectory . '/emptyDump.sql'));
     }
 
     /**

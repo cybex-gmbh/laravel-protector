@@ -1,6 +1,6 @@
 <?php
 
-namespace Cybex\Protector\Classes;
+namespace Cybex\Protector\Classes\SchemaState\MySql;
 
 use Illuminate\Database\Connection;
 
@@ -14,7 +14,7 @@ class MySqlSchemaStateProxy extends AbstractMySqlSchemaStateProxy
     /**
      * @inheritDoc
      */
-    public function dump(Connection $connection, $path)
+    public function dump(Connection $connection, $path): void
     {
         $this->executeDumpProcess(
             $this->schemaState->makeProcess(
@@ -37,31 +37,43 @@ class MySqlSchemaStateProxy extends AbstractMySqlSchemaStateProxy
      */
     protected function getCommandString(): string
     {
-        $command = 'mysqldump '.$this->schemaState->connectionString().' ';
+        // Laravel added a required parameter in v12.52.0.
+        $clientVersion = method_exists($this, 'detectClientVersion') ? $this->detectClientVersion() : [];
 
-        $parameters = [
+        $command = 'mysqldump ' . $this->schemaState->connectionString($clientVersion) . ' ';
+
+        return $command . implode(' ', $this->getParameters()) . ' "${:LARAVEL_LOAD_DATABASE}"';
+    }
+
+    public function getParameters(): array
+    {
+        return [
+            ...$this->getBaseParameters(),
+            ...array_keys(array_filter($this->getConditionalParameters())),
+        ];
+    }
+
+    public function getBaseParameters(): array
+    {
+        return [
             '--add-locks',
             '--routines',
             '--tz-utc',
             '--column-statistics=0',
             '--result-file="${:LARAVEL_LOAD_PATH}"',
-            '--max-allowed-packet='.$this->protector->getMaxPacketLength(),
-            ...array_keys(array_filter($this->getConditionalParameters())),
-            '"${:LARAVEL_LOAD_DATABASE}"',
+            '--max-allowed-packet=' . $this->protector->getMaxPacketLength(),
         ];
-
-        return $command.implode(' ', $parameters);
     }
 
     public function getConditionalParameters(): array
     {
         return [
             '--set-gtid-purged=OFF' => !$this->schemaState->connection->isMaria(),
-            '--no-create-db'        => !$this->protector->shouldCreateDb(),
-            '--skip-comments'       => !$this->protector->shouldDumpComments(),
-            '--skip-set-charset'    => !$this->protector->shouldDumpCharsets(),
-            '--no-data'             => !$this->protector->shouldDumpData(),
-            '--no-tablespaces'      => !$this->protector->shouldUseTablespaces(),
+            '--no-create-db' => !$this->protector->shouldCreateDb(),
+            '--skip-comments' => !$this->protector->shouldDumpComments(),
+            '--skip-set-charset' => !$this->protector->shouldDumpCharsets(),
+            '--no-data' => !$this->protector->shouldDumpData(),
+            '--no-tablespaces' => !$this->protector->shouldUseTablespaces(),
         ];
     }
 }

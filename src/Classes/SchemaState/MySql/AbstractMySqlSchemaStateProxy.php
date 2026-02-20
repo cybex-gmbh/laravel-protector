@@ -1,12 +1,10 @@
 <?php
 
-namespace Cybex\Protector\Classes;
+namespace Cybex\Protector\Classes\SchemaState\MySql;
 
 use Cybex\Protector\Protector;
-use Exception;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Schema\MySqlSchemaState;
-use Illuminate\Database\Schema\SchemaState;
 use Symfony\Component\Process\Process;
 
 /**
@@ -14,6 +12,12 @@ use Symfony\Component\Process\Process;
  */
 abstract class AbstractMySqlSchemaStateProxy extends MySqlSchemaState
 {
+    abstract public function getParameters(): array;
+
+    abstract public function getBaseParameters(): array;
+
+    abstract public function getConditionalParameters(): array;
+
     public function __construct(protected MySqlSchemaState $schemaState, protected Protector $protector)
     {
         parent::__construct($schemaState->connection);
@@ -22,7 +26,7 @@ abstract class AbstractMySqlSchemaStateProxy extends MySqlSchemaState
     /**
      * @inheritDoc
      */
-    public function dump(Connection $connection, $path)
+    public function dump(Connection $connection, $path): void
     {
         $this->schemaState->dump(...func_get_args());
     }
@@ -30,7 +34,7 @@ abstract class AbstractMySqlSchemaStateProxy extends MySqlSchemaState
     /**
      * @inheritDoc
      */
-    public function load($path)
+    public function load($path): void
     {
         $this->schemaState->load(...func_get_args());
     }
@@ -58,10 +62,5 @@ abstract class AbstractMySqlSchemaStateProxy extends MySqlSchemaState
     protected function appendMigrationData(string $path): void
     {
         $this->schemaState->appendMigrationData(...func_get_args());
-    }
-
-    public function getConditionalParameters(): array
-    {
-        return [];
     }
 }

@@ -42,7 +42,9 @@ This package allows you to download, export and import your application's databa
     * [Setup for storing the local database](#setup-for-storing-the-local-database)
     * [Setup for importing the database of a remote server](#setup-for-importing-the-database-of-a-remote-server)
     * [Setup for collecting backups from multiple servers](#setup-for-collecting-backups-from-multiple-servers)
-* [Migration guide from Protector v1.x to v2.x](#migration-guide-from-protector-v1x-to-v2x)
+* [Configuration](#configuration)
+    * [Dump metadata](#dump-metadata)
+* [Development](#development)
 
 ## Usage
 
@@ -269,22 +271,50 @@ according user on each target server.
 
 See [cybex-gmbh/collector](https://github.com/cybex-gmbh/collector) for an example implementation.
 
-## Migration guide from Protector v1.x to v2.x
+## Configuration
 
-Likelihood of impact: high
+The `protector.php` config file sets initial settings for the `Protector` instance.
 
-- If your app does not explicitly require the laravel/sanctum package, upgrading Protector to version 2.x will also
-  upgrade Sanctum to version 3.x. This will require you to follow its
-  [upgrade guide](https://github.com/laravel/sanctum/blob/3.x/UPGRADE.md).
+Additional settings can be configured on the `Protector` instance. For all available options, take a look at
+the [HasConfiguration trait](src/Traits/HasConfiguration.php).
 
-Likelihood of impact: low
+For example, to configure a specific auth token and server URL:
 
-- Access to the formerly public methods `getGitRevision()`, `getGitHeadDate()` or `getGitBranch()` is now protected.
-  You now need to call getMetaData() and extract the information from the returned array.
+```php
+Protector::withAuthToken($authToken)->withServerUrl($serverUrl);
+```
 
-## Migration guide from Protector v2.x to v3.x
+### Dump metadata
 
-No breaking changes are expected.
+Customize the metadata appended to a dump by adding providers to the `metadata.providers` array in your `config/protector.php` file:
+
+```php
+'providers' => [
+    \Cybex\Protector\Classes\Metadata\Providers\EnvMetadataProvider::class,
+    \Cybex\Protector\Classes\Metadata\Providers\GitMetadataProvider::class,
+    \Path\To\Your\CustomMetadataProvider::class,
+],
+```
+
+Available metadata providers:
+
+1. `DatabaseMetadataProvider`: Will always be appended. Adds general information about the dump, such as the database connection and dumped at date.
+1. `ProtectorMetadataProvider`: Adds information about the settings set on the `Protector` instance.
+1. `EnvMetadataProvider`: Adds information based on an .env value. The default .env key used for this is `PROTECTOR_METADATA`.
+1. `GitMetadataProvider`: Adds information about the Git repository, such as the current branch and revision.
+1. `JsonMetadataProvider`: Adds information from a JSON file. The default file path used for this is `protector_metadata.json`.
+
+> [!NOTE]
+> You can create your own metadata providers by implementing the `Cybex\Protector\Contracts\MetadataProvider` interface.
+> Duplicate provider keys will be merged in the final metadata array, so choose a unique key.
+
+> [!TIP]
+> An example of using the JsonMetadataProvider would be to add custom metadata from a CI/CD pipeline.
+> For example, in a GitHub Actions workflow, you could add a step that writes Git information to `protector_metadata.json`
+>
+> ```bash
+> jq -n --arg repo ${{ github.repository }} --arg branch ${{ github.ref_name }} --arg revision ${{ github.sha }} --arg buildDate "$(date --iso-8601=seconds --utc)" '{gitRepo: $repo, gitBranch: $branch, gitRevision: $revision, buildDate: $buildDate}' > protector_metadata.json
+> ```
 
 ## Development
 
@@ -309,7 +339,7 @@ composer install
 
 > [!NOTE]
 > We disable composer security checking for this package, as vulnerabilities would block the development.
-> The project requiring our package should be responsible for evaluating possible vulnerabilities. 
+> The project requiring our package should be responsible for evaluating possible vulnerabilities.
 > For more information, see the [composer documentation](https://getcomposer.org/doc/06-config.md#block-insecure).
 
 Specific to the example app, for demo data:
@@ -325,13 +355,13 @@ Make sure you are in the package directory.
 Run tests on the MySQL database:
 
 ```bash
-vendor/bin/phpunit
+composer test
 ```
 
 Run tests on the PostgreSQL database:
 
 ```bash
-vendor/bin/phpunit -c phpunit-postgres.xml.dist
+composer test-postgres
 ```
 
 ## Contributing
