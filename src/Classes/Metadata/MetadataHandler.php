@@ -34,6 +34,7 @@ class MetadataHandler
      */
     public function getDumpMetadata(string $dumpFile): bool|array
     {
+        // 'options' is only available in legacy dumps.
         $desiredMetaLines = [
             'options',
             'meta',
