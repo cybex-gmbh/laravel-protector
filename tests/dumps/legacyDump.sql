@@ -185,4 +185,5 @@ TABLES;
 
 -- Dump completed on 2022-06-29 12:43:25
 
--- meta:{"database":{"database":"protector-tests","connection":"mysql","maxPacketLength":"8M","dumpedAtDate":"2022-06-29 12:43:24"},"git":{"revision":"2aae6c35c94fcfb415dbe95f408b9ce91ee846ed","branch":"feature/tests","revisionDate":"2022-07-12 08:00:00 +0200"}}
+-- options:{"no-data":false}
+-- meta:{"database":"protector-tests","connection":"mysql","maxPacketLength":"8M","gitRevision":"","gitBranch":"","gitRevisionDate":"","dumpedAtDate":"2022-06-29 12:43:24"}

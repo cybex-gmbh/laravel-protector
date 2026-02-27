@@ -185,5 +185,4 @@ TABLES;
 
 -- Dump completed on 2022-06-29 12:43:25
 
--- options:{"no-data":false}
 -- meta:{"invalid","dumpedAtDate":2022-06-29 12:43:24}

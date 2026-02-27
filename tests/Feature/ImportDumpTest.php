@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Config;
 
 class ImportDumpTest extends TestCase
 {
+    const DUMP_DATE = '2022-06-29 12:43:24';
+
     protected Filesystem $disk;
     protected static string $baseDirectory = 'dumps';
     protected string $filePath;
@@ -39,15 +41,12 @@ class ImportDumpTest extends TestCase
             [
                 static::$baseDirectory . "/dump.sql",
                 [
-                    'options' => [
-                        'no-data' => false,
-                    ],
                     'meta' => [
                         'database' => [
                             'database' => 'protector-tests',
                             'connection' => 'mysql',
                             'maxPacketLength' => '8M',
-                            'dumpedAtDate' => Carbon::parse('2022-06-29 12:43:24')->toDateTimeString(),
+                            'dumpedAtDate' => Carbon::parse(static::DUMP_DATE)->toDateTimeString(),
                         ],
                         'git' => [
                             'revision' => '',
@@ -60,9 +59,6 @@ class ImportDumpTest extends TestCase
             [
                 static::$baseDirectory . "/dumpWithGit.sql",
                 [
-                    'options' => [
-                        'no-data' => false,
-                    ],
                     'meta' => [
                         'git' => [
                             'revision' => '2aae6c35c94fcfb415dbe95f408b9ce91ee846ed',
@@ -74,7 +70,7 @@ class ImportDumpTest extends TestCase
                             'database' => 'protector-tests',
                             'connection' => 'mysql',
                             'maxPacketLength' => '8M',
-                            'dumpedAtDate' => Carbon::parse('2022-06-29 12:43:24')->toDateTimeString(),
+                            'dumpedAtDate' => Carbon::parse(static::DUMP_DATE)->toDateTimeString(),
                         ],
                     ]
                 ]
@@ -87,6 +83,23 @@ class ImportDumpTest extends TestCase
                 static::$baseDirectory . "/dumpWithIncorrectMetadata.sql",
                 false
             ],
+            [
+                static::$baseDirectory . "/legacyDump.sql",
+                [
+                    'options' => [
+                        'no-data' => false,
+                    ],
+                    'meta' => [
+                        'database' => 'protector-tests',
+                        'connection' => 'mysql',
+                        'maxPacketLength' => '8M',
+                        'gitRevision' => '',
+                        'gitBranch' => '',
+                        'gitRevisionDate' => '',
+                        'dumpedAtDate' => Carbon::parse(static::DUMP_DATE)->toDateTimeString(),
+                    ]
+                ]
+            ]
         ];
     }
 
