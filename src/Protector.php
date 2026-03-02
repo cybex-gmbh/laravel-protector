@@ -161,6 +161,7 @@ class Protector
 
     /**
      * Returns the appended metadata from a file.
+     * The file path starts with the configured protector base directory.
      */
     public function getDumpMetadata(string $dumpFile): bool|array
     {
