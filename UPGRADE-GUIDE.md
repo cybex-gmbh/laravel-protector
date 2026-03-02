@@ -8,6 +8,8 @@
 Dump metadata has received a new structure. Legacy dumps with old metadata are still supported. However, if you have code that relies on the old metadata structure, you will need
 to adjust it to work with the new structure. See below for details.
 
+It is recommended to update or re-publish the Protector configuration file, if you have previously published it.
+
 ### Protector dump metadata
 
 > [!NOTE]
