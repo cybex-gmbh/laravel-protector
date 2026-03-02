@@ -134,7 +134,8 @@ class MetadataTest extends TestCase
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [JsonFileMetadataProvider::class]);
         Config::set(static::METADATA_JSON_FILE_PATH_CONFIG_KEY, basename($filePath));
 
-        File::put($filePath, json_encode(['foo' => 'bar']));
+        File::shouldReceive('exists')->with($filePath)->andReturn(true);
+        File::shouldReceive('get')->with($filePath)->andReturn(json_encode(['foo' => 'bar']));
 
         $this->assertArrayHasKey('jsonFile', $this->protector->getMetadata());
         $this->assertEquals(['foo' => 'bar'], $this->protector->getMetadata()['jsonFile']);
@@ -150,7 +151,7 @@ class MetadataTest extends TestCase
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [JsonFileMetadataProvider::class]);
         Config::set(static::METADATA_JSON_FILE_PATH_CONFIG_KEY, basename($filePath));
 
-        File::delete($filePath);
+        File::shouldReceive('exists')->with($filePath)->andReturn(false);
 
         $this->assertArrayNotHasKey('jsonFile', $this->protector->getMetadata());
     }
