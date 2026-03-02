@@ -313,7 +313,15 @@ Available metadata providers:
 > For example, in a GitHub Actions workflow, you could add a step that writes Git information to `protector_metadata.json`
 >
 > ```bash
-> jq -n --arg repo ${{ github.repository }} --arg branch ${{ github.ref_name }} --arg revision ${{ github.sha }} --arg buildDate "$(date --iso-8601=seconds --utc)" '{gitRepo: $repo, gitBranch: $branch, gitRevision: $revision, buildDate: $buildDate}' > protector_metadata.json
+> - name: Protector Metadata
+>   shell: bash
+>   run: >
+>     jq -n \
+>       --arg repo ${{ github.repository }} \
+>       --arg branch ${{ github.ref_name }} \
+>       --arg revision ${{ github.sha }} \
+>       --arg buildDate "$(date --iso-8601=seconds --utc)" \
+>       '{gitRepo: $repo, gitBranch: $branch, gitRevision: $revision, buildDate: $buildDate}' > protector_metadata.json
 > ```
 
 ## Development
