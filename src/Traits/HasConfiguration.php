@@ -2,7 +2,9 @@
 
 namespace Cybex\Protector\Traits;
 
+use Cybex\Protector\Classes\Metadata\Providers\DatabaseMetadataProvider;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
+use Illuminate\Support\Collection;
 
 trait HasConfiguration
 {
@@ -74,9 +76,14 @@ trait HasConfiguration
     protected bool $dumpData = true;
 
     /**
-     * If true, the auto increment state will be stripped from the dump.
+     * If true, the auto-increment state will be stripped from the dump.
      */
     protected bool $removeAutoIncrementingState = false;
+
+    /**
+     * The metadata provider classes for the dump metadata.
+     */
+    protected array $metadataProviders;
 
     /**
      * Sets the auth token for Laravel Sanctum authentication.
@@ -254,6 +261,13 @@ trait HasConfiguration
         return $this;
     }
 
+    public function withMetadataProviders(array $metadataProviders): static
+    {
+        $this->metadataProviders = $metadataProviders;
+
+        return $this;
+    }
+
     /**
      * Retrieves the auth token for Laravel Sanctum authentication.
      */
@@ -324,6 +338,17 @@ trait HasConfiguration
     public function getServerUrl(): string
     {
         return $this->serverUrl ?: $this->getConfigValueForKey('remoteEndpoint.serverUrl');
+    }
+
+    /**
+     * The metadata provider classes can be configured on the protector instance, else we return the config default.
+     * @return Collection
+     */
+    public function getMetadataProviders(): Collection
+    {
+        $additionalMetadataProviders = collect($this->metadataProviders ?? $this->getConfigValueForKey('metadata.providers'));
+
+        return $additionalMetadataProviders->prepend(DatabaseMetadataProvider::class);
     }
 
     public function shouldDumpCharsets(): bool

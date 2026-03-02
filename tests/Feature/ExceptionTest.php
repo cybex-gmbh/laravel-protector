@@ -1,6 +1,6 @@
 <?php
 
-namespace Cybex\Protector\Tests\feature;
+namespace Cybex\Protector\Tests\Feature;
 
 use Cybex\Protector\Tests\TestCase;
 use LogicException;
