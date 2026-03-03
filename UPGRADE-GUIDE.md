@@ -22,6 +22,9 @@
 
 ### Setting .env key names during runtime
 
+> [!NOTE]
+> Impact: Calls to `Protector::withAuthTokenKeyName()` and `Protector::withPrivateKeyName()` will fail
+
 This feature has been removed due to issues with config caching.
 Calls to `env()` will return `null` when the config was cached
 using `php artisan config:cache`, `php artisan optimize` or similar.
@@ -38,6 +41,13 @@ use the following methods instead:
 - Protector::withAuthToken()
 
 ### Renamed config keys
+
+> [!NOTE]
+> Impact: Old `protector.php` config files will no longer work
+
+Some config keys have been renamed.
+If you have previously published the config file,
+you should re-publish it and adjust the configuration accordingly.
 
 | Old                                      | New                                         |
 |------------------------------------------|---------------------------------------------|
