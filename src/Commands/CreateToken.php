@@ -58,7 +58,6 @@ class CreateToken extends Command
         $this->warn(sprintf('Information for the user %s', $userInformation));
         $this->info(sprintf('%s="%s"', app('protector')->getAuthTokenKeyName(), $token->plainTextToken));
         $this->warn('The quotation marks at the start and end of the token are necessary!');
-        $this->info(sprintf('PROTECTOR_SERVER_URL=%s', route('protectorDumpEndpointRoute')));
-        $this->warn(sprintf('Caution! These env keys might be different based on the client\'s configuration.'));
+        $this->info(sprintf('%s=%s', app('protector')->getServerUrlKeyName(), route('protectorDumpEndpointRoute')));
     }
 }

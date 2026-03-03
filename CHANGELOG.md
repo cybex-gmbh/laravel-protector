@@ -14,6 +14,10 @@ All notable changes to `protector` will be documented in this file.
 - The metadata which is appended at the end of a dump file can now be customized,
   see the [Dump Metadata README section](README.md#dump-metadata) for more information
 
+### Fixes
+
+- Fixed an issue where the Protector would not work when caching the config using `php artisan config:cache` or similar
+
 ## [v3.2.1 - 2026-02-02](https://github.com/cybex-gmbh/laravel-protector/compare/v3.2.0...v3.2.1)
 
 - Internal shell calls now use the same method as used for dumping databases
