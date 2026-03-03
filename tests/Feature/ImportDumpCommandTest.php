@@ -25,7 +25,7 @@ class ImportDumpCommandTest extends TestCase
         parent::setUp();
 
         Config::set('protector.baseDirectory', 'protector');
-        Config::set('protector.remoteEndpoint.serverUrl', 'protector.invalid/protector/exportDump');
+        Config::set('protector.remoteDump.serverUrl', 'protector.invalid/protector/exportDump');
         Config::set('protector.baseDirectory', static::$baseDirectory);
 
         $this->disk = $this->getFakeDumpDisk();
@@ -86,8 +86,8 @@ class ImportDumpCommandTest extends TestCase
      */
     public function getRemoteDumpOnImportDumpCommand()
     {
-        Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
-        Config::set('protector.routeMiddleware', []);
+        Config::set('protector.remoteDump.basicAuthCredentials', '1234:1234');
+        Config::set('protector.serverConfig.routeMiddleware', []);
 
         $serverUrl = $this->protector->getServerUrl();
 
@@ -106,8 +106,8 @@ class ImportDumpCommandTest extends TestCase
      */
     public function canGetRemoteDumpWithFlushOptionEnabled()
     {
-        Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
-        Config::set('protector.routeMiddleware', []);
+        Config::set('protector.remoteDump.basicAuthCredentials', '1234:1234');
+        Config::set('protector.serverConfig.routeMiddleware', []);
 
         Http::fake([
             $this->serverUrl => Http::response(__FUNCTION__, 200, ['Chunk-Size' => 100]),
