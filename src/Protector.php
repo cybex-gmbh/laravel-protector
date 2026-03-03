@@ -11,6 +11,10 @@ use Cybex\Protector\Exceptions\FailedImportException;
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\FailedWipeException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
+use Cybex\Protector\Exceptions\InvalidConfiguration\MissingPrivateKeyException;
+use Cybex\Protector\Exceptions\InvalidConfiguration\MissingServerUrlException;
+use Cybex\Protector\Exceptions\InvalidConfiguration\NoAuthConfiguredException;
+use Cybex\Protector\Exceptions\InvalidConfiguration\SanctumBasicAuthConflictException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
@@ -182,7 +186,8 @@ class Protector
      * Reads the remote dump file and stores it on the client disk.
      *
      * @throws FailedRemoteDatabaseFetchingException
-     * @throws InvalidConfigurationException
+     * @throws MissingPrivateKeyException
+     * @throws MissingServerUrlException
      * @throws InvalidEnvironmentException
      */
     public function getRemoteDump(): string
@@ -190,13 +195,11 @@ class Protector
         $disk = $this->getDisk();
 
         if ($this->shouldEncrypt() && !$this->getPrivateKey()) {
-            throw new InvalidConfigurationException(
-                'For using Laravel Sanctum a crypto keypair is required. There was none found in your .env file.'
-            );
+            throw new MissingPrivateKeyException();
         }
 
         if (!$serverUrl = $this->getServerUrl()) {
-            throw new InvalidConfigurationException('Server url is not set or invalid.');
+            throw new MissingServerUrlException();
         }
 
         $this->createDirectory($this->getConfigValueForKey('baseDirectory'), $disk);
@@ -377,7 +380,7 @@ class Protector
                     return response($exception->httpResponse, 500, ['message' => $exception->httpResponse]);
                 }
 
-                $chunkSize = $this->getConfigValueForKey('chunkSize');
+                $chunkSize = $this->getConfigValueForKey('serverConfig.chunkSize');
 
                 return response()->streamDownload(
                     function () use ($publicKey, $serverFilePath, $chunkSize, $shouldEncrypt) {
@@ -443,34 +446,33 @@ class Protector
     }
 
     /**
-     * Configure Http request with either the sanctum token or htaccess credentials.
+     * Configure Http request with either the Sanctum token or basic auth credentials.
      *
-     * @throws InvalidConfigurationException
+     * @throws SanctumBasicAuthConflictException
+     * @throws NoAuthConfiguredException
      */
     protected function getConfiguredHttpRequest(): PendingRequest
     {
-        $htaccessLogin = $this->getConfigValueForKey('remoteEndpoint.htaccessLogin');
+        $basicAuthCredentials = $this->getConfigValueForKey('remoteDump.basicAuthCredentials');
 
         if ($this->shouldEncrypt()) {
-            // Laravel Sanctum and htaccess cannot be used simultaneously since they use the same header.
-            if ($htaccessLogin) {
-                throw new InvalidConfigurationException('Laravel Sanctum and Htaccess can not be used simultaneously');
+            // Laravel Sanctum and Basic Auth cannot be used simultaneously since they use the same header.
+            if ($basicAuthCredentials) {
+                throw new SanctumBasicAuthConflictException();
             }
 
             // Add Bearer token authentication to request.
             $request = Http::withToken($this->getAuthToken());
-        } elseif ($htaccessLogin) {
+        } elseif ($basicAuthCredentials) {
             // Add basic authentication to request.
-            $credentials = explode(':', $htaccessLogin);
+            $credentials = explode(':', $basicAuthCredentials);
             $request = Http::withBasicAuth($credentials[0], $credentials[1]);
         } else {
             // Protector cannot be used without any authentication.
-            throw new InvalidConfigurationException(
-                'Either Laravel Sanctum has to be active or a htaccess login has to be defined.'
-            );
+            throw new NoAuthConfiguredException();
         }
 
-        return $request->withOptions(['stream' => true])->withHeaders(['Accept' => 'application/json'])->timeout($this->getConfigValueForKey('httpTimeout', 120));
+        return $request->withOptions(['stream' => true])->withHeaders(['Accept' => 'application/json'])->timeout($this->getConfigValueForKey('remoteDump.httpTimeout', 120));
     }
 
     /**
@@ -578,7 +580,7 @@ class Protector
      */
     protected function shouldEncrypt(): bool
     {
-        return in_array('auth:sanctum', config('protector.routeMiddleware'));
+        return in_array('auth:sanctum', config('protector.serverConfig.routeMiddleware'));
     }
 
     /**

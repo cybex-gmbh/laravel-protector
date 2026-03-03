@@ -120,7 +120,7 @@ class ExportDumpTest extends TestCase
      */
     public function createsStreamedFileDownloadResponse()
     {
-        Config::set('protector.routeMiddleware', []);
+        Config::set('protector.serverConfig.routeMiddleware', []);
 
         $response = $this->protector->generateFileDownloadResponse(new Request(), null);
 

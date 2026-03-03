@@ -31,16 +31,6 @@ trait HasConfiguration
     protected bool $dropDb = true;
 
     /**
-     * The name of the .env key for the Protector DB Token.
-     */
-    protected string $authTokenKeyName = 'PROTECTOR_AUTH_TOKEN';
-
-    /**
-     * The name of the .env key for the Protector Private Key.
-     */
-    protected string $privateKeyName = 'PROTECTOR_PRIVATE_KEY';
-
-    /**
      * The server url for the dump endpoint.
      */
     protected string $serverUrl = '';
@@ -49,6 +39,11 @@ trait HasConfiguration
      * The Protector Auth Token.
      */
     protected string $authToken = '';
+
+    /**
+     * The Protector Private Key.
+     */
+    protected string $privateKey = '';
 
     /**
      * The maximum packet length for the dump.
@@ -91,16 +86,6 @@ trait HasConfiguration
     public function withAuthToken(string $authToken): static
     {
         $this->authToken = $authToken;
-
-        return $this;
-    }
-
-    /**
-     * Sets the name of the .env key for the Protector DB Token.
-     */
-    public function withAuthTokenKeyName(string $authTokenKeyName): static
-    {
-        $this->authTokenKeyName = $authTokenKeyName;
 
         return $this;
     }
@@ -242,21 +227,18 @@ trait HasConfiguration
     }
 
     /**
-     * Sets the name of the .env key for the Protector Crypto Key.
-     */
-    public function withPrivateKeyName(string $privateKeyName): static
-    {
-        $this->privateKeyName = $privateKeyName;
-
-        return $this;
-    }
-
-    /**
      * Sets the server url of the dump endpoint.
      */
     public function withServerUrl(string $serverUrl): static
     {
         $this->serverUrl = $serverUrl;
+
+        return $this;
+    }
+
+    public function withPrivateKey(string $privateKey): static
+    {
+        $this->privateKey = $privateKey;
 
         return $this;
     }
@@ -273,15 +255,15 @@ trait HasConfiguration
      */
     protected function getAuthToken(): string
     {
-        return $this->authToken ?: env($this->authTokenKeyName, '');
+        return $this->authToken ?: $this->getConfigValueForKey('remoteDump.authToken');
     }
 
     /**
-     * Gets the name of the .env key for the Protector DB Token.
+     * Gets the name of the .env key for the auth token.
      */
     public function getAuthTokenKeyName(): string
     {
-        return $this->authTokenKeyName;
+        return 'PROTECTOR_AUTH_TOKEN';
     }
 
     /**
@@ -312,11 +294,11 @@ trait HasConfiguration
     }
 
     /**
-     * Sets the name of the .env key for the Protector Crypto Key.
+     * Gets the name of the .env key for the Protector private key.
      */
     public function getPrivateKeyName(): string
     {
-        return $this->privateKeyName;
+        return 'PROTECTOR_PRIVATE_KEY';
     }
 
     /**
@@ -324,7 +306,7 @@ trait HasConfiguration
      */
     protected function getPrivateKey(): string
     {
-        return env($this->privateKeyName, '');
+        return $this->privateKey ?: $this->getConfigValueForKey('remoteDump.privateKey');
     }
 
     public function getConnectionName(): string
@@ -337,7 +319,15 @@ trait HasConfiguration
      */
     public function getServerUrl(): string
     {
-        return $this->serverUrl ?: $this->getConfigValueForKey('remoteEndpoint.serverUrl');
+        return $this->serverUrl ?: $this->getConfigValueForKey('remoteDump.serverUrl');
+    }
+
+    /**
+     * Gets the name of the .env key for the Protector server URL.
+     */
+    public function getServerUrlKeyName(): string
+    {
+        return 'PROTECTOR_SERVER_URL';
     }
 
     /**
