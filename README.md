@@ -358,8 +358,6 @@ php artisan migrate --seed
 
 ### Testing
 
-Make sure you are in the package directory.
-
 Run tests on the MySQL database:
 
 ```bash
