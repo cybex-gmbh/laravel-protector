@@ -58,7 +58,7 @@ class ExportDumpTest extends TestCase
 
         $this->disk = $this->getFakeDumpDisk();
 
-        $this->baseDirectory = Config::get('protector.baseDirectory');
+        $this->baseDirectory = Config::get('protector.dump.baseDirectory');
         $this->filePath = sprintf('%s/dump.sql', $this->baseDirectory);
         $this->emptyDumpPath = 'testDumps/dump.sql';
     }
@@ -68,7 +68,7 @@ class ExportDumpTest extends TestCase
      */
     public function createDestinationFilePath()
     {
-        $this->disk->deleteDirectory(Config::get('protector.baseDirectory'));
+        $this->disk->deleteDirectory(Config::get('protector.dump.baseDirectory'));
 
         $filePath = $this->protector->createDestinationFilePath(__FUNCTION__);
         $destinationFilePath = $this->disk->path($filePath);
@@ -82,7 +82,7 @@ class ExportDumpTest extends TestCase
      */
     public function createDestinationFilePathWithSubFolder()
     {
-        $this->disk->deleteDirectory(Config::get('protector.baseDirectory'));
+        $this->disk->deleteDirectory(Config::get('protector.dump.baseDirectory'));
 
         $filePath = $this->protector->createDestinationFilePath(__FUNCTION__, __FUNCTION__);
         $destinationFilePath = $this->disk->path($filePath);
@@ -120,7 +120,7 @@ class ExportDumpTest extends TestCase
      */
     public function createsStreamedFileDownloadResponse()
     {
-        Config::set('protector.serverConfig.routeMiddleware', []);
+        Config::set('protector.server.routeMiddleware', []);
 
         $response = $this->protector->generateFileDownloadResponse(new Request(), null);
 

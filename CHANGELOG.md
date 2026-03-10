@@ -9,6 +9,10 @@ All notable changes to `protector` will be documented in this file.
 >
 > For more information, see the [upgrade guide](UPGRADE-GUIDE.md#v3-to-v4).
 
+### General
+
+- Restructured the `protector.php` configuration file for better organization and clarity
+
 ### Features
 
 - The metadata which is appended at the end of a dump file can now be customized,

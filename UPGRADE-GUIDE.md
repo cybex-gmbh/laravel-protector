@@ -43,20 +43,43 @@ use the following methods instead:
 ### Renamed config keys
 
 > [!NOTE]
-> Impact: Old `protector.php` config files will no longer work
+> Impact: App may crash, published `protector.php` config files will no longer work
 
 Some config keys have been renamed.
 If you have previously published the config file,
 you should re-publish it and adjust the configuration accordingly.
 
-| Old                                      | New                                         |
-|------------------------------------------|---------------------------------------------|
-| `protector.remoteEndpoint`               | `protector.remoteDump`                      |
-| `protector.remoteEndpoint.htaccessLogin` | `protector.remoteDump.basicAuthCredentials` |
-| `protector.httpTimeout`                  | `protector.remoteDump.httpTimeout`          |
-| `protector.dumpEndpointRoute`            | `protector.serverConfig.dumpEndpointRoute`  |
-| `protector.routeMiddleware`              | `protector.serverConfig.routeMiddleware`    |
-| `protector.chunkSize`                    | `protector.serverConfig.chunkSize`          |
+| Old                                      | New                                     |
+|------------------------------------------|-----------------------------------------|
+| `protector.fileName`                     | `protector.dump.fileName`               |
+| `protector.baseDirectory`                | `protector.dump.baseDirectory`          |
+| `protector.diskName`                     | `protector.dump.diskName`               |
+| `protector.maxPacketLength`              | `protector.dump.maxPacketLength`        |
+| `protector.remoteEndpoint.serverUrl`     | `protector.client.dumpEndpointUrl`      |
+| `protector.remoteEndpoint.htaccessLogin` | `protector.client.basicAuthCredentials` |
+| `protector.httpTimeout`                  | `protector.client.httpTimeout`          |
+| `protector.dumpEndpointRoute`            | `protector.server.dumpEndpointRoute`    |
+| `protector.routeMiddleware`              | `protector.server.routeMiddleware`      |
+| `protector.chunkSize`                    | `protector.server.chunkSize`            |
+
+### Renamed .env keys
+
+> [!NOTE]
+> Impact: App may crash, old .env keys will be ignored
+
+The .env keys have changed to be consistent with the config keys:
+
+| Old                             | New                                    |
+|---------------------------------|----------------------------------------|
+| `PROTECTOR_BASE_DIRECTORY`      | `PROTECTOR_DUMP_BASE_DIRECTORY`        |
+| `PROTECTOR_DISK_NAME`           | `PROTECTOR_DUMP_DISK_NAME`             |
+| `PROTECTOR_MAX_PACKET_LENGTH`   | `PROTECTOR_DUMP_MAX_PACKET_LENGTH`     |
+| `PROTECTOR_AUTH_TOKEN`          | `PROTECTOR_CLIENT_AUTH_TOKEN`          |
+| `PROTECTOR_PRIVATE_KEY`         | `PROTECTOR_CLIENT_PRIVATE_KEY`         |
+| `PROTECTOR_SERVER_URL`          | `PROTECTOR_CLIENT_DUMP_ENDPOINT_URL`   |
+| `PROTECTOR_HTTP_TIMEOUT`        | `PROTECTOR_CLIENT_HTTP_TIMEOUT`        |
+| `PROTECTOR_DUMP_ENDPOINT_ROUTE` | `PROTECTOR_SERVER_DUMP_ENDPOINT_ROUTE` |
+| `PROTECTOR_CHUNK_SIZE`          | `PROTECTOR_SERVER_CHUNK_SIZE`          |
 
 ### Protector dump metadata
 

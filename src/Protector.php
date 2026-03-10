@@ -11,8 +11,8 @@ use Cybex\Protector\Exceptions\FailedImportException;
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\FailedWipeException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
+use Cybex\Protector\Exceptions\InvalidConfiguration\MissingDumpEndpointUrlException;
 use Cybex\Protector\Exceptions\InvalidConfiguration\MissingPrivateKeyException;
-use Cybex\Protector\Exceptions\InvalidConfiguration\MissingServerUrlException;
 use Cybex\Protector\Exceptions\InvalidConfiguration\NoAuthConfiguredException;
 use Cybex\Protector\Exceptions\InvalidConfiguration\SanctumBasicAuthConflictException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
@@ -139,7 +139,7 @@ class Protector
         return implode(
             DIRECTORY_SEPARATOR,
             array_filter([
-                $this->getConfigValueForKey('baseDirectory'),
+                $this->getConfigValueForKey('dump.baseDirectory'),
                 $subFolder,
                 $fileName,
             ])
@@ -187,7 +187,7 @@ class Protector
      *
      * @throws FailedRemoteDatabaseFetchingException
      * @throws MissingPrivateKeyException
-     * @throws MissingServerUrlException
+     * @throws MissingDumpEndpointUrlException
      * @throws InvalidEnvironmentException
      */
     public function getRemoteDump(): string
@@ -198,11 +198,11 @@ class Protector
             throw new MissingPrivateKeyException();
         }
 
-        if (!$serverUrl = $this->getServerUrl()) {
-            throw new MissingServerUrlException();
+        if (!$dumpEndpointUrl = $this->getDumpEndpointUrl()) {
+            throw new MissingDumpEndpointUrlException();
         }
 
-        $this->createDirectory($this->getConfigValueForKey('baseDirectory'), $disk);
+        $this->createDirectory($this->getConfigValueForKey('dump.baseDirectory'), $disk);
 
         $request = $this->getConfiguredHttpRequest();
 
@@ -213,7 +213,7 @@ class Protector
         }
 
         try {
-            $response = $request->withoutRedirecting()->post($serverUrl);
+            $response = $request->withoutRedirecting()->post($dumpEndpointUrl);
         } catch (Exception $exception) {
             throw new FailedRemoteDatabaseFetchingException(
                 sprintf('Could not fetch database from remote server: %s', $exception->getMessage())
@@ -229,7 +229,7 @@ class Protector
 
             throw match ($httpCode) {
                 401, 403 => new UnauthorizedHttpException('', $httpCode . ' Unauthorized access'),
-                404 => new NotFoundHttpException('404 Not found: ' . $serverUrl),
+                404 => new NotFoundHttpException('404 Not found: ' . $dumpEndpointUrl),
                 500 => new FailedRemoteDatabaseFetchingException($response->header('message')),
                 default => new HttpException($httpCode, 'Status code ' . $httpCode),
             };
@@ -249,7 +249,7 @@ class Protector
         if ($disk->size($destinationFilePath) === 0) {
             $disk->delete($destinationFilePath);
 
-            throw new FailedRemoteDatabaseFetchingException(sprintf('Retrieved empty response from %s', $serverUrl));
+            throw new FailedRemoteDatabaseFetchingException(sprintf('Retrieved empty response from %s', $dumpEndpointUrl));
         }
 
         return $destinationFilePath;
@@ -306,7 +306,7 @@ class Protector
         ];
 
         return sprintf(
-            config('protector.fileName'),
+            config('protector.dump.fileName'),
             $appUrl,
             $database,
             $connection,
@@ -342,7 +342,7 @@ class Protector
      */
     public function getBaseDirectory(): string
     {
-        return $this->getConfigValueForKey('baseDirectory') ?? '';
+        return $this->getConfigValueForKey('dump.baseDirectory') ?? '';
     }
 
     /**
@@ -380,7 +380,7 @@ class Protector
                     return response($exception->httpResponse, 500, ['message' => $exception->httpResponse]);
                 }
 
-                $chunkSize = $this->getConfigValueForKey('serverConfig.chunkSize');
+                $chunkSize = $this->getConfigValueForKey('server.chunkSize');
 
                 return response()->streamDownload(
                     function () use ($publicKey, $serverFilePath, $chunkSize, $shouldEncrypt) {
@@ -424,7 +424,7 @@ class Protector
      */
     public function getDisk(?string $diskName = null): Filesystem
     {
-        $diskName ??= $this->getConfigValueForKey('diskName', config('filesystems.default'));
+        $diskName ??= $this->getConfigValueForKey('dump.diskName', config('filesystems.default'));
 
         return Storage::disk($diskName);
     }
@@ -453,7 +453,7 @@ class Protector
      */
     protected function getConfiguredHttpRequest(): PendingRequest
     {
-        $basicAuthCredentials = $this->getConfigValueForKey('remoteDump.basicAuthCredentials');
+        $basicAuthCredentials = $this->getConfigValueForKey('client.basicAuthCredentials');
 
         if ($this->shouldEncrypt()) {
             // Laravel Sanctum and Basic Auth cannot be used simultaneously since they use the same header.
@@ -472,7 +472,7 @@ class Protector
             throw new NoAuthConfiguredException();
         }
 
-        return $request->withOptions(['stream' => true])->withHeaders(['Accept' => 'application/json'])->timeout($this->getConfigValueForKey('remoteDump.httpTimeout', 120));
+        return $request->withOptions(['stream' => true])->withHeaders(['Accept' => 'application/json'])->timeout($this->getConfigValueForKey('client.httpTimeout', 120));
     }
 
     /**
@@ -483,7 +483,7 @@ class Protector
     public function getLatestDumpName(): string
     {
         $disk = $this->getDisk();
-        $baseDirectory = $this->getConfigValueForKey('baseDirectory');
+        $baseDirectory = $this->getConfigValueForKey('dump.baseDirectory');
         $files = $disk->files($baseDirectory);
 
         if (empty($files)) {
@@ -580,7 +580,7 @@ class Protector
      */
     protected function shouldEncrypt(): bool
     {
-        return in_array('auth:sanctum', config('protector.serverConfig.routeMiddleware'));
+        return in_array('auth:sanctum', config('protector.server.routeMiddleware'));
     }
 
     /**
@@ -619,7 +619,7 @@ class Protector
 
         return sprintf(
             '%s%s%s',
-            $this->getConfigValueForKey('baseDirectory'),
+            $this->getConfigValueForKey('dump.baseDirectory'),
             DIRECTORY_SEPARATOR,
             ($destinationFileName ?? 'remote_dump.sql')
         );

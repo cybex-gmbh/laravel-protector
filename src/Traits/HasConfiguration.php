@@ -31,9 +31,9 @@ trait HasConfiguration
     protected bool $dropDb = true;
 
     /**
-     * The server url for the dump endpoint.
+     * The dump endpoint URL.
      */
-    protected string $serverUrl = '';
+    protected string $dumpEndpointUrl = '';
 
     /**
      * The Protector Auth Token.
@@ -221,17 +221,17 @@ trait HasConfiguration
 
     public function withDefaultMaxPacketLength(): static
     {
-        $this->maxPacketLength = config('protector.maxPacketLength');
+        $this->maxPacketLength = config('protector.dump.maxPacketLength');
 
         return $this;
     }
 
     /**
-     * Sets the server url of the dump endpoint.
+     * Sets the dump endpoint URL.
      */
-    public function withServerUrl(string $serverUrl): static
+    public function withDumpEndpointUrl(string $dumpEndpointUrl): static
     {
-        $this->serverUrl = $serverUrl;
+        $this->dumpEndpointUrl = $dumpEndpointUrl;
 
         return $this;
     }
@@ -255,7 +255,7 @@ trait HasConfiguration
      */
     protected function getAuthToken(): string
     {
-        return $this->authToken ?: $this->getConfigValueForKey('remoteDump.authToken');
+        return $this->authToken ?: $this->getConfigValueForKey('client.authToken');
     }
 
     /**
@@ -263,7 +263,7 @@ trait HasConfiguration
      */
     public function getAuthTokenKeyName(): string
     {
-        return 'PROTECTOR_AUTH_TOKEN';
+        return 'PROTECTOR_CLIENT_AUTH_TOKEN';
     }
 
     /**
@@ -298,7 +298,7 @@ trait HasConfiguration
      */
     public function getPrivateKeyName(): string
     {
-        return 'PROTECTOR_PRIVATE_KEY';
+        return 'PROTECTOR_CLIENT_PRIVATE_KEY';
     }
 
     /**
@@ -306,7 +306,7 @@ trait HasConfiguration
      */
     protected function getPrivateKey(): string
     {
-        return $this->privateKey ?: $this->getConfigValueForKey('remoteDump.privateKey');
+        return $this->privateKey ?: $this->getConfigValueForKey('client.privateKey');
     }
 
     public function getConnectionName(): string
@@ -315,19 +315,19 @@ trait HasConfiguration
     }
 
     /**
-     * Retrieves the server url of the dump endpoint.
+     * Retrieves the URL of the dump endpoint.
      */
-    public function getServerUrl(): string
+    public function getDumpEndpointUrl(): string
     {
-        return $this->serverUrl ?: $this->getConfigValueForKey('remoteDump.serverUrl');
+        return $this->dumpEndpointUrl ?: $this->getConfigValueForKey('client.dumpEndpointUrl');
     }
 
     /**
-     * Gets the name of the .env key for the Protector server URL.
+     * Gets the name of the .env key for the Protector dump endpoint URL.
      */
-    public function getServerUrlKeyName(): string
+    public function getDumpEndpointUrlKeyName(): string
     {
-        return 'PROTECTOR_SERVER_URL';
+        return 'PROTECTOR_CLIENT_DUMP_ENDPOINT_URL';
     }
 
     /**
@@ -336,7 +336,7 @@ trait HasConfiguration
      */
     public function getMetadataProviders(): Collection
     {
-        $additionalMetadataProviders = collect($this->metadataProviders ?? $this->getConfigValueForKey('metadata.providers'));
+        $additionalMetadataProviders = collect($this->metadataProviders ?? $this->getConfigValueForKey('dump.metadata.providers'));
 
         return $additionalMetadataProviders->prepend(DatabaseMetadataProvider::class);
     }

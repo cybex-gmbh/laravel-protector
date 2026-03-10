@@ -16,9 +16,9 @@ use TypeError;
 
 class MetadataTest extends TestCase
 {
-    const METADATA_PROVIDER_CONFIG_KEY = 'protector.metadata.providers';
-    const METADATA_ENV_VALUE_CONFIG_KEY = 'protector.metadata.envValue';
-    const METADATA_JSON_FILE_PATH_CONFIG_KEY = 'protector.metadata.jsonFilePath';
+    const METADATA_PROVIDER_CONFIG_KEY = 'protector.dump.metadata.providers';
+    const METADATA_ENV_VALUE_CONFIG_KEY = 'protector.dump.metadata.envValue';
+    const METADATA_JSON_FILE_PATH_CONFIG_KEY = 'protector.dump.metadata.jsonFilePath';
 
     /**
      * @test
@@ -52,7 +52,7 @@ class MetadataTest extends TestCase
      */
     public function includesDatabaseMetadataProviderByDefault()
     {
-        Config::set('protector.metadataProviders', []);
+        Config::set('protector.dump.metadata.providers', []);
 
         $this->assertContains(DatabaseMetadataProvider::class, $this->protector->getMetadataProviders());
     }
@@ -235,7 +235,7 @@ class TestCustomFooMetadataProvider implements MetadataProvider
     public function getMetadata(): array|string
     {
         return [
-            'foo' => $this->config::get('protector.metadata.providers')
+            'foo' => $this->config::get('protector.dump.metadata.providers')
         ];
     }
 }
