@@ -128,7 +128,7 @@ class ImportDump extends Command
     {
         $disk = $this->protector->getDisk();
         $basePath = $this->protector->getBaseDirectory();
-        $serverUrl = $this->protector->getServerUrl();
+        $dumpEndpointUrl = $this->protector->getDumpEndpointUrl();
         $absolutePath = $disk->path($basePath);
 
         $this->line(
@@ -148,7 +148,7 @@ class ImportDump extends Command
             $this->warn(sprintf('Deleted all old files in %s', $absolutePath));
         }
 
-        $this->line(sprintf('>>> Successfully retrieved remote dump from %s', $serverUrl));
+        $this->line(sprintf('>>> Successfully retrieved remote dump from %s', $dumpEndpointUrl));
 
         return $importFilePath;
     }

@@ -230,31 +230,32 @@ Run the following command to receive
 php artisan protector:keys
 ```
 
-Your server admin will then give you the token and server-url to save in your .env file.
-Unless specified otherwise in your software, the .env keys are
+> [!IMPORTANT]
+> Do not give your private key to anyone and keep it protected at all times!
 
-```bash
-PROTECTOR_AUTH_TOKEN=
-PROTECTOR_SERVER_URL=
+Your server admin will then give you the token and dump endpoint URL to save in your .env file.
+
+```dotenv
+PROTECTOR_CLIENT_AUTH_TOKEN=
+PROTECTOR_CLIENT_DUMP_ENDPOINT_URL=
 ```
-
-> Do not give your private key to anyone and keep it protected at all time
 
 See [Usage](#usage) on how to import the remote database.
 
-> Downloaded database dump files are stored unencrypted
+> [!NOTE]
+> Downloaded database dump files are stored unencrypted.
 
 #### On the server
 
 Make sure that the server is accessible to the client machine via HTTPS.
 
-When one of your developers gives you their public key from the previous step, you can authorize them with:
+When one of your developers gives you their public key, you can authorize them with:
 
 ```bash
 php artisan protector:token --publicKey=<public key> <user id>
 ```
 
-You will receive the token and url to give back to the developer, who has to save them in their .env file.
+You will receive the token and dump endpoint URL to give back to the developer, who has to save them in their .env file.
 
 The developer can then download and import the server database on their own.
 
@@ -278,15 +279,15 @@ The `protector.php` config file sets initial settings for the `Protector` instan
 Additional settings can be configured on the `Protector` instance. For all available options, take a look at
 the [HasConfiguration trait](src/Traits/HasConfiguration.php).
 
-For example, to configure a specific auth token and server URL:
+For example, to configure a specific auth token and dump endpoint URL:
 
 ```php
-Protector::withAuthToken($authToken)->withServerUrl($serverUrl);
+Protector::withAuthToken($authToken)->withDumpEndpointUrl($dumpEndpointUrl);
 ```
 
 ### Dump metadata
 
-Customize the metadata appended to a dump by adding providers to the `metadata.providers` array in your `config/protector.php` file:
+Customize the metadata appended to a dump by adding providers to the `dump.metadata.providers` array in your `config/protector.php` file:
 
 ```php
 'providers' => [

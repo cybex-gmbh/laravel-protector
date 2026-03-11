@@ -31,24 +31,19 @@ trait HasConfiguration
     protected bool $dropDb = true;
 
     /**
-     * The name of the .env key for the Protector DB Token.
+     * The dump endpoint URL.
      */
-    protected string $authTokenKeyName = 'PROTECTOR_AUTH_TOKEN';
-
-    /**
-     * The name of the .env key for the Protector Private Key.
-     */
-    protected string $privateKeyName = 'PROTECTOR_PRIVATE_KEY';
-
-    /**
-     * The server url for the dump endpoint.
-     */
-    protected string $serverUrl = '';
+    protected string $dumpEndpointUrl = '';
 
     /**
      * The Protector Auth Token.
      */
     protected string $authToken = '';
+
+    /**
+     * The Protector Private Key.
+     */
+    protected string $privateKey = '';
 
     /**
      * The maximum packet length for the dump.
@@ -91,16 +86,6 @@ trait HasConfiguration
     public function withAuthToken(string $authToken): static
     {
         $this->authToken = $authToken;
-
-        return $this;
-    }
-
-    /**
-     * Sets the name of the .env key for the Protector DB Token.
-     */
-    public function withAuthTokenKeyName(string $authTokenKeyName): static
-    {
-        $this->authTokenKeyName = $authTokenKeyName;
 
         return $this;
     }
@@ -236,27 +221,24 @@ trait HasConfiguration
 
     public function withDefaultMaxPacketLength(): static
     {
-        $this->maxPacketLength = config('protector.maxPacketLength');
+        $this->maxPacketLength = config('protector.dump.maxPacketLength');
 
         return $this;
     }
 
     /**
-     * Sets the name of the .env key for the Protector Crypto Key.
+     * Sets the dump endpoint URL.
      */
-    public function withPrivateKeyName(string $privateKeyName): static
+    public function withDumpEndpointUrl(string $dumpEndpointUrl): static
     {
-        $this->privateKeyName = $privateKeyName;
+        $this->dumpEndpointUrl = $dumpEndpointUrl;
 
         return $this;
     }
 
-    /**
-     * Sets the server url of the dump endpoint.
-     */
-    public function withServerUrl(string $serverUrl): static
+    public function withPrivateKey(string $privateKey): static
     {
-        $this->serverUrl = $serverUrl;
+        $this->privateKey = $privateKey;
 
         return $this;
     }
@@ -273,15 +255,15 @@ trait HasConfiguration
      */
     protected function getAuthToken(): string
     {
-        return $this->authToken ?: env($this->authTokenKeyName, '');
+        return $this->authToken ?: $this->getConfigValueForKey('client.authToken');
     }
 
     /**
-     * Gets the name of the .env key for the Protector DB Token.
+     * Gets the name of the .env key for the auth token.
      */
     public function getAuthTokenKeyName(): string
     {
-        return $this->authTokenKeyName;
+        return 'PROTECTOR_CLIENT_AUTH_TOKEN';
     }
 
     /**
@@ -312,11 +294,11 @@ trait HasConfiguration
     }
 
     /**
-     * Sets the name of the .env key for the Protector Crypto Key.
+     * Gets the name of the .env key for the Protector private key.
      */
     public function getPrivateKeyName(): string
     {
-        return $this->privateKeyName;
+        return 'PROTECTOR_CLIENT_PRIVATE_KEY';
     }
 
     /**
@@ -324,7 +306,7 @@ trait HasConfiguration
      */
     protected function getPrivateKey(): string
     {
-        return env($this->privateKeyName, '');
+        return $this->privateKey ?: $this->getConfigValueForKey('client.privateKey');
     }
 
     public function getConnectionName(): string
@@ -333,11 +315,19 @@ trait HasConfiguration
     }
 
     /**
-     * Retrieves the server url of the dump endpoint.
+     * Retrieves the URL of the dump endpoint.
      */
-    public function getServerUrl(): string
+    public function getDumpEndpointUrl(): string
     {
-        return $this->serverUrl ?: $this->getConfigValueForKey('remoteEndpoint.serverUrl');
+        return $this->dumpEndpointUrl ?: $this->getConfigValueForKey('client.dumpEndpointUrl');
+    }
+
+    /**
+     * Gets the name of the .env key for the Protector dump endpoint URL.
+     */
+    public function getDumpEndpointUrlKeyName(): string
+    {
+        return 'PROTECTOR_CLIENT_DUMP_ENDPOINT_URL';
     }
 
     /**
@@ -346,7 +336,7 @@ trait HasConfiguration
      */
     public function getMetadataProviders(): Collection
     {
-        $additionalMetadataProviders = collect($this->metadataProviders ?? $this->getConfigValueForKey('metadata.providers'));
+        $additionalMetadataProviders = collect($this->metadataProviders ?? $this->getConfigValueForKey('dump.metadata.providers'));
 
         return $additionalMetadataProviders->prepend(DatabaseMetadataProvider::class);
     }

@@ -28,7 +28,7 @@ class ImportDumpTest extends TestCase
 
         $this->protector = app('protector');
 
-        Config::set('protector.baseDirectory', static::$baseDirectory);
+        Config::set('protector.dump.baseDirectory', static::$baseDirectory);
 
         $this->disk = $this->getFakeDumpDisk();
 

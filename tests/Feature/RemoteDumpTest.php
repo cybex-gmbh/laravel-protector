@@ -3,6 +3,10 @@
 namespace Cybex\Protector\Tests\Feature;
 
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
+use Cybex\Protector\Exceptions\InvalidConfiguration\MissingDumpEndpointUrlException;
+use Cybex\Protector\Exceptions\InvalidConfiguration\MissingPrivateKeyException;
+use Cybex\Protector\Exceptions\InvalidConfiguration\NoAuthConfiguredException;
+use Cybex\Protector\Exceptions\InvalidConfiguration\SanctumBasicAuthConflictException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Tests\TestCase;
 use Illuminate\Contracts\Filesystem\Filesystem;
@@ -17,20 +21,20 @@ class RemoteDumpTest extends TestCase
 {
     protected Filesystem $disk;
 
-    protected string $serverUrl;
+    protected string $dumpEndpointUrl;
     protected string $baseDirectory;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        Config::set('protector.remoteEndpoint.serverUrl', 'protector.invalid/protector/exportDump');
-        Config::set('protector.routeMiddleware', []);
-        Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
+        Config::set('protector.client.dumpEndpointUrl', 'protector.invalid/protector/exportDump');
+        Config::set('protector.server.routeMiddleware', []);
+        Config::set('protector.client.basicAuthCredentials', '1234:1234');
 
         $this->disk = Storage::disk('local');
-        $this->serverUrl = app('protector')->getServerUrl();
-        $this->baseDirectory = Config::get('protector.baseDirectory');
+        $this->dumpEndpointUrl = app('protector')->getDumpEndpointUrl();
+        $this->baseDirectory = Config::get('protector.dump.baseDirectory');
     }
 
     protected function tearDown(): void
@@ -57,7 +61,7 @@ class RemoteDumpTest extends TestCase
      */
     public function sanctumIsEnabled()
     {
-        Config::set('protector.routeMiddleware', ['auth:sanctum']);
+        Config::set('protector.server.routeMiddleware', ['auth:sanctum']);
 
         $shouldEncrypt = $this->runProtectedMethod('shouldEncrypt');
 
@@ -69,7 +73,7 @@ class RemoteDumpTest extends TestCase
      */
     public function sanctumIsNotEnabled()
     {
-        Config::set('protector.routeMiddleware', []);
+        Config::set('protector.server.routeMiddleware', []);
 
         $shouldEncrypt = $this->runProtectedMethod('shouldEncrypt');
 
@@ -79,11 +83,11 @@ class RemoteDumpTest extends TestCase
     /**
      * @test
      */
-    public function failOnMissingServerUrl()
+    public function failOnMissingDumpEndpointUrl()
     {
-        Config::set('protector.remoteEndpoint.serverUrl', '');
+        Config::set('protector.client.dumpEndpointUrl', '');
 
-        $this->expectException(InvalidConfigurationException::class);
+        $this->expectException(MissingDumpEndpointUrlException::class);
         $this->protector->getRemoteDump();
     }
 
@@ -92,15 +96,10 @@ class RemoteDumpTest extends TestCase
      */
     public function failWhenPrivateKeyIsNotSet()
     {
-        Config::set('protector.routeMiddleware', ['auth:sanctum']);
+        Config::set('protector.server.routeMiddleware', ['auth:sanctum']);
+        Config::set('protector.client.privateKey', '');
 
-        $this->protector->withPrivateKeyName('NON_EXISTENT_PRIVATE_KEY_NAME');
-
-        Http::fake([
-            $this->serverUrl => Http::response(),
-        ]);
-
-        $this->expectException(InvalidConfigurationException::class);
+        $this->expectException(MissingPrivateKeyException::class);
         $this->protector->getRemoteDump();
     }
 
@@ -109,7 +108,7 @@ class RemoteDumpTest extends TestCase
      */
     public function failWhenResponseCouldNotBeReceived()
     {
-        Config::set('protector.routeMiddleware', []);
+        Config::set('protector.server.routeMiddleware', []);
 
         Http::fake([
             __FUNCTION__ => Http::response(),
@@ -123,13 +122,13 @@ class RemoteDumpTest extends TestCase
     /**
      * @test
      */
-    public function htaccessIsInRequestHeaderWhenSpecified()
+    public function basicAuthIsInRequestHeaderWhenSpecified()
     {
-        Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
-        Config::set('protector.routeMiddleware', []);
+        Config::set('protector.client.basicAuthCredentials', '1234:1234');
+        Config::set('protector.server.routeMiddleware', []);
 
         Http::fake([
-            $this->serverUrl => Http::response(__FUNCTION__, 200, ['Chunk-Size' => 100]),
+            $this->dumpEndpointUrl => Http::response(__FUNCTION__, 200, ['Chunk-Size' => 100]),
         ]);
 
         $this->protector->getRemoteDump();
@@ -145,7 +144,7 @@ class RemoteDumpTest extends TestCase
     public function emptyDumpThrowsException()
     {
         Http::fake([
-            $this->serverUrl => Http::response('', 200, ['Chunk-Size' => 100]),
+            $this->dumpEndpointUrl => Http::response('', 200, ['Chunk-Size' => 100]),
         ]);
 
         $this->expectException(FailedRemoteDatabaseFetchingException::class);
@@ -167,7 +166,7 @@ class RemoteDumpTest extends TestCase
             $this->expectException(UnauthorizedHttpException::class);
 
             Http::fake([
-                $this->serverUrl => Http::response([], $statusCode),
+                $this->dumpEndpointUrl => Http::response([], $statusCode),
             ]);
 
             $this->protector->getRemoteDump();
@@ -182,7 +181,7 @@ class RemoteDumpTest extends TestCase
         $this->expectException(NotFoundHttpException::class);
 
         Http::fake([
-            $this->serverUrl => Http::response([], 404),
+            $this->dumpEndpointUrl => Http::response([], 404),
         ]);
 
         $this->protector->getRemoteDump();
@@ -196,7 +195,7 @@ class RemoteDumpTest extends TestCase
         $this->expectException(FailedRemoteDatabaseFetchingException::class);
 
         Http::fake([
-            $this->serverUrl => Http::response([], 500),
+            $this->dumpEndpointUrl => Http::response([], 500),
         ]);
 
         $this->protector->getRemoteDump();
@@ -215,7 +214,7 @@ class RemoteDumpTest extends TestCase
         $encryptionOverhead = $this->runProtectedMethod('determineEncryptionOverhead', [$chunkSize, $publicKey]);
 
         Http::fake([
-            $this->serverUrl => Http::response($encryptedMessage, 200, [
+            $this->dumpEndpointUrl => Http::response($encryptedMessage, 200, [
                 'Sanctum-Enabled' => true,
                 'Content-Disposition' => sprintf('attachment; filename="%s.txt"', __FUNCTION__),
                 'Chunk-Size' => strlen($message) + $encryptionOverhead,
@@ -239,23 +238,23 @@ class RemoteDumpTest extends TestCase
     /**
      * @test
      */
-    public function failOnLaravelSanctumIsDisabledAndNoHtaccessDefined()
+    public function failOnLaravelSanctumIsDisabledAndNoBasicAuthDefined()
     {
-        Config::set('protector.routeMiddleware', []);
-        Config::set('protector.remoteEndpoint.htaccessLogin', '');
+        Config::set('protector.server.routeMiddleware', []);
+        Config::set('protector.client.basicAuthCredentials', '');
 
-        $this->expectException(InvalidConfigurationException::class);
+        $this->expectException(NoAuthConfiguredException::class);
         $this->runProtectedMethod('getConfiguredHttpRequest');
     }
 
     /**
      * @test
      */
-    public function failOnLaravelSanctumIsActiveAndHtaccessIsDefined()
+    public function failOnLaravelSanctumIsActiveAndBasicAuthIsDefined()
     {
-        Config::set('protector.routeMiddleware', ['auth:sanctum']);
+        Config::set('protector.server.routeMiddleware', ['auth:sanctum']);
 
-        $this->expectException(InvalidConfigurationException::class);
+        $this->expectException(SanctumBasicAuthConflictException::class);
         $this->runProtectedMethod('getConfiguredHttpRequest');
     }
 
@@ -267,18 +266,19 @@ class RemoteDumpTest extends TestCase
         $request = $this->runProtectedMethod('getConfiguredHttpRequest');
         $options = $request->getOptions();
 
-        $this->assertEquals(true, $options['stream']);
+        $this->assertTrue($options['stream']);
         $this->assertEquals('application/json', $options['headers']['Accept']);
         $this->assertInstanceOf(PendingRequest::class, $request);
     }
 
     /**
      * @test
+     * When the Sanctum token is configured in the request, it will contain an option 'headers', which is an array containing the Authorization header.
      */
     public function addTokenToRequestWhenSanctumIsActive()
     {
-        Config::set('protector.routeMiddleware', ['auth:sanctum']);
-        Config::set('protector.remoteEndpoint.htaccessLogin', null);
+        Config::set('protector.server.routeMiddleware', ['auth:sanctum']);
+        Config::set('protector.client.basicAuthCredentials', null);
 
         $request = $this->runProtectedMethod('getConfiguredHttpRequest');
         $options = $request->getOptions();
@@ -289,8 +289,9 @@ class RemoteDumpTest extends TestCase
 
     /**
      * @test
+     * When Basic Auth is configured in the request, it will contain an option 'auth', which is an array containing the credentials.
      */
-    public function addBasicAuthToRequestWhenHtaccessIsUsed()
+    public function addBasicAuthToRequestWhenBasicAuthIsUsed()
     {
         $request = $this->runProtectedMethod('getConfiguredHttpRequest');
         $options = $request->getOptions();
@@ -315,9 +316,9 @@ class RemoteDumpTest extends TestCase
      */
     public function canGetConfigValueForKey()
     {
-        Config::set('protector.baseDirectory', __FUNCTION__);
+        Config::set('protector.dump.baseDirectory', __FUNCTION__);
 
-        $result = $this->runProtectedMethod('getConfigValueForKey', ['baseDirectory']);
+        $result = $this->runProtectedMethod('getConfigValueForKey', ['dump.baseDirectory']);
 
         $this->assertEquals(__FUNCTION__, $result);
     }
@@ -329,23 +330,11 @@ class RemoteDumpTest extends TestCase
     {
         $functionName = __FUNCTION__;
 
-        Config::set('protector.baseDirectory', fn() => $functionName);
+        Config::set('protector.dump.baseDirectory', fn() => $functionName);
 
-        $result = $this->runProtectedMethod('getConfigValueForKey', ['baseDirectory']);
+        $result = $this->runProtectedMethod('getConfigValueForKey', ['dump.baseDirectory']);
 
         $this->assertEquals($functionName, $result);
-    }
-
-    /**
-     * Sets the env key name for the private key.
-     * @test
-     */
-    public function validateUsersPrivateKeyName()
-    {
-        $this->protector->withPrivateKeyName(__FUNCTION__);
-        $privateKeyName = $this->protector->getPrivateKeyName();
-
-        $this->assertEquals(__FUNCTION__, $privateKeyName);
     }
 
     /**
@@ -363,7 +352,7 @@ class RemoteDumpTest extends TestCase
     public function canCreateFilename()
     {
         $structure = '%s %d-%d-%d %d-%d %x.sql';
-        config()->set('protector.fileName', $structure);
+        config()->set('protector.dump.fileName', $structure);
 
         $fileName = $this->protector->createFilename();
 
@@ -378,7 +367,7 @@ class RemoteDumpTest extends TestCase
     {
         $authToken = $this->runProtectedMethod('getAuthToken');
 
-        $this->assertEquals(env('PROTECTOR_AUTH_TOKEN'), $authToken);
+        $this->assertEquals(config('protector.client.authToken'), $authToken);
     }
 
     /**
@@ -396,20 +385,8 @@ class RemoteDumpTest extends TestCase
     /**
      * @test
      */
-    public function setAuthTokenKeyName()
+    public function canGetDumpEndpointUrl()
     {
-        $this->protector->withAuthTokenKeyName(__FUNCTION__);
-
-        $authTokenKeyName = $this->runProtectedMethod('getAuthTokenKeyName');
-
-        $this->assertEquals(__FUNCTION__, $authTokenKeyName);
-    }
-
-    /**
-     * @test
-     */
-    public function canGetServerUrl()
-    {
-        $this->assertEquals(config('protector.remoteEndpoint.serverUrl'), $this->protector->getServerUrl());
+        $this->assertEquals(config('protector.client.dumpEndpointUrl'), $this->protector->getDumpEndpointUrl());
     }
 }

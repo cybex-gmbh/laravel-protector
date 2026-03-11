@@ -15,7 +15,7 @@ class ImportDumpCommandTest extends TestCase
 {
     protected Filesystem $disk;
 
-    protected string $serverUrl;
+    protected string $dumpEndpointUrl;
     protected string $shouldDownloadDump;
     protected string $shouldImportDump;
     protected static string $baseDirectory = 'dumps';
@@ -24,12 +24,12 @@ class ImportDumpCommandTest extends TestCase
     {
         parent::setUp();
 
-        Config::set('protector.baseDirectory', 'protector');
-        Config::set('protector.remoteEndpoint.serverUrl', 'protector.invalid/protector/exportDump');
-        Config::set('protector.baseDirectory', static::$baseDirectory);
+        Config::set('protector.dump.baseDirectory', 'protector');
+        Config::set('protector.client.dumpEndpointUrl', 'protector.invalid/protector/exportDump');
+        Config::set('protector.dump.baseDirectory', static::$baseDirectory);
 
         $this->disk = $this->getFakeDumpDisk();
-        $this->serverUrl = $this->protector->getServerUrl();
+        $this->dumpEndpointUrl = $this->protector->getDumpEndpointUrl();
 
         $this->shouldDownloadDump = 'Do you want to download and import a fresh dump from the server or an existing local dump?';
         $this->shouldImportDump = sprintf(
@@ -86,13 +86,13 @@ class ImportDumpCommandTest extends TestCase
      */
     public function getRemoteDumpOnImportDumpCommand()
     {
-        Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
-        Config::set('protector.routeMiddleware', []);
+        Config::set('protector.client.basicAuthCredentials', '1234:1234');
+        Config::set('protector.server.routeMiddleware', []);
 
-        $serverUrl = $this->protector->getServerUrl();
+        $dumpEndpointUrl = $this->protector->getDumpEndpointUrl();
 
         Http::fake([
-            $serverUrl => Http::response(__FUNCTION__, 200, ['Chunk-Size' => 100]),
+            $dumpEndpointUrl => Http::response(__FUNCTION__, 200, ['Chunk-Size' => 100]),
         ]);
 
         $this->artisan('protector:import --remote')
@@ -106,18 +106,18 @@ class ImportDumpCommandTest extends TestCase
      */
     public function canGetRemoteDumpWithFlushOptionEnabled()
     {
-        Config::set('protector.remoteEndpoint.htaccessLogin', '1234:1234');
-        Config::set('protector.routeMiddleware', []);
+        Config::set('protector.client.basicAuthCredentials', '1234:1234');
+        Config::set('protector.server.routeMiddleware', []);
 
         Http::fake([
-            $this->serverUrl => Http::response(__FUNCTION__, 200, ['Chunk-Size' => 100]),
+            $this->dumpEndpointUrl => Http::response(__FUNCTION__, 200, ['Chunk-Size' => 100]),
         ]);
 
         $this->artisan('protector:import --remote --flush')
             ->expectsConfirmation($this->shouldImportDump);
 
         $this->assertEquals(
-            [sprintf('%s%sremote_dump.sql', Config::get('protector.baseDirectory'), DIRECTORY_SEPARATOR)],
+            [sprintf('%s%sremote_dump.sql', Config::get('protector.dump.baseDirectory'), DIRECTORY_SEPARATOR)],
             $this->protector->getDumpFiles()
         );
     }

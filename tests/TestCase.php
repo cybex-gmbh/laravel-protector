@@ -82,7 +82,7 @@ class TestCase extends OrchestraTestCase
 
     protected function getDumpDisk(): Filesystem
     {
-        $diskName = config('protector.diskName', config('filesystems.default'));
+        $diskName = config('protector.dump.diskName', config('filesystems.default'));
 
         return Storage::fake($diskName);
     }
