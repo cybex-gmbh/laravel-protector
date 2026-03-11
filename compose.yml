@@ -38,6 +38,8 @@ services:
             MYSQL_ROOT_PASSWORD: *db-pass
             MYSQL_ROOT_HOST: "%"
             MYSQL_ALLOW_EMPTY_PASSWORD: 1
+        volumes:
+            - 'mysql:/var/lib/mysql'
         networks:
             - internal
         healthcheck:
@@ -51,6 +53,8 @@ services:
             POSTGRES_USER: *db-user
             POSTGRES_PASSWORD: *db-pass
             POSTGRES_HOST_AUTH_METHOD: 'trust'
+        volumes:
+            - 'pgsql:/var/lib/postgresql/data'
         networks:
             - internal
         healthcheck:
@@ -62,3 +66,8 @@ networks:
         internal: true
     shared:
         external: true
+volumes:
+    mysql:
+        driver: local
+    pgsql:
+        driver: local
