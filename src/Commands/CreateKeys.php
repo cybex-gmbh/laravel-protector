@@ -2,7 +2,6 @@
 
 namespace Cybex\Protector\Commands;
 
-use Cybex\Protector\Protector;
 use Illuminate\Console\Command;
 
 /**

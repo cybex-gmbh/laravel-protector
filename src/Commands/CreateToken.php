@@ -2,7 +2,6 @@
 
 namespace Cybex\Protector\Commands;
 
-use Cybex\Protector\Protector;
 use Illuminate\Console\Command;
 
 /**
@@ -37,11 +36,10 @@ class CreateToken extends Command
         $publicKey = $this->option('publicKey');
         $user = config('auth.providers.users.model')::findOrFail($this->argument('userId'));
         $user->tokens()->whereAbilities('["protector:import"]')->delete();
-        $userInformation = sprintf('%s|%s (%s)', $user->id, $user->name, $user->email);
 
         $this->newLine();
 
-        $this->warn(sprintf('Executing for User %s', $userInformation));
+        $this->warn(sprintf('Executing for User %s|%s (%s)', $user->id, $user->name, $user->email));
 
         if (!$user->protector_public_key && !$publicKey) {
             $this->fail('The user doesn\'t have a protector public key and none was specified. Please provide a public key for the user.');
@@ -51,7 +49,7 @@ class CreateToken extends Command
             $user->protector_public_key = $publicKey;
             $user->save();
 
-            $this->info(sprintf('Protector public key was set for user %s.', $userInformation));
+            $this->info('Protector public key was set.');
         }
 
         $this->newLine();
