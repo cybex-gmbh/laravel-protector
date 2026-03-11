@@ -23,7 +23,7 @@ class CreateKeys extends Command
      *
      * @var string
      */
-    protected $description = 'Creates crypto public and private key.';
+    protected $description = 'Creates public and private crypto keys.';
 
     /**
      * Execute the console command.
