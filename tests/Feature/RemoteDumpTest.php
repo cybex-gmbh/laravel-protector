@@ -207,8 +207,8 @@ class RemoteDumpTest extends TestCase
     public function checkForSuccessfulDecryption()
     {
         $message = env('PROTECTOR_DECRYPTED_MESSAGE');
-        $encryptedMessage = sodium_hex2bin(env('PROTECTOR_ENCRYPTED_MESSAGE'));
-        $publicKey = sodium_hex2bin(env('PROTECTOR_PUBLIC_KEY'));
+        $encryptedMessage = base64_decode(env('PROTECTOR_ENCRYPTED_MESSAGE_BASE64'));
+        $publicKey = env('PROTECTOR_PUBLIC_KEY');
 
         $chunkSize = strlen($message);
         $encryptionOverhead = $this->runProtectedMethod('determineEncryptionOverhead', [$chunkSize, $publicKey]);
