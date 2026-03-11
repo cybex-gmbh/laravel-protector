@@ -47,7 +47,7 @@ class CreateKeys extends Command
         $this->newLine();
 
         $this->info(sprintf('# Protector Public Key: %s', sodium_bin2hex($publicKey)));
-        $this->info(sprintf('%s=%s', app(Protector::class)->getPrivateKeyName(), sodium_bin2hex($keyPair)));
+        $this->info(sprintf('%s=%s', app('protector')->getPrivateKeyName(), sodium_bin2hex($keyPair)));
 
         $this->newLine();
     }
