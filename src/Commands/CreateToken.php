@@ -2,6 +2,7 @@
 
 namespace Cybex\Protector\Commands;
 
+use Cybex\Protector\Protector;
 use Illuminate\Console\Command;
 
 /**
@@ -31,18 +32,19 @@ class CreateToken extends Command
      *
      * @return void
      */
-    public function handle()
+    public function handle(): void
     {
         $publicKey = $this->option('publicKey');
         $user = config('auth.providers.users.model')::findOrFail($this->argument('userId'));
         $user->tokens()->whereAbilities('["protector:import"]')->delete();
-        $userInformation = sprintf('%s: %s (%s)', $user->id, $user->name, $user->email);
+        $userInformation = sprintf('%s|%s (%s)', $user->id, $user->name, $user->email);
+
+        $this->newLine();
+
+        $this->warn(sprintf('Executing for User %s', $userInformation));
 
         if (!$user->protector_public_key && !$publicKey) {
-            $this->error(
-                'The user doesn\'t have a protector public key and none was specified. Please provide a public key for the user.'
-            );
-            return null;
+            $this->fail('The user doesn\'t have a protector public key and none was specified. Please provide a public key for the user.');
         }
 
         if ($publicKey) {
@@ -50,14 +52,16 @@ class CreateToken extends Command
             $user->save();
 
             $this->info(sprintf('Protector public key was set for user %s.', $userInformation));
-            $this->output->newLine();
         }
+
+        $this->newLine();
 
         $token = $user->createToken('protector', ['protector:import']);
 
-        $this->warn(sprintf('Information for the user %s', $userInformation));
-        $this->info(sprintf('%s="%s"', app('protector')->getAuthTokenKeyName(), $token->plainTextToken));
         $this->warn('The quotation marks at the start and end of the token are necessary!');
-        $this->info(sprintf('%s=%s', app('protector')->getDumpEndpointUrlKeyName(), route('protectorDumpEndpointRoute')));
+        $this->info(sprintf('%s="%s"', app(Protector::class)->getAuthTokenKeyName(), $token->plainTextToken));
+        $this->info(sprintf('%s=%s', app(Protector::class)->getDumpEndpointUrlKeyName(), route('protectorDumpEndpointRoute')));
+
+        $this->newLine();
     }
 }
