@@ -11,6 +11,7 @@ All notable changes to `protector` will be documented in this file.
 
 ### General
 
+- The minimum required PHP version is now 8.2
 - Restructured the `protector.php` configuration file for better organization and clarity
 - Reformatted the output of the `protector:keys` and `protector:token` commands to easier spot relevant information
 

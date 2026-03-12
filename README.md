@@ -331,15 +331,15 @@ There is an example app with the Laravel Protector package installed.
 
 The file structure in the container is as follows:
 
-- /var/www/html: example app
-- /var/www/package: Protector package
+- /var/www: example app
+- /var/package: Protector package
 
 ```bash
-./sail up -d
+docker compose up -d
 ```
 
 ```bash
-./sail shell
+docker compose exec app shell
 ```
 
 ```bash

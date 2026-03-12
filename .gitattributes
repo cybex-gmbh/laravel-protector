@@ -7,7 +7,6 @@ docker export-ignore
 exampleApp export-ignore
 tests export-ignore
 .editorconfig export-ignore
-.env export-ignore
 .gitattributes export-ignore
 .gitignore export-ignore
 CHANGELOG.md export-ignore
@@ -16,4 +15,3 @@ phpunit.xml.dist export-ignore
 phpunit-ci.xml.dist export-ignore
 phpunit-postgres.xml.dist export-ignore
 pint.json export-ignore
-sail export-ignore
