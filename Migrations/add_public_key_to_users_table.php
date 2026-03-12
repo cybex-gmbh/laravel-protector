@@ -15,7 +15,7 @@ class AddPublicKeyToUsersTable extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->string('protector_public_key')->unique()->nullable()->comment(
-                'The sodium public key for the Protector package.'
+                'The public key for the Protector package.'
             );
         });
     }

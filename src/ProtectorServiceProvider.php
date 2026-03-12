@@ -4,10 +4,12 @@ namespace Cybex\Protector;
 
 use Cybex\Protector\Classes\SchemaState\MySql\MySqlSchemaStateProxy;
 use Cybex\Protector\Classes\SchemaState\Postgres\PostgresSchemaStateProxy;
+use Cybex\Protector\Classes\SodiumCrypter;
 use Cybex\Protector\Commands\CreateKeys;
 use Cybex\Protector\Commands\CreateToken;
 use Cybex\Protector\Commands\ExportDump;
 use Cybex\Protector\Commands\ImportDump;
+use Cybex\Protector\Contracts\Crypter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -50,6 +52,8 @@ class ProtectorServiceProvider extends ServiceProvider
         // Scoped to the request lifecycle to ensure a new instance is created for each request (e.g. for Octane).
         $this->app->scoped(Protector::class, Protector::class);
         $this->app->bind('protector', Protector::class);
+
+        $this->app->singleton(Crypter::class, SodiumCrypter::class);
 
         // Register the SchemaState proxy classes.
         $this->app->bind(MySqlSchemaStateProxy::class, function ($app, array $params) {

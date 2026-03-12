@@ -2,6 +2,8 @@
 
 namespace Cybex\Protector\Commands;
 
+use Cybex\Protector\Contracts\Crypter;
+use Cybex\Protector\Protector;
 use Illuminate\Console\Command;
 
 /**
@@ -31,8 +33,9 @@ class CreateKeys extends Command
      */
     public function handle(): void
     {
-        $keyPair = sodium_crypto_box_keypair();
-        $publicKey = sodium_crypto_box_publickey($keyPair);
+        $crypter = app(Crypter::class);
+        $privateKey = $crypter->createPrivateKey();
+        $publicKey = $crypter->getPublicKeyFromPrivateKey($privateKey);
 
         $this->newLine();
 
@@ -45,8 +48,8 @@ class CreateKeys extends Command
 
         $this->newLine();
 
-        $this->info(sprintf('# Protector Public Key: %s', sodium_bin2hex($publicKey)));
-        $this->info(sprintf('%s=%s', app('protector')->getPrivateKeyName(), sodium_bin2hex($keyPair)));
+        $this->info(sprintf('# Protector Public Key: %s', $publicKey));
+        $this->info(sprintf('%s=%s', app('protector')->getPrivateKeyName(), $privateKey));
 
         $this->newLine();
     }
