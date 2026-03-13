@@ -8,12 +8,11 @@ services:
         image: cybexwebdev/php-laravel:${DOCKER_PHP_VERSION:-8.2}-devtools
         container_name: ${COMPOSE_PROJECT_NAME}
         environment:
+            APP_ENV: staging
             CONTAINER_ROLE: web
         volumes:
             - '.:/var/package'
             - './exampleApp:/var/www/'
-        env_file:
-            - ./exampleApp/.env
         networks:
             - internal
             - shared
