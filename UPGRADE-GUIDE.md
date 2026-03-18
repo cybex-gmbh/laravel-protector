@@ -7,6 +7,7 @@
 
 #### Overview (see below for details):
 
+- The minimum required PHP version is now 8.2
 - Dump metadata has received a new structure.
   Legacy dumps with old metadata are still supported.
   However, if you have code that relies on the old metadata structure,
@@ -19,6 +20,13 @@
 > [!IMPORTANT]
 > The `protector.php` config structure and keys have changed.
 > If you have previously published the config file, you should re-publish it and adjust the configuration accordingly.
+
+### Minimum PHP version
+
+> [!NOTE]
+> Impact: Apps running on PHP versions below 8.2 will not be able to use this version of the package.
+
+You need to update your system to PHP 8.2 or higher, as it is now the minimum required version.
 
 ### Setting .env key names during runtime
 
