@@ -13,6 +13,8 @@ services:
         volumes:
             - '.:/var/package'
             - './exampleApp:/var/www/'
+            # For .bash_history and similar
+            - 'home:/home/www'
         networks:
             - internal
             - shared
@@ -57,4 +59,6 @@ volumes:
     mysql:
         driver: local
     pgsql:
+        driver: local
+    home:
         driver: local

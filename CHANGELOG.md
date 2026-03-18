@@ -24,6 +24,10 @@ All notable changes to `protector` will be documented in this file.
 
 - Fixed an issue where the Protector would not work when caching the config using `php artisan config:cache` or similar
 
+### Development
+
+- The dev image has been updated and Laravel Sail has been removed. Please check the [development section of the README](README.md#development) for usage.
+
 ## [v3.2.1 - 2026-02-02](https://github.com/cybex-gmbh/laravel-protector/compare/v3.2.0...v3.2.1)
 
 - Internal shell calls now use the same method as used for dumping databases
