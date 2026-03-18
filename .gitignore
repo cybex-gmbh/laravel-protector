@@ -6,6 +6,3 @@ coverage
 /.idea
 .phpunit.result.cache
 .env
-/exampleApp/.*/*
-/exampleApp/.mysql_history
-/exampleApp/.bash_history
