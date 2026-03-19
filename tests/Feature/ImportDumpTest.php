@@ -3,6 +3,7 @@
 namespace Cybex\Protector\Tests\Feature;
 
 use Carbon\Carbon;
+use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
 use Cybex\Protector\Exceptions\FailedImportException;
 use Cybex\Protector\Exceptions\FailedWipeException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
@@ -203,7 +204,7 @@ class ImportDumpTest extends TestCase
     public function throwsExceptionIfNoFileExists()
     {
         $this->clearDumpDirectory();
-        $this->expectException(FileNotFoundException::class);
+        $this->expectException(EmptyBaseDirectoryException::class);
         $this->protector->getLatestDumpName();
     }
 
