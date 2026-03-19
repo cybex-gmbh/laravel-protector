@@ -70,7 +70,9 @@ class ImportDump extends Command
         $hasFile = !empty(trim($this->option('file')));
 
         if ($this->option('force') && !($this->option('remote') || $hasFile || $this->option('latest'))) {
-            $this->fail('Nothing to import. You need to specify either --remote, --file, or --latest.');
+            $this->error('Nothing to import. You need to specify either --remote, --file, or --latest.');
+
+            return self::FAILURE;
         }
 
         match (true) {
