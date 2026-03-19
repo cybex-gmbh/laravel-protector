@@ -6,6 +6,7 @@ use Cybex\Protector\Classes\Metadata\MetadataHandler;
 use Cybex\Protector\Classes\SchemaState\MySql\MySqlSchemaStateProxy;
 use Cybex\Protector\Classes\SchemaState\Postgres\PostgresSchemaStateProxy;
 use Cybex\Protector\Contracts\Crypter;
+use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
 use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
 use Cybex\Protector\Exceptions\FailedDumpGenerationException;
 use Cybex\Protector\Exceptions\FailedImportException;
@@ -490,7 +491,7 @@ class Protector
     /**
      * Returns the name of the most recent dump.
      *
-     * @throws FileNotFoundException
+     * @throws EmptyBaseDirectoryException
      */
     public function getLatestDumpName(): string
     {
@@ -499,7 +500,7 @@ class Protector
         $files = $disk->files($baseDirectory);
 
         if (empty($files)) {
-            throw new FileNotFoundException($disk->path($baseDirectory));
+            throw new EmptyBaseDirectoryException();
         }
 
         usort($files, function ($a, $b) use ($disk) {
