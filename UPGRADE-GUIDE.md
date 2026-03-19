@@ -8,6 +8,8 @@
 #### Overview (see below for details):
 
 - The minimum required PHP version is now 8.2
+- Some config and .env keys have been renamed.
+- The Protector dump endpoint route name has been changed.
 - Dump metadata has received a new structure.
   Legacy dumps with old metadata are still supported.
   However, if you have code that relies on the old metadata structure,
@@ -15,7 +17,6 @@
 - To support config caching, .env key names can no longer be changed during runtime.
   If you previously relied on setting .env key names,
   you will now have to set the values directly instead.
-- Some config keys have been renamed.
 
 > [!IMPORTANT]
 > The `protector.php` config structure and keys have changed.
@@ -24,33 +25,17 @@
 ### Minimum PHP version
 
 > [!NOTE]
+> Likelihood of impact: high
+>
 > Impact: Apps running on PHP versions below 8.2 will not be able to use this version of the package.
 
 You need to update your system to PHP 8.2 or higher, as it is now the minimum required version.
 
-### Setting .env key names during runtime
-
-> [!NOTE]
-> Impact: Calls to `Protector::withAuthTokenKeyName()` and `Protector::withPrivateKeyName()` will fail
-
-This feature has been removed due to issues with config caching.
-Calls to `env()` will return `null` when the config was cached
-using `php artisan config:cache`, `php artisan optimize` or similar.
-
-Therefore, the following methods are no longer available:
-
-- Protector::withAuthTokenKeyName()
-- Protector::withPrivateKeyName()
-
-If you need to set the values for the auth token or the private key during runtime,
-use the following methods instead:
-
-- Protector::withPrivateKey()
-- Protector::withAuthToken()
-
 ### Renamed config keys
 
 > [!NOTE]
+> Likelihood of impact: high
+>
 > Impact: App may crash, published `protector.php` config files will no longer work
 
 Some config keys have been renamed.
@@ -73,6 +58,8 @@ you should re-publish it and adjust the configuration accordingly.
 ### Renamed .env keys
 
 > [!NOTE]
+> Likelihood of impact: high
+>
 > Impact: App may crash, old .env keys will be ignored
 
 The .env keys have changed to be consistent with the config keys:
@@ -89,9 +76,20 @@ The .env keys have changed to be consistent with the config keys:
 | `PROTECTOR_DUMP_ENDPOINT_ROUTE` | `PROTECTOR_SERVER_DUMP_ENDPOINT_ROUTE` |
 | `PROTECTOR_CHUNK_SIZE`          | `PROTECTOR_SERVER_CHUNK_SIZE`          |
 
+### Protector dump endpoint route name
+
+> [!NOTE]
+> Likelihood of impact: low
+>
+> Impact: Using the route name for calls like `route('protectorDumpEndpointRoute')` will fail
+
+The route name has been changed to `protector.server.dump` to align it with the overall naming scheme and allow wildcard addressing.
+
 ### Protector dump metadata
 
 > [!NOTE]
+> Likelihood of impact: low
+>
 > Impact: Dump metadata may be wrong
 
 Dump metadata can now be configured using metadata providers in the config.
@@ -111,6 +109,8 @@ For example, instead of using `new Protector()`, you should be using either of t
 ### Protector::getMetaData()
 
 > [!NOTE]
+> Likelihood of impact: low
+>
 > Impact: Calls to Protector::getMetaData() will fail
 
 The method was renamed from `getMetaData()` to `getMetadata()`.
@@ -149,6 +149,8 @@ Now, `getMetadata()` returns (assuming the default configuration is used and the
 ### Protector::getDumpMetaData()
 
 > [!NOTE]
+> Likelihood of impact: low
+>
 > Impact: Calls to Protector::getDumpMetaData() will fail
 
 The method was renamed from `getDumpMetaData()` to `getDumpMetadata()`.
@@ -160,9 +162,33 @@ Legacy dumps will still contain the `options` key.
 ### Protector::isUnderGitVersionControl()
 
 > [!NOTE]
+> Likelihood of impact: low
+>
 > Impact: Calls to Protector::isUnderGitVersionControl() will fail
 
 The method is no longer available.
+
+### Setting .env key names during runtime
+
+> [!NOTE]
+> Likelihood of impact: low
+>
+> Impact: Calls to `Protector::withAuthTokenKeyName()` and `Protector::withPrivateKeyName()` will fail
+
+This feature has been removed due to issues with config caching.
+Calls to `env()` will return `null` when the config was cached
+using `php artisan config:cache`, `php artisan optimize` or similar.
+
+Therefore, the following methods are no longer available:
+
+- Protector::withAuthTokenKeyName()
+- Protector::withPrivateKeyName()
+
+If you need to set the values for the auth token or the private key during runtime,
+use the following methods instead:
+
+- Protector::withPrivateKey()
+- Protector::withAuthToken()
 
 ---
 
@@ -177,7 +203,7 @@ No breaking changes are expected.
 
 ## v1 to v2
 
-- [Release Notes](CHANGELOG.md#v040)
+- [Release Notes](CHANGELOG.md#v200---2023-02-23)
 - [GitHub diff](https://github.com/cybex-gmbh/laravel-protector/compare/v1.5.0...v2.0.0)
 
 Likelihood of impact: high
