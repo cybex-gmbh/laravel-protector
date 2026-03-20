@@ -57,6 +57,8 @@ class ImportDump extends Command
      */
     public function handle(): int
     {
+        $this->newLine();
+
         if (App::environment('production') && !$this->option('allow-production')) {
             throw new InvalidEnvironmentException(
                 'Import is not allowed on production systems! Use --allow-production'
@@ -75,12 +77,16 @@ class ImportDump extends Command
             return self::FAILURE;
         }
 
-        match (true) {
-            $this->option('remote') => $this->importDumpFromRemote(),
-            $hasFile => $this->importDumpFromFile(),
-            $this->option('latest') => $this->importLatestDump(),
-            default => $this->importInteractive(),
+        $dumpFilePath = match (true) {
+            $this->option('remote') => $this->getDumpFromRemote(),
+            $hasFile => $this->getDumpFromFile(),
+            $this->option('latest') => $this->getLatestDump(),
+            default => $this->getDumpInteractive(),
         };
+
+        $this->prepareAndImportDumpFile($dumpFilePath);
+
+        $this->newLine();
 
         return self::SUCCESS;
     }
@@ -88,7 +94,7 @@ class ImportDump extends Command
     /**
      * Reads the remote dump file and deletes all old dumps if the flush option is set.
      */
-    protected function importDumpFromRemote(): void
+    protected function getDumpFromRemote(): string
     {
         $disk = $this->protector->getDisk();
         $basePath = $this->protector->getBaseDirectory();
@@ -108,8 +114,7 @@ class ImportDump extends Command
             $this->warn(sprintf('Deleted all old files in %s', $absolutePathToBaseDirectory));
         }
 
-        // We need to create a local temp file as the Protector disk might not be a local disk.
-        $this->importDumpFromTempFile($relativeRemoteDumpFilePath);
+        return $relativeRemoteDumpFilePath;
     }
 
     /**
@@ -118,22 +123,18 @@ class ImportDump extends Command
      *
      * @throws FileNotFoundException
      */
-    protected function importDumpFromFile(): void
+    protected function getDumpFromFile(): string
     {
         $isAbsoluteFilePath = $this->isAbsolutePath($this->option('file'));
-        $dumpFilePath = $isAbsoluteFilePath ? $this->option('file') : sprintf('%s%s%s', $this->protector->getBaseDirectory(), DIRECTORY_SEPARATOR, $this->option('file'));
 
         switch ($isAbsoluteFilePath) {
             case true:
-                $fileExists = file_exists($dumpFilePath);
                 $dumpFilePath = $this->option('file');
-                $importFn = fn() => $this->importDump($dumpFilePath, $this->option('force'));
+                $fileExists = file_exists($dumpFilePath);
                 break;
             default:
+                $dumpFilePath = implode(DIRECTORY_SEPARATOR, [$this->protector->getBaseDirectory(), $this->option('file')]);
                 $fileExists = $this->protector->getDisk()->exists($dumpFilePath);
-                $dumpFilePath = sprintf('%s%s%s', $this->protector->getBaseDirectory(), DIRECTORY_SEPARATOR, $this->option('file'));
-                // For relative paths, we need to create a local temp file as the Protector disk might not be a local disk.
-                $importFn = fn() => $this->importDumpFromTempFile($dumpFilePath);
                 break;
         }
 
@@ -141,52 +142,48 @@ class ImportDump extends Command
             throw new FileNotFoundException($dumpFilePath);
         }
 
-        $importFn();
+        // Might be absolute or relative at this point.
+        return $dumpFilePath;
     }
 
-    protected function importLatestDump(): void
+    protected function getLatestDump(): string
     {
         $relativeImportFilePath = $this->protector->getLatestDumpName();
 
         $this->info(sprintf('Importing <comment>%s</comment>', $relativeImportFilePath));
 
-        // We need to create a local temp file as the Protector disk might not be a local disk.
-        $this->importDumpFromTempFile($relativeImportFilePath);
+        return $relativeImportFilePath;
     }
 
-    protected function importInteractive(): void
+    protected function getDumpInteractive(): string
     {
         if ($this->userWantsRemoteDump()) {
-            $this->importDumpFromRemote();
-
-            return;
+            return $this->getDumpFromRemote();
         }
 
-        $relativeImportFilePath = $this->chooseImportDump($this->option('connection'));
-
-        // We need to create a local temp file as the Protector disk might not be a local disk.
-        $this->importDumpFromTempFile($relativeImportFilePath);
+        return $this->chooseImportDump($this->option('connection'));
     }
 
     /**
      * Imports a dump file.
      * If it is stored remotely, a local temporary file is created, imported, and deleted afterward.
      */
-    protected function importDumpFromTempFile(string $dumpFilePath): void
+    protected function prepareAndImportDumpFile(string $dumpFilePath): void
     {
-        if (!is_a($this->protector->getDisk()->getAdapter(), LocalFilesystemAdapter::class)) {
-            $absoluteLocalFilePath = $this->protector->createTempFilePath($dumpFilePath);
-        }
-
-        // We need an absolute file path going forward. The file path may already be absolute, only if called with the --file option and passed an absolute path.
+        // We need an absolute and local file path going forward. The file path may already be absolute and local, only if called with the --file option and passed an absolute path.
         if (!$this->isAbsolutePath($dumpFilePath)) {
-            $dumpFilePath = $this->protector->getDisk()->path($dumpFilePath);
+            // The Protector disk might be local, if not, we need to create a local temp file.
+            if (is_a($this->protector->getDisk()->getAdapter(), LocalFilesystemAdapter::class)) {
+                $dumpFilePath = $this->protector->getDisk()->path($dumpFilePath);
+            } else {
+                $absoluteTempFilePath = $this->protector->createTempFilePath($dumpFilePath);
+            }
         }
 
         try {
-            $this->importDump($absoluteLocalFilePath ?? $dumpFilePath, $this->option('force'));
+            $this->importDump($absoluteTempFilePath ?? $dumpFilePath, $this->option('force'));
         } finally {
-            !empty($absoluteLocalFilePath) && unlink($absoluteLocalFilePath);
+            !empty($absoluteTempFilePath) && unlink($absoluteTempFilePath);
         }
     }
 
@@ -198,8 +195,9 @@ class ImportDump extends Command
         $connectionFiles = $this->getConnectionFiles($connectionName);
 
         if ($connectionFiles->count() === 1) {
-            $importFilePath = $connectionFiles->first()['path'];
-            $this->info(sprintf('Using file "%s" because there are no other dumps.', $importFilePath));
+            $relativeImportFilePath = $connectionFiles->first()['path'];
+
+            $this->info(sprintf('Using file "%s" because there are no other dumps.', $relativeImportFilePath));
         } else {
             $importFile = $this->choice(
                 'Which file do you want to import?',
@@ -208,10 +206,10 @@ class ImportDump extends Command
                 })->toArray()
             );
 
-            $importFilePath = $connectionFiles->firstWhere('file', $importFile)['path'];
+            $relativeImportFilePath = $connectionFiles->firstWhere('file', $importFile)['path'];
         }
 
-        return $importFilePath;
+        return $relativeImportFilePath;
     }
 
     /**
