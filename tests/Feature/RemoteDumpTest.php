@@ -33,7 +33,7 @@ class RemoteDumpTest extends TestCase
         Config::set('protector.client.basicAuthCredentials', '1234:1234');
 
         $this->disk = Storage::disk('local');
-        $this->dumpEndpointUrl = app('protector')->getDumpEndpointUrl();
+        $this->dumpEndpointUrl = $this->protector->getConfig()->getDumpEndpointUrl();
         $this->baseDirectory = Config::get('protector.dump.baseDirectory');
     }
 
@@ -63,7 +63,7 @@ class RemoteDumpTest extends TestCase
     {
         Config::set('protector.server.routeMiddleware', ['auth:sanctum']);
 
-        $shouldEncrypt = $this->runProtectedMethod('shouldEncrypt');
+        $shouldEncrypt = $this->protector->getConfig()->shouldEncrypt();
 
         $this->assertTrue($shouldEncrypt);
     }
@@ -75,7 +75,7 @@ class RemoteDumpTest extends TestCase
     {
         Config::set('protector.server.routeMiddleware', []);
 
-        $shouldEncrypt = $this->runProtectedMethod('shouldEncrypt');
+        $shouldEncrypt = $this->protector->getConfig()->shouldEncrypt();
 
         $this->assertFalse($shouldEncrypt);
     }
@@ -306,9 +306,9 @@ class RemoteDumpTest extends TestCase
     public function canReturnDatabaseName()
     {
         Config::set(sprintf('database.connections.%s.database', env('DB_CONNECTION')), __FUNCTION__);
-        $this->protector->withConnectionName();
+        $this->protector->getConfig()->withConnectionName();
 
-        $this->assertEquals(__FUNCTION__, $this->protector->getDatabaseName());
+        $this->assertEquals(__FUNCTION__, $this->protector->getConfig()->getDatabaseName());
     }
 
     /**
@@ -318,7 +318,7 @@ class RemoteDumpTest extends TestCase
     {
         Config::set('protector.dump.baseDirectory', __FUNCTION__);
 
-        $result = $this->runProtectedMethod('getConfigValueForKey', ['dump.baseDirectory']);
+        $result = $this->protector->getConfig()->getConfigValueForKey('dump.baseDirectory');
 
         $this->assertEquals(__FUNCTION__, $result);
     }
@@ -332,7 +332,7 @@ class RemoteDumpTest extends TestCase
 
         Config::set('protector.dump.baseDirectory', fn() => $functionName);
 
-        $result = $this->runProtectedMethod('getConfigValueForKey', ['dump.baseDirectory']);
+        $result = $this->protector->getConfig()->getConfigValueForKey('dump.baseDirectory');
 
         $this->assertEquals($functionName, $result);
     }
@@ -365,7 +365,7 @@ class RemoteDumpTest extends TestCase
      */
     public function canGetAuthToken()
     {
-        $authToken = $this->runProtectedMethod('getAuthToken');
+        $authToken = $this->protector->getConfig()->getAuthToken();
 
         $this->assertEquals(config('protector.client.authToken'), $authToken);
     }
@@ -375,9 +375,9 @@ class RemoteDumpTest extends TestCase
      */
     public function setAuthToken()
     {
-        $this->protector->withAuthToken(__FUNCTION__);
+        $this->protector->getConfig()->withAuthToken(__FUNCTION__);
 
-        $authToken = $this->runProtectedMethod('getAuthToken');
+        $authToken = $this->protector->getConfig()->getAuthToken();
 
         $this->assertEquals(__FUNCTION__, $authToken);
     }
@@ -387,6 +387,6 @@ class RemoteDumpTest extends TestCase
      */
     public function canGetDumpEndpointUrl()
     {
-        $this->assertEquals(config('protector.client.dumpEndpointUrl'), $this->protector->getDumpEndpointUrl());
+        $this->assertEquals(config('protector.client.dumpEndpointUrl'), $this->protector->getConfig()->getDumpEndpointUrl());
     }
 }

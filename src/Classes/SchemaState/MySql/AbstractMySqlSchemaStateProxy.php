@@ -2,7 +2,7 @@
 
 namespace Cybex\Protector\Classes\SchemaState\MySql;
 
-use Cybex\Protector\Protector;
+use Cybex\Protector\ProtectorConfig;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Schema\MySqlSchemaState;
 use Symfony\Component\Process\Process;
@@ -18,7 +18,7 @@ abstract class AbstractMySqlSchemaStateProxy extends MySqlSchemaState
 
     abstract public function getConditionalParameters(): array;
 
-    public function __construct(protected MySqlSchemaState $schemaState, protected Protector $protector)
+    public function __construct(protected MySqlSchemaState $schemaState, protected ProtectorConfig $config)
     {
         parent::__construct($schemaState->connection);
     }

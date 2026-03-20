@@ -67,7 +67,7 @@ class ImportDump extends Command
 
         $this->protector = app('protector');
         $this->protector->guardRequiredFunctionsEnabled();
-        $this->protector->withConnectionName($this->option('connection'));
+        $this->protector->getConfig()->withConnectionName($this->option('connection'));
 
         $hasFile = !empty(trim($this->option('file')));
 
@@ -96,9 +96,9 @@ class ImportDump extends Command
      */
     protected function getDumpFromRemote(): string
     {
-        $disk = $this->protector->getDisk();
-        $basePath = $this->protector->getBaseDirectory();
-        $dumpEndpointUrl = $this->protector->getDumpEndpointUrl();
+        $disk = $this->protector->getConfig()->getDisk();
+        $basePath = $this->protector->getConfig()->getBaseDirectory();
+        $dumpEndpointUrl = $this->protector->getConfig()->getDumpEndpointUrl();
         $absoluteBasePath = $disk->path($basePath);
 
         $this->line(
@@ -133,8 +133,8 @@ class ImportDump extends Command
                 $fileExists = file_exists($dumpFilePath);
                 break;
             default:
-                $dumpFilePath = implode(DIRECTORY_SEPARATOR, [$this->protector->getBaseDirectory(), $this->option('file')]);
-                $fileExists = $this->protector->getDisk()->exists($dumpFilePath);
+                $dumpFilePath = implode(DIRECTORY_SEPARATOR, [$this->protector->getConfig()->getBaseDirectory(), $this->option('file')]);
+                $fileExists = $this->protector->getConfig()->getDisk()->exists($dumpFilePath);
                 break;
         }
 
@@ -173,8 +173,8 @@ class ImportDump extends Command
         // We need an absolute and local file path going forward. The file path may already be absolute and local, only if called with the --file option and passed an absolute path.
         if (!$this->isAbsolutePath($dumpFilePath)) {
             // The Protector disk might be local, if not, we need to create a local temp file.
-            if (is_a($this->protector->getDisk()->getAdapter(), LocalFilesystemAdapter::class)) {
-                $dumpFilePath = $this->protector->getDisk()->path($dumpFilePath);
+            if (is_a($this->protector->getConfig()->getDisk()->getAdapter(), LocalFilesystemAdapter::class)) {
+                $dumpFilePath = $this->protector->getConfig()->getDisk()->path($dumpFilePath);
             } else {
                 $absoluteTempFilePath = $this->protector->createTempFilePath($dumpFilePath);
             }
@@ -275,7 +275,7 @@ class ImportDump extends Command
         if ($optionForce || $this->confirm(
                 sprintf(
                     'Are you sure that you want to import the dump into the database: %s?',
-                    $this->protector->getDatabaseName()
+                    $this->protector->getConfig()->getDatabaseName()
                 )
             )) {
 
