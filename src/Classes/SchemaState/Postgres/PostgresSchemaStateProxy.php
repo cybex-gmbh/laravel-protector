@@ -48,11 +48,11 @@ class PostgresSchemaStateProxy extends AbstractPostgresSchemaStateProxy
     public function getConditionalParameters(): array
     {
         return [
-            '--create' => $this->protector->shouldCreateDb(),
-            '--clean' => $this->protector->shouldCreateDb() && $this->protector->shouldDropDb(),
-            '--verbose' => $this->protector->shouldDumpComments(),
-            '--schema-only' => !$this->protector->shouldDumpData(),
-            '--no-tablespaces' => !$this->protector->shouldUseTablespaces(),
+            '--create' => $this->config->shouldCreateDb(),
+            '--clean' => $this->config->shouldCreateDb() && $this->config->shouldDropDb(),
+            '--verbose' => $this->config->shouldDumpComments(),
+            '--schema-only' => !$this->config->shouldDumpData(),
+            '--no-tablespaces' => !$this->config->shouldUseTablespaces(),
         ];
     }
 

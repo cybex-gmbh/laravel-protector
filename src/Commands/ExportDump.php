@@ -40,7 +40,7 @@ class ExportDump extends Command
         $this->protector->guardRequiredFunctionsEnabled();
 
         $fileName = $this->option('file') ?: $this->protector->createFilename();
-        $directory = $this->protector->getBaseDirectory();
+        $directory = $this->protector->getConfig()->getBaseDirectory();
 
         if ($this->option('connection')) {
             $connectionName = $this->option('connection');
@@ -49,14 +49,14 @@ class ExportDump extends Command
         $options = [];
         $options['no-data'] = $this->option('no-data') ?: false;
 
-        $this->protector->withConnectionName($connectionName ?? null);
+        $this->protector->getConfig()->withConnectionName($connectionName ?? null);
 
         $tempFilePath = $this->protector->createDump($options);
 
-        $this->protector->getDisk()->putFileAs($directory, new File($tempFilePath), $fileName);
+        $this->protector->getConfig()->getDisk()->putFileAs($directory, new File($tempFilePath), $fileName);
         unlink($tempFilePath);
 
-        $this->info(sprintf('Dump <comment>%s</> was created in <comment>%s</>', $fileName, $this->protector->getDisk()->path($directory)));
+        $this->info(sprintf('Dump <comment>%s</> was created in <comment>%s</>', $fileName, $this->protector->getConfig()->getDisk()->path($directory)));
 
         return self::SUCCESS;
     }

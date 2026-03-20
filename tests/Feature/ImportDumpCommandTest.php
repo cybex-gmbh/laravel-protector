@@ -33,12 +33,12 @@ class ImportDumpCommandTest extends TestCase
         Config::set('protector.dump.baseDirectory', static::$baseDirectory);
 
         $this->disk = $this->getFakeDumpDisk();
-        $this->dumpEndpointUrl = $this->protector->getDumpEndpointUrl();
+        $this->dumpEndpointUrl = $this->protector->getConfig()->getDumpEndpointUrl();
 
         $this->shouldDownloadDump = 'Do you want to download and import a fresh dump from the server or an existing local dump?';
         $this->shouldImportDump = sprintf(
             'Are you sure that you want to import the dump into the database: %s?',
-            $this->protector->getDatabaseName()
+            $this->protector->getConfig()->getDatabaseName()
         );
     }
 
@@ -93,7 +93,7 @@ class ImportDumpCommandTest extends TestCase
         Config::set('protector.client.basicAuthCredentials', '1234:1234');
         Config::set('protector.server.routeMiddleware', []);
 
-        $dumpEndpointUrl = $this->protector->getDumpEndpointUrl();
+        $dumpEndpointUrl = $this->protector->getConfig()->getDumpEndpointUrl();
 
         Http::fake([
             $dumpEndpointUrl => Http::response(__FUNCTION__, 200, ['Chunk-Size' => 100]),
@@ -157,7 +157,7 @@ class ImportDumpCommandTest extends TestCase
         $this->artisan('protector:import --latest')->expectsConfirmation($this->shouldImportDump);
 
         $this->assertEquals(
-            sprintf('%s%sdump.sql', $this->protector->getBaseDirectory(), DIRECTORY_SEPARATOR),
+            sprintf('%s%sdump.sql', $this->protector->getConfig()->getBaseDirectory(), DIRECTORY_SEPARATOR),
             $this->protector->getLatestDumpName()
         );
     }
@@ -195,6 +195,6 @@ class ImportDumpCommandTest extends TestCase
      */
     public function ensureFilesystemAdapterCanBeRetrieved()
     {
-        $this->assertTrue(is_a($this->protector->getDisk()->getAdapter(), LocalFilesystemAdapter::class));
+        $this->assertTrue(is_a($this->protector->getConfig()->getDisk()->getAdapter(), LocalFilesystemAdapter::class));
     }
 }

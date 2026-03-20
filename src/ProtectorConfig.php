@@ -1,12 +1,21 @@
 <?php
 
-namespace Cybex\Protector\Traits;
+namespace Cybex\Protector;
 
 use Cybex\Protector\Classes\Metadata\Providers\DatabaseMetadataProvider;
+use Cybex\Protector\Classes\SchemaState\MySql\MySqlSchemaStateProxy;
+use Cybex\Protector\Classes\SchemaState\Postgres\PostgresSchemaStateProxy;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
+use Cybex\Protector\Exceptions\UnsupportedDatabaseException;
+use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Database\Schema\MySqlSchemaState;
+use Illuminate\Database\Schema\PostgresSchemaState;
+use Illuminate\Database\Schema\SchemaState;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
-trait HasConfiguration
+class ProtectorConfig
 {
     /**
      * Cache for the current connection-name.
@@ -17,6 +26,8 @@ trait HasConfiguration
      * Cache for the current connection-configuration.
      */
     protected mixed $connectionConfig;
+
+    protected array $schemaStateParameters;
 
     /**
      * Defines whether dumps should include a DB creation statement.
@@ -79,6 +90,14 @@ trait HasConfiguration
      * The metadata provider classes for the dump metadata.
      */
     protected array $metadataProviders;
+
+    public function __construct(?string $connectionName = null)
+    {
+        $this->withConnectionName($connectionName)
+            ->withDefaultMaxPacketLength()
+            ->withoutCreateDb()
+            ->withoutTablespaces();
+    }
 
     /**
      * Sets the auth token for Laravel Sanctum authentication.
@@ -251,9 +270,19 @@ trait HasConfiguration
     }
 
     /**
+     * Returns a config value for a specific key and checks for Callables.
+     */
+    public function getConfigValueForKey(string $key, mixed $default = null): mixed
+    {
+        $value = config(sprintf('protector.%s', $key), $default);
+
+        return is_callable($value) ? $value() : $value;
+    }
+
+    /**
      * Retrieves the auth token for Laravel Sanctum authentication.
      */
-    protected function getAuthToken(): string
+    public function getAuthToken(): string
     {
         return $this->authToken ?: $this->getConfigValueForKey('client.authToken');
     }
@@ -269,7 +298,7 @@ trait HasConfiguration
     /**
      * Returns the database config for the given connection.
      */
-    protected function getDatabaseConfig(): mixed
+    public function getDatabaseConfig(): mixed
     {
         return config(sprintf('database.connections.%s', $this->connectionName), false);
     }
@@ -304,7 +333,7 @@ trait HasConfiguration
     /**
      * Retrieves the private key for encryption.
      */
-    protected function getPrivateKey(): string
+    public function getPrivateKey(): string
     {
         return $this->privateKey ?: $this->getConfigValueForKey('client.privateKey');
     }
@@ -312,6 +341,14 @@ trait HasConfiguration
     public function getConnectionName(): string
     {
         return $this->connectionName;
+    }
+
+    /**
+     * Returns the current connection configuration.
+     */
+    public function getConnectionConfig(): mixed
+    {
+        return $this->connectionConfig;
     }
 
     /**
@@ -339,6 +376,29 @@ trait HasConfiguration
         $additionalMetadataProviders = collect($this->metadataProviders ?? $this->getConfigValueForKey('dump.metadata.providers'));
 
         return $additionalMetadataProviders->prepend(DatabaseMetadataProvider::class);
+    }
+
+    /**
+     * Returns the config value for the baseDirectory key.
+     */
+    public function getBaseDirectory(): string
+    {
+        return $this->getConfigValueForKey('dump.baseDirectory') ?? '';
+    }
+
+    /**
+     * Returns the disk which is stated in the config. If no disk is stated the default filesystem disk will be returned.
+     */
+    public function getDisk(?string $diskName = null): Filesystem
+    {
+        $diskName ??= $this->getConfigValueForKey('dump.diskName', config('filesystems.default'));
+
+        return Storage::disk($diskName);
+    }
+
+    public function shouldEncrypt(): bool
+    {
+        return in_array('auth:sanctum', $this->getConfigValueForKey('server.routeMiddleware', []));
     }
 
     public function shouldDumpCharsets(): bool
@@ -374,5 +434,38 @@ trait HasConfiguration
     public function shouldUseTablespaces(): bool
     {
         return $this->tablespaces;
+    }
+
+    /**
+     * Gets the current schema state parameters.
+     * These may change between calls, as the protector could be reconfigured to use a different connection and thus a different schema state proxy.
+     *
+     * @return array
+     */
+    public function getSchemaStateParameters(): array
+    {
+        $this->getProxyForSchemaState();
+
+        return $this->schemaStateParameters;
+    }
+
+    /**
+     * @throws UnsupportedDatabaseException
+     */
+    public function getProxyForSchemaState(): SchemaState
+    {
+        $connection = DB::connection($this->getConnectionName());
+        $schemaState = $connection->getSchemaState();
+
+        $schemaStateProxy = match (get_class($schemaState)) {
+            MySqlSchemaState::class => app(MySqlSchemaStateProxy::class, [$schemaState, $this]),
+            PostgresSchemaState::class => app(PostgresSchemaStateProxy::class, [$schemaState, $this]),
+            //            SqliteSchemaState::class => app('SqliteSchemaStateProxy', [$schemaState, $this]),
+            default => throw new UnsupportedDatabaseException('Unsupported database schema state: ' . class_basename($schemaState)),
+        };
+
+        $this->schemaStateParameters = $schemaStateProxy->getParameters();
+
+        return $schemaStateProxy;
     }
 }

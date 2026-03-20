@@ -12,7 +12,7 @@ All notable changes to `protector` will be documented in this file.
 ### General
 
 - The minimum required PHP version is now 8.2
-- Restructured the `protector.php` configuration file for better organization and clarity
+- Restructured the `Protector` class by splitting it into `Protector` and `ProtectorConfig`. Configuration methods are now accessible via `Protector::getConfig()`
 - The `protector:import` command no longer supports the `--dump` option. The `--file` option now accepts both a relative and an absolute path.
 - Reformatted the output of the `protector:keys` and `protector:token` commands to easier spot relevant information
 
