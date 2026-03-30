@@ -148,7 +148,6 @@ class ImportDumpCommandTest extends TestCase
         $this->artisan(sprintf('protector:import --file=%s --force', $fileName))->assertFailed();
     }
 
-
     /**
      * @test
      */
