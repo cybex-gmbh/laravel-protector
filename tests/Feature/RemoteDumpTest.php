@@ -318,7 +318,7 @@ class RemoteDumpTest extends TestCase
     {
         Config::set('protector.dump.baseDirectory', __FUNCTION__);
 
-        $result = $this->protector->getConfig()->getConfigValueForKey('dump.baseDirectory');
+        $result = $this->protector->getConfig()->getBaseDirectory();
 
         $this->assertEquals(__FUNCTION__, $result);
     }
@@ -332,7 +332,7 @@ class RemoteDumpTest extends TestCase
 
         Config::set('protector.dump.baseDirectory', fn() => $functionName);
 
-        $result = $this->protector->getConfig()->getConfigValueForKey('dump.baseDirectory');
+        $result = $this->protector->getConfig()->getBaseDirectory();
 
         $this->assertEquals($functionName, $result);
     }

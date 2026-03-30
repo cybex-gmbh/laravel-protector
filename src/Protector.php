@@ -175,7 +175,7 @@ class Protector
             throw new MissingDumpEndpointUrlException();
         }
 
-        $this->createDirectory($this->config->getConfigValueForKey('dump.baseDirectory'), $disk);
+        $this->createDirectory($this->config->getBaseDirectory(), $disk);
 
         $request = $this->getConfiguredHttpRequest();
 
@@ -348,7 +348,7 @@ class Protector
                     return response($throwable->getMessage(), 500, ['message' => 'Unknown error, please check server logs for details.']);
                 }
 
-                $chunkSize = $this->config->getConfigValueForKey('server.chunkSize');
+                $chunkSize = $this->config->getChunkSize();
 
                 return response()->streamDownload(
                     function () use ($publicKey, $serverFilePath, $chunkSize, $shouldEncrypt) {
@@ -411,7 +411,7 @@ class Protector
      */
     protected function getConfiguredHttpRequest(): PendingRequest
     {
-        $basicAuthCredentials = $this->config->getConfigValueForKey('client.basicAuthCredentials');
+        $basicAuthCredentials = $this->config->getBasicAuthCredentials();
 
         if ($this->config->shouldEncrypt()) {
             // Laravel Sanctum and Basic Auth cannot be used simultaneously since they use the same header.
@@ -430,7 +430,7 @@ class Protector
             throw new NoAuthConfiguredException();
         }
 
-        return $request->withOptions(['stream' => true])->withHeaders(['Accept' => 'application/json'])->timeout($this->config->getConfigValueForKey('client.httpTimeout', 120));
+        return $request->withOptions(['stream' => true])->withHeaders(['Accept' => 'application/json'])->timeout($this->config->getHttpTimeout());
     }
 
     /**
@@ -441,7 +441,7 @@ class Protector
     public function getLatestDumpName(): string
     {
         $disk = $this->config->getDisk();
-        $baseDirectory = $this->config->getConfigValueForKey('dump.baseDirectory');
+        $baseDirectory = $this->config->getBaseDirectory();
         $files = $disk->files($baseDirectory);
 
         if (empty($files)) {
@@ -553,7 +553,7 @@ class Protector
 
         return sprintf(
             '%s%s%s',
-            $this->config->getConfigValueForKey('dump.baseDirectory'),
+            $this->config->getBaseDirectory(),
             DIRECTORY_SEPARATOR,
             ($destinationFileName ?? 'remote_dump.sql')
         );

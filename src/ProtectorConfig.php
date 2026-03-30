@@ -44,9 +44,15 @@ class ProtectorConfig implements ProtectorConfigContract
 
     protected string $authToken = '';
 
+    protected string $basicAuth = '';
+
     protected string $privateKey = '';
 
     protected string $maxPacketLength;
+
+    protected int $chunkSize;
+
+    protected int $httpTimeout;
 
     /**
      * If set to false, the --no-tablespaces dump option will be used.
@@ -80,7 +86,6 @@ class ProtectorConfig implements ProtectorConfigContract
     public function __construct(?string $connectionName = null)
     {
         $this->setConnectionName($connectionName)
-            ->withDefaultMaxPacketLength()
             ->withoutCreateDb()
             ->withoutTablespaces();
     }
@@ -152,6 +157,54 @@ class ProtectorConfig implements ProtectorConfigContract
         return $this;
     }
 
+    public function withDefaultAuthToken(): static
+    {
+        return $this->setAuthToken($this->getConfigValueForKey('client.authToken'));
+    }
+
+    /** {@inheritDoc} */
+    public function getBasicAuthCredentials(): ?string
+    {
+        return $this->basicAuth ?: $this->getConfigValueForKey('client.basicAuthCredentials');
+    }
+
+    /** {@inheritDoc} */
+    public function setBasicAuthCredentials(string $credentials): static
+    {
+        $this->basicAuth = $credentials;
+
+        return $this;
+    }
+
+    /** {@inheritDoc} */
+    public function withDefaultBasicAuthCredentials(): static
+    {
+        return $this->setBasicAuthCredentials($this->getConfigValueForKey('client.basicAuthCredentials'));
+    }
+
+    public function getPrivateKey(): string
+    {
+        return $this->privateKey ?: $this->getConfigValueForKey('client.privateKey');
+    }
+
+    /** {@inheritDoc} */
+    public function getPrivateKeyName(): string
+    {
+        return 'PROTECTOR_CLIENT_PRIVATE_KEY';
+    }
+
+    public function setPrivateKey(string $privateKey): static
+    {
+        $this->privateKey = $privateKey;
+
+        return $this;
+    }
+
+    public function withDefaultPrivateKey(): static
+    {
+        return $this->setPrivateKey($this->getConfigValueForKey('client.privateKey'));
+    }
+
     public function getDumpEndpointUrl(): string
     {
         return $this->dumpEndpointUrl ?: $this->getConfigValueForKey('client.dumpEndpointUrl');
@@ -170,10 +223,15 @@ class ProtectorConfig implements ProtectorConfigContract
         return $this;
     }
 
+    public function withDefaultDumpEndpointUrl(): static
+    {
+        return $this->setDumpEndpointUrl($this->getConfigValueForKey('client.dumpEndpointUrl'));
+    }
+
     /** {@inheritDoc} */
     public function getMaxPacketLength(): string
     {
-        return $this->maxPacketLength;
+        return $this->maxPacketLength ?? $this->getConfigValueForKey('dump.maxPacketLength');
     }
 
     /** {@inheritDoc} */
@@ -187,9 +245,41 @@ class ProtectorConfig implements ProtectorConfigContract
     /** {@inheritDoc} */
     public function withDefaultMaxPacketLength(): static
     {
-        $this->maxPacketLength = $this->getConfigValueForKey('dump.maxPacketLength');
+        return $this->setMaxPacketLength($this->getConfigValueForKey('dump.maxPacketLength'));
+    }
+
+    public function getChunkSize(): int
+    {
+        return $this->chunkSize ?? $this->getConfigValueForKey('server.chunkSize');
+    }
+
+    public function setChunkSize(int $chunkSize): static
+    {
+        $this->chunkSize = $chunkSize;
 
         return $this;
+    }
+
+    public function withDefaultChunkSize(): static
+    {
+        return $this->setChunkSize($this->getConfigValueForKey('server.chunkSize'));
+    }
+
+    public function getHttpTimeout(): int
+    {
+        return $this->httpTimeout ?? $this->getConfigValueForKey('client.httpTimeout');
+    }
+
+    public function setHttpTimeout(int $httpTimeout): static
+    {
+        $this->httpTimeout = $httpTimeout;
+
+        return $this;
+    }
+
+    public function withDefaultHttpTimeout(): static
+    {
+        return $this->setHttpTimeout($this->getConfigValueForKey('client.httpTimeout'));
     }
 
     /** {@inheritDoc} */
@@ -207,22 +297,9 @@ class ProtectorConfig implements ProtectorConfigContract
         return $this;
     }
 
-    public function getPrivateKey(): string
+    public function withDefaultMetadataProviders(): static
     {
-        return $this->privateKey ?: $this->getConfigValueForKey('client.privateKey');
-    }
-
-    /** {@inheritDoc} */
-    public function getPrivateKeyName(): string
-    {
-        return 'PROTECTOR_CLIENT_PRIVATE_KEY';
-    }
-
-    public function withPrivateKey(string $privateKey): static
-    {
-        $this->privateKey = $privateKey;
-
-        return $this;
+        return $this->setMetadataProviders($this->getConfigValueForKey('dump.metadata.providers'));
     }
 
     public function shouldRemoveAutoIncrementingState(): bool
@@ -394,7 +471,7 @@ class ProtectorConfig implements ProtectorConfigContract
     /**
      * Returns a config value for a specific key and checks for Callables.
      */
-    public function getConfigValueForKey(string $key, mixed $default = null): mixed
+    protected function getConfigValueForKey(string $key, mixed $default = null): mixed
     {
         $value = config(sprintf('protector.%s', $key), $default);
 
