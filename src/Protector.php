@@ -4,6 +4,7 @@ namespace Cybex\Protector;
 
 use Cybex\Protector\Classes\Metadata\MetadataHandler;
 use Cybex\Protector\Contracts\Crypter;
+use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
 use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
 use Cybex\Protector\Exceptions\FailedDumpGenerationException;
@@ -45,22 +46,22 @@ class Protector
 {
     protected array $requiredFunctionsCache;
 
-    public function __construct(protected ProtectorConfig $config)
+    public function __construct(protected ProtectorConfigContract $config)
     {
     }
 
     /**
      * Returns a new Protector instance with the given configuration.
      */
-    public static function withConfig(ProtectorConfig $config): static
+    public static function withConfig(ProtectorConfigContract $config): static
     {
-        return app()->makeWith('protector', [ProtectorConfig::class => $config]);
+        return app()->makeWith('protector', [ProtectorConfigContract::class => $config]);
     }
 
     /**
      * Returns the current configuration.
      */
-    public function getConfig(): ProtectorConfig
+    public function getConfig(): ProtectorConfigContract
     {
         return $this->config;
     }
@@ -141,7 +142,7 @@ class Protector
      */
     public function getDumpMetadata(string $dumpFile): bool|array
     {
-        return app()->makeWith(MetadataHandler::class, [ProtectorConfig::class => $this->config])->getDumpMetadata($dumpFile);
+        return app()->makeWith(MetadataHandler::class, [ProtectorConfigContract::class => $this->config])->getDumpMetadata($dumpFile);
     }
 
     /**
@@ -296,7 +297,7 @@ class Protector
      */
     public function getMetadata(): array
     {
-        return app()->makeWith(MetadataHandler::class, [ProtectorConfig::class => $this->config])->getMetadata();
+        return app()->makeWith(MetadataHandler::class, [ProtectorConfigContract::class => $this->config])->getMetadata();
     }
 
     /**
