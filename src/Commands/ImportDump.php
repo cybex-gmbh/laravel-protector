@@ -30,7 +30,7 @@ class ImportDump extends Command
                 {--f|file= : Either an absolute path to a file, or a filename relative to the protector dump directory. }
                 {--c|connection= : The configured database-connection in Laravel\'s config/database.php. }
                 {--allow-production : Enable importing SQL dumps on a production system. }
-                {--force : Forces the import of the given file or remote download. Requires the file, remote or latest option. }
+                {--force : Skips confirmation prompts. Requires the file, remote or latest option. }
                 {--i|ignore-connection-filter : Ignores filter of dumps to defined connections. }
                 {--r|remote : Pull a fresh dump from the remote server as configured in the .env file. Will be used as fallback when combined with other options. }
                 {--flush : Delete all existing dumps in the dump folder when using a remote dump. }
