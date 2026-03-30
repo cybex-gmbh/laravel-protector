@@ -26,9 +26,7 @@ class ProtectorConfig implements ProtectorConfigContract
     /**
      * Cache for the current connection-configuration.
      */
-    protected mixed $connectionConfig;
-
-    protected array $schemaStateParameters;
+    protected array|false $connectionConfig;
 
     /**
      * Defines whether dumps should include a DB creation statement.
@@ -42,24 +40,12 @@ class ProtectorConfig implements ProtectorConfigContract
      */
     protected bool $dropDb = true;
 
-    /**
-     * The dump endpoint URL.
-     */
     protected string $dumpEndpointUrl = '';
 
-    /**
-     * The Protector Auth Token.
-     */
     protected string $authToken = '';
 
-    /**
-     * The Protector Private Key.
-     */
     protected string $privateKey = '';
 
-    /**
-     * The maximum packet length for the dump.
-     */
     protected string $maxPacketLength;
 
     /**
@@ -87,10 +73,9 @@ class ProtectorConfig implements ProtectorConfigContract
      */
     protected bool $removeAutoIncrementingState = false;
 
-    /**
-     * The metadata provider classes for the dump metadata.
-     */
     protected array $metadataProviders;
+
+    protected array $schemaStateParameters;
 
     public function __construct(?string $connectionName = null)
     {
@@ -101,69 +86,50 @@ class ProtectorConfig implements ProtectorConfigContract
     }
 
     /**
-     * Sets the auth token for Laravel Sanctum authentication.
+     * Returns the config value for the baseDirectory key.
      */
-    public function setAuthToken(string $authToken): static
+    public function getBaseDirectory(): string
     {
-        $this->authToken = $authToken;
-
-        return $this;
+        return $this->getConfigValueForKey('dump.baseDirectory') ?? '';
     }
 
-    public function withAutoIncrementingState(): static
+    /**
+     * Returns the disk which is stated in the config. If no disk is stated, the default filesystem disk will be returned.
+     */
+    public function getDisk(?string $diskName = null): Filesystem
     {
-        $this->removeAutoIncrementingState = false;
+        $diskName ??= $this->getConfigValueForKey('dump.diskName', config('filesystems.default'));
 
-        return $this;
+        return Storage::disk($diskName);
     }
 
-    public function withoutAutoIncrementingState(): static
+    /**
+     * Returns the current connection configuration.
+     */
+    public function getConnectionConfig(): array|false
     {
-        $this->removeAutoIncrementingState = true;
-
-        return $this;
+        return $this->connectionConfig;
     }
 
-    public function withCharsets(): static
+    /**
+     * Returns the database config for the given connection.
+     */
+    public function getDatabaseConfig(): array|false
     {
-        $this->dumpCharsets = true;
-
-        return $this;
+        return config(sprintf('database.connections.%s', $this->connectionName), false);
     }
 
-    public function withoutCharsets(): static
+    /**
+     * Returns the database name specified in the connectionConfig array.
+     */
+    public function getDatabaseName(): string
     {
-        $this->dumpCharsets = false;
-
-        return $this;
+        return $this->connectionConfig['database'];
     }
 
-    public function withComments(): static
+    public function getConnectionName(): string
     {
-        $this->dumpComments = true;
-
-        return $this;
-    }
-
-    public function withoutComments(): static
-    {
-        $this->dumpComments = false;
-
-        return $this;
-    }
-
-    public function withData(): static
-    {
-        $this->dumpData = true;
-
-        return $this;
-    }
-
-    public function withoutData(): static
-    {
-        $this->dumpData = false;
-
-        return $this;
+        return $this->connectionName;
     }
 
     /**
@@ -180,6 +146,183 @@ class ProtectorConfig implements ProtectorConfigContract
         return $this;
     }
 
+    public function getAuthToken(): string
+    {
+        return $this->authToken ?: $this->getConfigValueForKey('client.authToken');
+    }
+
+    /**
+     * Gets the name of the .env key for the auth token.
+     */
+    public function getAuthTokenKeyName(): string
+    {
+        return 'PROTECTOR_CLIENT_AUTH_TOKEN';
+    }
+
+    public function setAuthToken(string $authToken): static
+    {
+        $this->authToken = $authToken;
+
+        return $this;
+    }
+
+    public function getDumpEndpointUrl(): string
+    {
+        return $this->dumpEndpointUrl ?: $this->getConfigValueForKey('client.dumpEndpointUrl');
+    }
+
+    /**
+     * Gets the name of the .env key for the Protector dump endpoint URL.
+     */
+    public function getDumpEndpointUrlKeyName(): string
+    {
+        return 'PROTECTOR_CLIENT_DUMP_ENDPOINT_URL';
+    }
+
+    public function setDumpEndpointUrl(string $dumpEndpointUrl): static
+    {
+        $this->dumpEndpointUrl = $dumpEndpointUrl;
+
+        return $this;
+    }
+
+    /**
+     * Returns the maximum packet length specified in the config.
+     * The option 'max_allowed_packet' sets an upper limit on the size of any single message between the MySQL server and clients.
+     * This has to be set up on the client (here) and the MySQL server.
+     * This is not applicable to PostgreSQL.
+     */
+    public function getMaxPacketLength(): string
+    {
+        return $this->maxPacketLength;
+    }
+
+    /**
+     * The option 'max_allowed_packet' sets an upper limit on the size of any single message between the MySQL server and clients.
+     * This has to be set up on the client (here) and the MySQL server.
+     * This is not applicable to PostgreSQL.
+     */
+    public function setMaxPacketLength(string $maxPacketLength): static
+    {
+        $this->maxPacketLength = $maxPacketLength;
+
+        return $this;
+    }
+
+    /**
+     * Uses the max packet length specified in the config file.
+     * The option 'max_allowed_packet' sets an upper limit on the size of any single message between the MySQL server and clients.
+     * This has to be set up on the client (here) and the MySQL server.
+     * This is not applicable to PostgreSQL.
+     */
+    public function withDefaultMaxPacketLength(): static
+    {
+        $this->maxPacketLength = $this->getConfigValueForKey('dump.maxPacketLength');
+
+        return $this;
+    }
+
+    /**
+     * The metadata provider classes can be configured on the protector instance, else we return the config default.
+     *
+     * @return Collection
+     */
+    public function getMetadataProviders(): Collection
+    {
+        $additionalMetadataProviders = collect($this->metadataProviders ?? $this->getConfigValueForKey('dump.metadata.providers'));
+
+        return $additionalMetadataProviders->prepend(DatabaseMetadataProvider::class);
+    }
+
+    public function setMetadataProviders(array $metadataProviders): static
+    {
+        $this->metadataProviders = $metadataProviders;
+
+        return $this;
+    }
+
+    public function getPrivateKey(): string
+    {
+        return $this->privateKey ?: $this->getConfigValueForKey('client.privateKey');
+    }
+
+    /**
+     * Gets the name of the .env key for the Protector private key.
+     */
+    public function getPrivateKeyName(): string
+    {
+        return 'PROTECTOR_CLIENT_PRIVATE_KEY';
+    }
+
+    public function withPrivateKey(string $privateKey): static
+    {
+        $this->privateKey = $privateKey;
+
+        return $this;
+    }
+
+    public function shouldRemoveAutoIncrementingState(): bool
+    {
+        return $this->removeAutoIncrementingState;
+    }
+
+    public function withAutoIncrementingState(): static
+    {
+        $this->removeAutoIncrementingState = false;
+
+        return $this;
+    }
+
+    public function withoutAutoIncrementingState(): static
+    {
+        $this->removeAutoIncrementingState = true;
+
+        return $this;
+    }
+
+    public function shouldDumpCharsets(): bool
+    {
+        return $this->dumpCharsets;
+    }
+
+    public function withCharsets(): static
+    {
+        $this->dumpCharsets = true;
+
+        return $this;
+    }
+
+    public function withoutCharsets(): static
+    {
+        $this->dumpCharsets = false;
+
+        return $this;
+    }
+
+    public function shouldDumpComments(): bool
+    {
+        return $this->dumpComments;
+    }
+
+    public function withComments(): static
+    {
+        $this->dumpComments = true;
+
+        return $this;
+    }
+
+    public function withoutComments(): static
+    {
+        $this->dumpComments = false;
+
+        return $this;
+    }
+
+    public function shouldCreateDb(): bool
+    {
+        return $this->createDb;
+    }
+
     public function withCreateDb(): static
     {
         $this->createDb = true;
@@ -192,6 +335,30 @@ class ProtectorConfig implements ProtectorConfigContract
         $this->createDb = false;
 
         return $this;
+    }
+
+    public function shouldDumpData(): bool
+    {
+        return $this->dumpData;
+    }
+
+    public function withData(): static
+    {
+        $this->dumpData = true;
+
+        return $this;
+    }
+
+    public function withoutData(): static
+    {
+        $this->dumpData = false;
+
+        return $this;
+    }
+
+    public function shouldDropDb(): bool
+    {
+        return $this->dropDb;
     }
 
     /**
@@ -218,6 +385,11 @@ class ProtectorConfig implements ProtectorConfigContract
         return $this;
     }
 
+    public function shouldUseTablespaces(): bool
+    {
+        return $this->tablespaces;
+    }
+
     public function withTablespaces(): static
     {
         $this->tablespaces = true;
@@ -232,222 +404,9 @@ class ProtectorConfig implements ProtectorConfigContract
         return $this;
     }
 
-    public function setMaxPacketLength(string $maxPacketLength): static
-    {
-        $this->maxPacketLength = $maxPacketLength;
-
-        return $this;
-    }
-
-    public function withDefaultMaxPacketLength(): static
-    {
-        $this->maxPacketLength = config('protector.dump.maxPacketLength');
-
-        return $this;
-    }
-
-    /**
-     * Sets the dump endpoint URL.
-     */
-    public function setDumpEndpointUrl(string $dumpEndpointUrl): static
-    {
-        $this->dumpEndpointUrl = $dumpEndpointUrl;
-
-        return $this;
-    }
-
-    public function withPrivateKey(string $privateKey): static
-    {
-        $this->privateKey = $privateKey;
-
-        return $this;
-    }
-
-    public function setMetadataProviders(array $metadataProviders): static
-    {
-        $this->metadataProviders = $metadataProviders;
-
-        return $this;
-    }
-
-    /**
-     * Returns a config value for a specific key and checks for Callables.
-     */
-    public function getConfigValueForKey(string $key, mixed $default = null): mixed
-    {
-        $value = config(sprintf('protector.%s', $key), $default);
-
-        return is_callable($value) ? $value() : $value;
-    }
-
-    /**
-     * Retrieves the auth token for Laravel Sanctum authentication.
-     */
-    public function getAuthToken(): string
-    {
-        return $this->authToken ?: $this->getConfigValueForKey('client.authToken');
-    }
-
-    /**
-     * Gets the name of the .env key for the auth token.
-     */
-    public function getAuthTokenKeyName(): string
-    {
-        return 'PROTECTOR_CLIENT_AUTH_TOKEN';
-    }
-
-    /**
-     * Returns the database config for the given connection.
-     */
-    public function getDatabaseConfig(): mixed
-    {
-        return config(sprintf('database.connections.%s', $this->connectionName), false);
-    }
-
-    /**
-     * Returns the database name specified in the connectionConfig array.
-     */
-    public function getDatabaseName(): string
-    {
-        return $this->connectionConfig['database'];
-    }
-
-    /**
-     * Returns the maximum packet length specified in the config.
-     * The option 'max_allowed_packet' sets an upper limit on the size of any single message between the MySQL server and clients.
-     * This has to be set up on the client (here) and the MySQL server.
-     * This is not applicable to PostgreSQL.
-     */
-    public function getMaxPacketLength(): string
-    {
-        return $this->maxPacketLength;
-    }
-
-    /**
-     * Gets the name of the .env key for the Protector private key.
-     */
-    public function getPrivateKeyName(): string
-    {
-        return 'PROTECTOR_CLIENT_PRIVATE_KEY';
-    }
-
-    /**
-     * Retrieves the private key for encryption.
-     */
-    public function getPrivateKey(): string
-    {
-        return $this->privateKey ?: $this->getConfigValueForKey('client.privateKey');
-    }
-
-    public function getConnectionName(): string
-    {
-        return $this->connectionName;
-    }
-
-    /**
-     * Returns the current connection configuration.
-     */
-    public function getConnectionConfig(): mixed
-    {
-        return $this->connectionConfig;
-    }
-
-    /**
-     * Retrieves the URL of the dump endpoint.
-     */
-    public function getDumpEndpointUrl(): string
-    {
-        return $this->dumpEndpointUrl ?: $this->getConfigValueForKey('client.dumpEndpointUrl');
-    }
-
-    /**
-     * Gets the name of the .env key for the Protector dump endpoint URL.
-     */
-    public function getDumpEndpointUrlKeyName(): string
-    {
-        return 'PROTECTOR_CLIENT_DUMP_ENDPOINT_URL';
-    }
-
-    /**
-     * The metadata provider classes can be configured on the protector instance, else we return the config default.
-     * @return Collection
-     */
-    public function getMetadataProviders(): Collection
-    {
-        $additionalMetadataProviders = collect($this->metadataProviders ?? $this->getConfigValueForKey('dump.metadata.providers'));
-
-        return $additionalMetadataProviders->prepend(DatabaseMetadataProvider::class);
-    }
-
-    /**
-     * Returns the config value for the baseDirectory key.
-     */
-    public function getBaseDirectory(): string
-    {
-        return $this->getConfigValueForKey('dump.baseDirectory') ?? '';
-    }
-
-    /**
-     * Returns the disk which is stated in the config. If no disk is stated the default filesystem disk will be returned.
-     */
-    public function getDisk(?string $diskName = null): Filesystem
-    {
-        $diskName ??= $this->getConfigValueForKey('dump.diskName', config('filesystems.default'));
-
-        return Storage::disk($diskName);
-    }
-
     public function shouldEncrypt(): bool
     {
         return in_array('auth:sanctum', $this->getConfigValueForKey('server.routeMiddleware', []));
-    }
-
-    public function shouldDumpCharsets(): bool
-    {
-        return $this->dumpCharsets;
-    }
-
-    public function shouldDumpComments(): bool
-    {
-        return $this->dumpComments;
-    }
-
-    public function shouldCreateDb(): bool
-    {
-        return $this->createDb;
-    }
-
-    public function shouldDropDb(): bool
-    {
-        return $this->dropDb;
-    }
-
-    public function shouldDumpData(): bool
-    {
-        return $this->dumpData;
-    }
-
-    public function shouldRemoveAutoIncrementingState(): bool
-    {
-        return $this->removeAutoIncrementingState;
-    }
-
-    public function shouldUseTablespaces(): bool
-    {
-        return $this->tablespaces;
-    }
-
-    /**
-     * Gets the current schema state parameters.
-     * These may change between calls, as the protector could be reconfigured to use a different connection and thus a different schema state proxy.
-     *
-     * @return array
-     */
-    public function getSchemaStateParameters(): array
-    {
-        $this->getProxyForSchemaState();
-
-        return $this->schemaStateParameters;
     }
 
     /**
@@ -468,5 +427,28 @@ class ProtectorConfig implements ProtectorConfigContract
         $this->schemaStateParameters = $schemaStateProxy->getParameters();
 
         return $schemaStateProxy;
+    }
+
+    /**
+     * Gets the current schema state parameters.
+     * These may change between calls, as the protector could be reconfigured to use a different connection and thus a different schema state proxy.
+     *
+     * @return array
+     */
+    public function getSchemaStateParameters(): array
+    {
+        $this->getProxyForSchemaState();
+
+        return $this->schemaStateParameters;
+    }
+
+    /**
+     * Returns a config value for a specific key and checks for Callables.
+     */
+    public function getConfigValueForKey(string $key, mixed $default = null): mixed
+    {
+        $value = config(sprintf('protector.%s', $key), $default);
+
+        return is_callable($value) ? $value() : $value;
     }
 }
