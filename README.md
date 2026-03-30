@@ -276,19 +276,13 @@ See [cybex-gmbh/collector](https://github.com/cybex-gmbh/collector) for an examp
 
 The `protector.php` config file sets initial settings for the `Protector` instance.
 
-Additional settings can be configured on the `Protector` instance. For all available options, take a look at
-the [ProtectorConfigContract](src/Contracts/ProtectorConfigContract.php).
+Generally, you should keep the `Protector` singleton instance as is. If you need to change any settings during runtime, create a new instance using `Protector::withConfig()`.
+For all available configuration options, take a look at the [ProtectorConfigContract](src/Contracts/ProtectorConfigContract.php).
 
 For example, to configure a specific auth token and dump endpoint URL:
 
 ```php
-Protector::getConfig()->withAuthToken($authToken)->withDumpEndpointUrl($dumpEndpointUrl);
-```
-
-Or you can create a new configuration and use it for the protector:
-
-```php
-$config = app(ProtectorConfigContract::class)->withAuthToken($authToken);
+$config = app(ProtectorConfigContract::class)->setAuthToken($authToken)->setDumpEndpointUrl($dumpEndpointUrl);
 $protector = Protector::withConfig($config);
 ```
 
