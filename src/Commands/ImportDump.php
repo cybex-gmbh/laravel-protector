@@ -99,10 +99,10 @@ class ImportDump extends Command
         $disk = $this->protector->getDisk();
         $basePath = $this->protector->getBaseDirectory();
         $dumpEndpointUrl = $this->protector->getDumpEndpointUrl();
-        $absolutePathToBaseDirectory = $disk->path($basePath);
+        $absoluteBasePath = $disk->path($basePath);
 
         $this->line(
-            sprintf('<<< Downloading dump from remote server to directory: <comment>%s</comment>', $absolutePathToBaseDirectory)
+            sprintf('<<< Downloading dump from remote server to directory: <comment>%s</comment>', $absoluteBasePath)
         );
 
         $relativeRemoteDumpFilePath = $this->protector->getRemoteDump();
@@ -111,7 +111,7 @@ class ImportDump extends Command
 
         if ($this->option('flush')) {
             $this->protector->flush(excludeFile: $relativeRemoteDumpFilePath);
-            $this->warn(sprintf('Deleted all old files in %s', $absolutePathToBaseDirectory));
+            $this->warn(sprintf('Deleted all old files in %s', $absoluteBasePath));
         }
 
         return $relativeRemoteDumpFilePath;
