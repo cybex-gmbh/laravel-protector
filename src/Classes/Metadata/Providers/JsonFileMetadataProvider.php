@@ -2,10 +2,10 @@
 
 namespace Cybex\Protector\Classes\Metadata\Providers;
 
-use Cybex\Protector\Contracts\MetadataProvider;
+use Cybex\Protector\Contracts\MetadataProviderContract;
 use File;
 
-class JsonFileMetadataProvider implements MetadataProvider
+class JsonFileMetadataProvider implements MetadataProviderContract
 {
     protected ?string $jsonFilePath;
 

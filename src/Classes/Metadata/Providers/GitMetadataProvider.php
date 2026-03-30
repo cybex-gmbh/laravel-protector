@@ -2,11 +2,11 @@
 
 namespace Cybex\Protector\Classes\Metadata\Providers;
 
-use Cybex\Protector\Contracts\MetadataProvider;
+use Cybex\Protector\Contracts\MetadataProviderContract;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
-class GitMetadataProvider implements MetadataProvider
+class GitMetadataProvider implements MetadataProviderContract
 {
     /**
      * @inheritDoc
