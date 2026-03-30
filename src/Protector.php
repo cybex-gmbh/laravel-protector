@@ -3,7 +3,7 @@
 namespace Cybex\Protector;
 
 use Cybex\Protector\Classes\Metadata\MetadataHandler;
-use Cybex\Protector\Contracts\Crypter;
+use Cybex\Protector\Contracts\CrypterContract;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
 use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
@@ -328,7 +328,7 @@ class Protector
                     $publicKey = '';
 
                     if ($shouldEncrypt) {
-                        $publicKey = app(Crypter::class)->getPublicKeyFromUser($request->user());
+                        $publicKey = app(CrypterContract::class)->getPublicKeyFromUser($request->user());
 
                         if (!$publicKey) {
                             throw new InvalidConfigurationException('The user does not have a public key, which is needed for encrypting the dump.');
@@ -359,7 +359,7 @@ class Protector
 
                             // Encrypt the data when Laravel Sanctum is active.
                             if ($shouldEncrypt) {
-                                $chunk = app(Crypter::class)->encrypt($chunk, $publicKey);
+                                $chunk = app(CrypterContract::class)->encrypt($chunk, $publicKey);
                             }
 
                             echo $chunk;
@@ -460,7 +460,7 @@ class Protector
      */
     public function decryptString(string $encryptedString): string
     {
-        $decryptedString = app(Crypter::class)->decrypt($encryptedString, $this->config->getPrivateKey());
+        $decryptedString = app(CrypterContract::class)->decrypt($encryptedString, $this->config->getPrivateKey());
 
         if ($decryptedString === false) {
             throw new InvalidConfigurationException(
@@ -590,7 +590,7 @@ class Protector
     protected function determineEncryptionOverhead(int $chunkSize, string $publicKey): int
     {
         $chunk = str_repeat('0', $chunkSize);
-        $encryptedChunk = app(Crypter::class)->encrypt($chunk, $publicKey);
+        $encryptedChunk = app(CrypterContract::class)->encrypt($chunk, $publicKey);
 
         return strlen($encryptedChunk) - $chunkSize;
     }

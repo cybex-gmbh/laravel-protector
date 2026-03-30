@@ -2,10 +2,10 @@
 
 namespace Cybex\Protector\Classes\Metadata\Providers;
 
-use Cybex\Protector\Contracts\MetadataProvider;
+use Cybex\Protector\Contracts\MetadataProviderContract;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
 
-class ProtectorMetadataProvider implements MetadataProvider
+class ProtectorMetadataProvider implements MetadataProviderContract
 {
     public function __construct(protected ProtectorConfigContract $protectorConfig)
     {

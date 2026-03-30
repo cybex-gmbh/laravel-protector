@@ -2,11 +2,11 @@
 
 namespace Cybex\Protector\Facades;
 
-use Cybex\Protector\Contracts\Crypter;
+use Cybex\Protector\Contracts\CrypterContract;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @mixin Crypter
+ * @mixin CrypterContract
  */
 class CrypterFacade extends Facade
 {
@@ -17,6 +17,6 @@ class CrypterFacade extends Facade
      */
     protected static function getFacadeAccessor(): string
     {
-        return Crypter::class;
+        return CrypterContract::class;
     }
 }

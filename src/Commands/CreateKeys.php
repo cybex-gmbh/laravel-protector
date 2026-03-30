@@ -2,7 +2,7 @@
 
 namespace Cybex\Protector\Commands;
 
-use Cybex\Protector\Contracts\Crypter;
+use Cybex\Protector\Contracts\CrypterContract;
 use Illuminate\Console\Command;
 
 /**
@@ -32,7 +32,7 @@ class CreateKeys extends Command
      */
     public function handle(): void
     {
-        $crypter = app(Crypter::class);
+        $crypter = app(CrypterContract::class);
         $privateKey = $crypter->createPrivateKey();
         $publicKey = $crypter->getPublicKeyFromPrivateKey($privateKey);
 

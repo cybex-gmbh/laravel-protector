@@ -6,7 +6,7 @@ use Cybex\Protector\Classes\Metadata\Providers\DatabaseMetadataProvider;
 use Cybex\Protector\Classes\Metadata\Providers\EnvMetadataProvider;
 use Cybex\Protector\Classes\Metadata\Providers\GitMetadataProvider;
 use Cybex\Protector\Classes\Metadata\Providers\JsonFileMetadataProvider;
-use Cybex\Protector\Contracts\MetadataProvider;
+use Cybex\Protector\Contracts\MetadataProviderContract;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Tests\TestCase;
 use Illuminate\Support\Carbon;
@@ -220,7 +220,7 @@ class MetadataTest extends TestCase
     }
 }
 
-class TestCustomFooMetadataProvider implements MetadataProvider
+class TestCustomFooMetadataProvider implements MetadataProviderContract
 {
     public function __construct(public ProtectorConfigContract $protectorConfig, public Config $config)
     {
@@ -244,7 +244,7 @@ class TestCustomFooMetadataProvider implements MetadataProvider
     }
 }
 
-class TestCustomBarMetadataProvider implements MetadataProvider
+class TestCustomBarMetadataProvider implements MetadataProviderContract
 {
     public function __construct()
     {

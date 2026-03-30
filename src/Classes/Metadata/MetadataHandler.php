@@ -2,7 +2,7 @@
 
 namespace Cybex\Protector\Classes\Metadata;
 
-use Cybex\Protector\Contracts\MetadataProvider;
+use Cybex\Protector\Contracts\MetadataProviderContract;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Illuminate\Support\Collection;
@@ -74,7 +74,7 @@ class MetadataHandler
 
     /**
      * The metadata provider classes can be configured on the protector instance, we make the actual provider classes here.
-     * @return Collection<MetadataProvider>
+     * @return Collection<MetadataProviderContract>
      */
     protected function getProviders(): Collection
     {
@@ -83,7 +83,7 @@ class MetadataHandler
             ->map($this->makeProvider(...));
     }
 
-    protected function makeProvider($providerClass): MetadataProvider
+    protected function makeProvider($providerClass): MetadataProviderContract
     {
         return app()->makeWith($providerClass, [ProtectorConfigContract::class => $this->protectorConfig]);
     }
