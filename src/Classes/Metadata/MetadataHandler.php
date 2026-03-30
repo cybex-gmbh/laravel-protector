@@ -3,13 +3,13 @@
 namespace Cybex\Protector\Classes\Metadata;
 
 use Cybex\Protector\Contracts\MetadataProvider;
+use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Exceptions\FileNotFoundException;
-use Cybex\Protector\ProtectorConfig;
 use Illuminate\Support\Collection;
 
 class MetadataHandler
 {
-    public function __construct(protected ProtectorConfig $protectorConfig)
+    public function __construct(protected ProtectorConfigContract $protectorConfig)
     {
     }
 
@@ -85,7 +85,7 @@ class MetadataHandler
 
     protected function makeProvider($providerClass): MetadataProvider
     {
-        return app()->makeWith($providerClass, [ProtectorConfig::class => $this->protectorConfig]);
+        return app()->makeWith($providerClass, [ProtectorConfigContract::class => $this->protectorConfig]);
     }
 
     /**

@@ -277,7 +277,7 @@ See [cybex-gmbh/collector](https://github.com/cybex-gmbh/collector) for an examp
 The `protector.php` config file sets initial settings for the `Protector` instance.
 
 Additional settings can be configured on the `Protector` instance. For all available options, take a look at
-the [ProtectorConfig class](src/ProtectorConfig.php).
+the [ProtectorConfigContract](src/Contracts/ProtectorConfigContract.php).
 
 For example, to configure a specific auth token and dump endpoint URL:
 
@@ -288,7 +288,7 @@ Protector::getConfig()->withAuthToken($authToken)->withDumpEndpointUrl($dumpEndp
 Or you can create a new configuration and use it for the protector:
 
 ```php
-$config = app(ProtectorConfig::class)->withAuthToken($authToken);
+$config = app(ProtectorConfigContract::class)->withAuthToken($authToken);
 $protector = Protector::withConfig($config);
 ```
 

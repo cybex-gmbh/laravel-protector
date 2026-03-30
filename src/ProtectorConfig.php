@@ -5,6 +5,7 @@ namespace Cybex\Protector;
 use Cybex\Protector\Classes\Metadata\Providers\DatabaseMetadataProvider;
 use Cybex\Protector\Classes\SchemaState\MySql\MySqlSchemaStateProxy;
 use Cybex\Protector\Classes\SchemaState\Postgres\PostgresSchemaStateProxy;
+use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\UnsupportedDatabaseException;
 use Illuminate\Contracts\Filesystem\Filesystem;
@@ -15,7 +16,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
-class ProtectorConfig
+class ProtectorConfig implements ProtectorConfigContract
 {
     /**
      * Cache for the current connection-name.

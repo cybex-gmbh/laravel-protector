@@ -7,7 +7,7 @@ use Cybex\Protector\Classes\Metadata\Providers\EnvMetadataProvider;
 use Cybex\Protector\Classes\Metadata\Providers\GitMetadataProvider;
 use Cybex\Protector\Classes\Metadata\Providers\JsonFileMetadataProvider;
 use Cybex\Protector\Contracts\MetadataProvider;
-use Cybex\Protector\ProtectorConfig;
+use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Tests\TestCase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
@@ -172,7 +172,7 @@ class MetadataTest extends TestCase
 
         $this->assertArrayHasKey('custom', $metadata);
         $this->assertEquals($metadataProviders, $metadata['custom']['foo']);
-        $this->assertInstanceOf(ProtectorConfig::class, app(TestCustomFooMetadataProvider::class)->protectorConfig);
+        $this->assertInstanceOf(ProtectorConfigContract::class, app(TestCustomFooMetadataProvider::class)->protectorConfig);
         $this->assertInstanceOf(Config::class, app(TestCustomFooMetadataProvider::class)->config);
     }
 
@@ -222,7 +222,7 @@ class MetadataTest extends TestCase
 
 class TestCustomFooMetadataProvider implements MetadataProvider
 {
-    public function __construct(public ProtectorConfig $protectorConfig, public Config $config)
+    public function __construct(public ProtectorConfigContract $protectorConfig, public Config $config)
     {
     }
 

@@ -3,12 +3,12 @@
 namespace Cybex\Protector\Commands;
 
 use Carbon\Carbon;
+use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Cybex\Protector\Protector;
-use Cybex\Protector\ProtectorConfig;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -49,7 +49,7 @@ class ImportDump extends Command
     protected const DOWNLOAD_REMOTE_DUMP = 'Download remote dump';
     protected const IMPORT_EXISTING_LOCAL_DUMP = 'Import existing local dump';
     protected Protector $protector;
-    protected ProtectorConfig $protectorConfig;
+    protected ProtectorConfigContract $protectorConfig;
 
     /**
      * Execute the console command.
