@@ -51,6 +51,35 @@ interface ProtectorConfigContract
 
     public function setAuthToken(string $authToken): static;
 
+    public function withDefaultAuthToken(): static;
+
+    /**
+     * Basic Auth may only be used without Laravel Sanctum.
+     */
+    public function getBasicAuthCredentials(): ?string;
+
+    /**
+     * Basic Auth may only be used without Laravel Sanctum.
+     * The value format should be "<username>:<password>".
+     */
+    public function setBasicAuthCredentials(string $credentials): static;
+
+    /**
+     * Basic Auth may only be used without Laravel Sanctum.
+     */
+    public function withDefaultBasicAuthCredentials(): static;
+
+    public function getPrivateKey(): string;
+
+    /**
+     * Gets the name of the .env key for the Protector private key.
+     */
+    public function getPrivateKeyName(): string;
+
+    public function setPrivateKey(string $privateKey): static;
+
+    public function withDefaultPrivateKey(): static;
+
     public function getDumpEndpointUrl(): string;
 
     /**
@@ -59,6 +88,8 @@ interface ProtectorConfigContract
     public function getDumpEndpointUrlKeyName(): string;
 
     public function setDumpEndpointUrl(string $dumpEndpointUrl): static;
+
+    public function withDefaultDumpEndpointUrl(): static;
 
     /**
      * Returns the maximum packet length specified in the config.
@@ -83,6 +114,18 @@ interface ProtectorConfigContract
      */
     public function withDefaultMaxPacketLength(): static;
 
+    public function getChunkSize(): int;
+
+    public function setChunkSize(int $chunkSize): static;
+
+    public function withDefaultChunkSize(): static;
+
+    public function getHttpTimeout(): int;
+
+    public function setHttpTimeout(int $httpTimeout): static;
+
+    public function withDefaultHttpTimeout(): static;
+
     /**
      * The metadata provider classes can be configured on the protector instance, else we return the config default.
      *
@@ -92,14 +135,7 @@ interface ProtectorConfigContract
 
     public function setMetadataProviders(array $metadataProviders): static;
 
-    public function getPrivateKey(): string;
-
-    /**
-     * Gets the name of the .env key for the Protector private key.
-     */
-    public function getPrivateKeyName(): string;
-
-    public function withPrivateKey(string $privateKey): static;
+    public function withDefaultMetadataProviders(): static;
 
     public function shouldRemoveAutoIncrementingState(): bool;
 

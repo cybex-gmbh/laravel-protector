@@ -10,7 +10,7 @@
 - The minimum required PHP version is now 8.2
 - Some config and .env keys have been renamed.
 - The `Protector` class has been refactored to separate configuration into a new `ProtectorConfig` class.
-  Most configuration-related methods have been moved from `Protector` to `ProtectorConfig`.
+  Configuration-related methods have been moved from `Protector` to `ProtectorConfig`.
 - The Protector dump endpoint route name has been changed.
 - Dump metadata has received a new structure.
   Legacy dumps with old metadata are still supported.
@@ -90,18 +90,14 @@ The .env keys have changed to be consistent with the config keys:
 The `Protector` class has been split into `Protector` and `ProtectorConfig`.
 Methods that were previously available on the `Protector` instance are now accessible through `Protector::getConfig()`.
 
-The following methods have been moved to `ProtectorConfig`:
+All methods of the `HasConfiguration` trait have been moved to `ProtectorConfig`.
+Some methods have been renamed:
 
-- `withAuthToken()`
-- `withPrivateKey()`
-- `withConnectionName()`
-- `getDisk()`
-- `getBaseDirectory()`
-- `getDatabaseName()`
-- `getDumpEndpointUrl()`
-- `shouldEncrypt()`
-- `getSchemaStateParameters()`
-- `getProxyForSchemaState()`
+- `withAuthToken()` -> `setAuthToken()`
+- `withPrivateKey()` -> `setPrivateKey()`
+- `withConnectionName()` -> `setConnectionName()`
+- `withMaxPacketLength()` -> `setMaxPacketLength()`
+- `withDumpEndpointUrl()` -> `setDumpEndpointUrl()`
 
 If you were previously calling these methods on a `Protector` instance, you should now call them on the result of `getConfig()`:
 
@@ -110,8 +106,14 @@ If you were previously calling these methods on a `Protector` instance, you shou
 Protector::withAuthToken($token);
 
 // New
-Protector::getConfig()->withAuthToken($token);
+Protector::getConfig()->setAuthToken($token);
 ```
+
+Additionally, these options can now be configured per-instance:
+
+- Chunk Size
+- Http Timeout
+- Basic Auth Credentials
 
 ### Protector dump endpoint route name
 
