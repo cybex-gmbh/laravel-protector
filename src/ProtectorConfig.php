@@ -85,17 +85,13 @@ class ProtectorConfig implements ProtectorConfigContract
             ->withoutTablespaces();
     }
 
-    /**
-     * Returns the config value for the baseDirectory key.
-     */
+    /** {@inheritDoc} */
     public function getBaseDirectory(): string
     {
         return $this->getConfigValueForKey('dump.baseDirectory') ?? '';
     }
 
-    /**
-     * Returns the disk which is stated in the config. If no disk is stated, the default filesystem disk will be returned.
-     */
+    /** {@inheritDoc} */
     public function getDisk(?string $diskName = null): Filesystem
     {
         $diskName ??= $this->getConfigValueForKey('dump.diskName', config('filesystems.default'));
@@ -103,25 +99,19 @@ class ProtectorConfig implements ProtectorConfigContract
         return Storage::disk($diskName);
     }
 
-    /**
-     * Returns the current connection configuration.
-     */
+    /** {@inheritDoc} */
     public function getConnectionConfig(): array|false
     {
         return $this->connectionConfig;
     }
 
-    /**
-     * Returns the database config for the given connection.
-     */
+    /** {@inheritDoc} */
     public function getDatabaseConfig(): array|false
     {
         return config(sprintf('database.connections.%s', $this->connectionName), false);
     }
 
-    /**
-     * Returns the database name specified in the connectionConfig array.
-     */
+    /** {@inheritDoc} */
     public function getDatabaseName(): string
     {
         return $this->connectionConfig['database'];
@@ -132,9 +122,7 @@ class ProtectorConfig implements ProtectorConfigContract
         return $this->connectionName;
     }
 
-    /**
-     * @throws InvalidConnectionException
-     */
+    /** {@inheritDoc} */
     public function setConnectionName(?string $connectionName = null): static
     {
         $this->connectionName = $connectionName ?? config('database.default');
@@ -151,9 +139,7 @@ class ProtectorConfig implements ProtectorConfigContract
         return $this->authToken ?: $this->getConfigValueForKey('client.authToken');
     }
 
-    /**
-     * Gets the name of the .env key for the auth token.
-     */
+    /** {@inheritDoc} */
     public function getAuthTokenKeyName(): string
     {
         return 'PROTECTOR_CLIENT_AUTH_TOKEN';
@@ -171,9 +157,7 @@ class ProtectorConfig implements ProtectorConfigContract
         return $this->dumpEndpointUrl ?: $this->getConfigValueForKey('client.dumpEndpointUrl');
     }
 
-    /**
-     * Gets the name of the .env key for the Protector dump endpoint URL.
-     */
+    /** {@inheritDoc} */
     public function getDumpEndpointUrlKeyName(): string
     {
         return 'PROTECTOR_CLIENT_DUMP_ENDPOINT_URL';
@@ -186,22 +170,13 @@ class ProtectorConfig implements ProtectorConfigContract
         return $this;
     }
 
-    /**
-     * Returns the maximum packet length specified in the config.
-     * The option 'max_allowed_packet' sets an upper limit on the size of any single message between the MySQL server and clients.
-     * This has to be set up on the client (here) and the MySQL server.
-     * This is not applicable to PostgreSQL.
-     */
+    /** {@inheritDoc} */
     public function getMaxPacketLength(): string
     {
         return $this->maxPacketLength;
     }
 
-    /**
-     * The option 'max_allowed_packet' sets an upper limit on the size of any single message between the MySQL server and clients.
-     * This has to be set up on the client (here) and the MySQL server.
-     * This is not applicable to PostgreSQL.
-     */
+    /** {@inheritDoc} */
     public function setMaxPacketLength(string $maxPacketLength): static
     {
         $this->maxPacketLength = $maxPacketLength;
@@ -209,12 +184,7 @@ class ProtectorConfig implements ProtectorConfigContract
         return $this;
     }
 
-    /**
-     * Uses the max packet length specified in the config file.
-     * The option 'max_allowed_packet' sets an upper limit on the size of any single message between the MySQL server and clients.
-     * This has to be set up on the client (here) and the MySQL server.
-     * This is not applicable to PostgreSQL.
-     */
+    /** {@inheritDoc} */
     public function withDefaultMaxPacketLength(): static
     {
         $this->maxPacketLength = $this->getConfigValueForKey('dump.maxPacketLength');
@@ -222,11 +192,7 @@ class ProtectorConfig implements ProtectorConfigContract
         return $this;
     }
 
-    /**
-     * The metadata provider classes can be configured on the protector instance, else we return the config default.
-     *
-     * @return Collection
-     */
+    /** {@inheritDoc} */
     public function getMetadataProviders(): Collection
     {
         $additionalMetadataProviders = collect($this->metadataProviders ?? $this->getConfigValueForKey('dump.metadata.providers'));
@@ -246,9 +212,7 @@ class ProtectorConfig implements ProtectorConfigContract
         return $this->privateKey ?: $this->getConfigValueForKey('client.privateKey');
     }
 
-    /**
-     * Gets the name of the .env key for the Protector private key.
-     */
+    /** {@inheritDoc} */
     public function getPrivateKeyName(): string
     {
         return 'PROTECTOR_CLIENT_PRIVATE_KEY';
@@ -361,11 +325,7 @@ class ProtectorConfig implements ProtectorConfigContract
         return $this->dropDb;
     }
 
-    /**
-     * Defines that existing databases should be dropped before importing a dump.
-     * Only works if used together with the $createDb option.
-     * (PostgreSQL only, controls the --clean flag)
-     */
+    /** {@inheritDoc} */
     public function withDropDb(): static
     {
         $this->dropDb = true;
@@ -373,11 +333,7 @@ class ProtectorConfig implements ProtectorConfigContract
         return $this;
     }
 
-    /**
-     * Defines that existing databases should not be dropped before importing a dump.
-     * Only works if used together with the $createDb option
-     * (PostgreSQL only, controls the --clean flag)
-     */
+    /** {@inheritDoc} */
     public function withoutDropDb(): static
     {
         $this->dropDb = false;
@@ -409,9 +365,7 @@ class ProtectorConfig implements ProtectorConfigContract
         return in_array('auth:sanctum', $this->getConfigValueForKey('server.routeMiddleware', []));
     }
 
-    /**
-     * @throws UnsupportedDatabaseException
-     */
+    /** {@inheritDoc} */
     public function getProxyForSchemaState(): SchemaState
     {
         $connection = DB::connection($this->getConnectionName());
@@ -429,12 +383,7 @@ class ProtectorConfig implements ProtectorConfigContract
         return $schemaStateProxy;
     }
 
-    /**
-     * Gets the current schema state parameters.
-     * These may change between calls, as the protector could be reconfigured to use a different connection and thus a different schema state proxy.
-     *
-     * @return array
-     */
+    /** {@inheritDoc} */
     public function getSchemaStateParameters(): array
     {
         $this->getProxyForSchemaState();
