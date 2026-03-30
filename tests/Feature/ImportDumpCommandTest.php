@@ -145,7 +145,7 @@ class ImportDumpCommandTest extends TestCase
 
         $this->expectExceptionObject(new FileNotFoundException(path: sprintf('%s%s%s', static::$baseDirectory, DIRECTORY_SEPARATOR, $fileName)));
 
-        $this->artisan(sprintf('protector:import --file=%s --ignore-connection-filter --force', $fileName))->assertFailed();
+        $this->artisan(sprintf('protector:import --file=%s --force', $fileName))->assertFailed();
     }
 
 
