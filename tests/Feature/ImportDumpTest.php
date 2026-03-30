@@ -150,7 +150,7 @@ class ImportDumpTest extends TestCase
     {
         Config::set('database.connections', null);
         $this->expectException(InvalidConnectionException::class);
-        $this->protector->getConfig()->withConnectionName(null);
+        $this->protector->getConfig()->setConnectionName(null);
     }
 
     /**
@@ -172,7 +172,7 @@ class ImportDumpTest extends TestCase
         Config::set('database.default', 'mysql');
         Config::set('database.connections.mysql.host', 'protector.invalid');
 
-        $this->protector->getConfig()->withConnectionName(null);
+        $this->protector->getConfig()->setConnectionName(null);
 
         $this->expectException(FailedWipeException::class);
         $this->protector->importDump($this->filePath);
