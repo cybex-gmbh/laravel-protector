@@ -8,7 +8,7 @@ use Illuminate\Support\Collection;
 
 interface ProtectorConfigContract
 {
-    public function withAuthToken(string $authToken): static;
+    public function setAuthToken(string $authToken): static;
 
     public function withAutoIncrementingState(): static;
 
@@ -26,7 +26,7 @@ interface ProtectorConfigContract
 
     public function withoutData(): static;
 
-    public function withConnectionName(?string $connectionName): static;
+    public function setConnectionName(?string $connectionName): static;
 
     public function withCreateDb(): static;
 
@@ -40,17 +40,15 @@ interface ProtectorConfigContract
 
     public function withoutTablespaces(): static;
 
-    public function withMaxPacketLength(string $maxPacketLength): static;
+    public function setMaxPacketLength(string $maxPacketLength): static;
 
     public function withDefaultMaxPacketLength(): static;
 
-    public function withDumpEndpointUrl(string $dumpEndpointUrl): static;
+    public function setDumpEndpointUrl(string $dumpEndpointUrl): static;
 
     public function withPrivateKey(string $privateKey): static;
 
-    public function withMetadataProviders(array $metadataProviders): static;
-
-    public function getConfigValueForKey(string $key, mixed $default): mixed;
+    public function setMetadataProviders(array $metadataProviders): static;
 
     public function getAuthToken(): string;
 

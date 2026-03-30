@@ -94,7 +94,7 @@ class ProtectorConfig implements ProtectorConfigContract
 
     public function __construct(?string $connectionName = null)
     {
-        $this->withConnectionName($connectionName)
+        $this->setConnectionName($connectionName)
             ->withDefaultMaxPacketLength()
             ->withoutCreateDb()
             ->withoutTablespaces();
@@ -103,7 +103,7 @@ class ProtectorConfig implements ProtectorConfigContract
     /**
      * Sets the auth token for Laravel Sanctum authentication.
      */
-    public function withAuthToken(string $authToken): static
+    public function setAuthToken(string $authToken): static
     {
         $this->authToken = $authToken;
 
@@ -169,7 +169,7 @@ class ProtectorConfig implements ProtectorConfigContract
     /**
      * @throws InvalidConnectionException
      */
-    public function withConnectionName(?string $connectionName = null): static
+    public function setConnectionName(?string $connectionName = null): static
     {
         $this->connectionName = $connectionName ?? config('database.default');
 
@@ -232,7 +232,7 @@ class ProtectorConfig implements ProtectorConfigContract
         return $this;
     }
 
-    public function withMaxPacketLength(string $maxPacketLength): static
+    public function setMaxPacketLength(string $maxPacketLength): static
     {
         $this->maxPacketLength = $maxPacketLength;
 
@@ -249,7 +249,7 @@ class ProtectorConfig implements ProtectorConfigContract
     /**
      * Sets the dump endpoint URL.
      */
-    public function withDumpEndpointUrl(string $dumpEndpointUrl): static
+    public function setDumpEndpointUrl(string $dumpEndpointUrl): static
     {
         $this->dumpEndpointUrl = $dumpEndpointUrl;
 
@@ -263,7 +263,7 @@ class ProtectorConfig implements ProtectorConfigContract
         return $this;
     }
 
-    public function withMetadataProviders(array $metadataProviders): static
+    public function setMetadataProviders(array $metadataProviders): static
     {
         $this->metadataProviders = $metadataProviders;
 

@@ -49,7 +49,7 @@ class ExportDump extends Command
         $options = [];
         $options['no-data'] = $this->option('no-data') ?: false;
 
-        $this->protector->getConfig()->withConnectionName($connectionName ?? null);
+        $this->protector->getConfig()->setConnectionName($connectionName ?? null);
 
         $tempFilePath = $this->protector->createDump($options);
 
