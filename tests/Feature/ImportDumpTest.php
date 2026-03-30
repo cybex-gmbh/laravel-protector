@@ -150,7 +150,7 @@ class ImportDumpTest extends TestCase
     {
         Config::set('database.connections', null);
         $this->expectException(InvalidConnectionException::class);
-        $this->protector->withConnectionName(null);
+        $this->protector->getConfig()->setConnectionName(null);
     }
 
     /**
@@ -172,7 +172,7 @@ class ImportDumpTest extends TestCase
         Config::set('database.default', 'mysql');
         Config::set('database.connections.mysql.host', 'protector.invalid');
 
-        $this->protector->withConnectionName(null);
+        $this->protector->getConfig()->setConnectionName(null);
 
         $this->expectException(FailedWipeException::class);
         $this->protector->importDump($this->filePath);
@@ -233,7 +233,7 @@ class ImportDumpTest extends TestCase
     {
         $this->protector->flush($excludeFromFlush);
 
-        $baseDirectory = $this->protector->getBaseDirectory();
+        $baseDirectory = $this->protector->getConfig()->getBaseDirectory();
         $dumpsAfterFlushing = $this->disk->files($baseDirectory);
 
         $this->assertEquals($expected, $dumpsAfterFlushing);

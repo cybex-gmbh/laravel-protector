@@ -2,6 +2,7 @@
 
 namespace Cybex\Protector\Tests\Feature;
 
+use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Exceptions\ShellAccessDeniedException;
 use Cybex\Protector\Protector;
 use Cybex\Protector\Tests\TestCase;
@@ -13,6 +14,7 @@ class ShellAccessDeniedExceptionTest extends TestCase
         parent::setUp();
 
         $this->protector = $this->getMockBuilder(Protector::class)
+            ->setConstructorArgs([app(ProtectorConfigContract::class)])
             ->onlyMethods(['checkFunctionExists'])
             ->getMock();
     }

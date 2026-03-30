@@ -3,6 +3,7 @@
 namespace Cybex\Protector\Commands;
 
 use Carbon\Carbon;
+use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
@@ -47,7 +48,8 @@ class ImportDump extends Command
 
     protected const DOWNLOAD_REMOTE_DUMP = 'Download remote dump';
     protected const IMPORT_EXISTING_LOCAL_DUMP = 'Import existing local dump';
-    protected ?Protector $protector = null;
+    protected Protector $protector;
+    protected ProtectorConfigContract $protectorConfig;
 
     /**
      * Execute the console command.
@@ -66,8 +68,10 @@ class ImportDump extends Command
         }
 
         $this->protector = app('protector');
+        $this->protectorConfig = $this->protector->getConfig();
+
         $this->protector->guardRequiredFunctionsEnabled();
-        $this->protector->withConnectionName($this->option('connection'));
+        $this->protectorConfig->setConnectionName($this->option('connection'));
 
         $hasFile = !empty(trim($this->option('file')));
 
@@ -96,9 +100,9 @@ class ImportDump extends Command
      */
     protected function getDumpFromRemote(): string
     {
-        $disk = $this->protector->getDisk();
-        $basePath = $this->protector->getBaseDirectory();
-        $dumpEndpointUrl = $this->protector->getDumpEndpointUrl();
+        $disk = $this->protectorConfig->getDisk();
+        $basePath = $this->protectorConfig->getBaseDirectory();
+        $dumpEndpointUrl = $this->protectorConfig->getDumpEndpointUrl();
         $absoluteBasePath = $disk->path($basePath);
 
         $this->line(
@@ -133,8 +137,8 @@ class ImportDump extends Command
                 $fileExists = file_exists($dumpFilePath);
                 break;
             default:
-                $dumpFilePath = implode(DIRECTORY_SEPARATOR, [$this->protector->getBaseDirectory(), $this->option('file')]);
-                $fileExists = $this->protector->getDisk()->exists($dumpFilePath);
+                $dumpFilePath = implode(DIRECTORY_SEPARATOR, [$this->protectorConfig->getBaseDirectory(), $this->option('file')]);
+                $fileExists = $this->protectorConfig->getDisk()->exists($dumpFilePath);
                 break;
         }
 
@@ -173,8 +177,8 @@ class ImportDump extends Command
         // We need an absolute and local file path going forward. The file path may already be absolute and local, only if called with the --file option and passed an absolute path.
         if (!$this->isAbsolutePath($dumpFilePath)) {
             // The Protector disk might be local, if not, we need to create a local temp file.
-            if (is_a($this->protector->getDisk()->getAdapter(), LocalFilesystemAdapter::class)) {
-                $dumpFilePath = $this->protector->getDisk()->path($dumpFilePath);
+            if (is_a($this->protectorConfig->getDisk()->getAdapter(), LocalFilesystemAdapter::class)) {
+                $dumpFilePath = $this->protectorConfig->getDisk()->path($dumpFilePath);
             } else {
                 $absoluteTempFilePath = $this->protector->createTempFilePath($dumpFilePath);
             }
@@ -275,7 +279,7 @@ class ImportDump extends Command
         if ($optionForce || $this->confirm(
                 sprintf(
                     'Are you sure that you want to import the dump into the database: %s?',
-                    $this->protector->getDatabaseName()
+                    $this->protectorConfig->getDatabaseName()
                 )
             )) {
 

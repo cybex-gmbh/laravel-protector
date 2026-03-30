@@ -3,9 +3,8 @@
 namespace Cybex\Protector;
 
 use Cybex\Protector\Classes\Metadata\MetadataHandler;
-use Cybex\Protector\Classes\SchemaState\MySql\MySqlSchemaStateProxy;
-use Cybex\Protector\Classes\SchemaState\Postgres\PostgresSchemaStateProxy;
-use Cybex\Protector\Contracts\Crypter;
+use Cybex\Protector\Contracts\CrypterContract;
+use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
 use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
 use Cybex\Protector\Exceptions\FailedDumpGenerationException;
@@ -21,16 +20,10 @@ use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Cybex\Protector\Exceptions\ShellAccessDeniedException;
-use Cybex\Protector\Exceptions\UnsupportedDatabaseException;
-use Cybex\Protector\Traits\HasConfiguration;
 use Exception;
 use GuzzleHttp\Psr7\StreamWrapper;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Connection;
-use Illuminate\Database\Schema\MySqlSchemaState;
-use Illuminate\Database\Schema\PostgresSchemaState;
-use Illuminate\Database\Schema\SchemaState;
-use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -40,7 +33,6 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use LogicException;
 use Psr\Http\Message\StreamInterface;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -52,18 +44,26 @@ use Throwable;
 
 class Protector
 {
-    use HasConfiguration;
-
     protected array $requiredFunctionsCache;
 
-    protected array $schemaStateParameters;
-
-    public function __construct(?string $connectionName = null)
+    public function __construct(protected ProtectorConfigContract $config)
     {
-        $this->withConnectionName($connectionName)
-            ->withDefaultMaxPacketLength()
-            ->withoutCreateDb()
-            ->withoutTablespaces();
+    }
+
+    /**
+     * Returns a new Protector instance with the given configuration.
+     */
+    public static function withConfig(ProtectorConfigContract $config): static
+    {
+        return app()->makeWith('protector', [ProtectorConfigContract::class => $config]);
+    }
+
+    /**
+     * Returns the current configuration.
+     */
+    public function getConfig(): ProtectorConfigContract
+    {
+        return $this->config;
     }
 
     /**
@@ -85,7 +85,7 @@ class Protector
             throw new InvalidEnvironmentException('Production environment is not allowed and option was not set.');
         }
 
-        if (!$this->connectionConfig) {
+        if (!$this->config->getConnectionConfig()) {
             throw new InvalidConnectionException('Connection is not configured properly');
         }
 
@@ -95,14 +95,14 @@ class Protector
 
         if (!Arr::get($options, 'no-wipe')) {
             try {
-                $this->wipeDatabase(DB::connection($this->connectionName));
+                $this->wipeDatabase(DB::connection($this->config->getConnectionName()));
             } catch (Throwable $exception) {
                 throw new FailedWipeException($exception->getMessage());
             }
         }
 
         try {
-            $this->getProxyForSchemaState()->load($sourceFilePath);
+            $this->config->getProxyForSchemaState()->load($sourceFilePath);
         } catch (Throwable $exception) {
             throw new FailedImportException($exception->getMessage());
         }
@@ -120,34 +120,6 @@ class Protector
 
 
     /**
-     * Gets the current schema state parameters.
-     * These may change between calls, as the protector could be reconfigured to use a different connection and thus a different schema state proxy.
-     *
-     * @return array
-     */
-    public function getSchemaStateParameters(): array
-    {
-        $this->getProxyForSchemaState();
-
-        return $this->schemaStateParameters;
-    }
-
-    /**
-     * Public function to create the Destination File Path for the dump.
-     */
-    public function createDestinationFilePath(string $fileName, ?string $subFolder = null): string
-    {
-        return implode(
-            DIRECTORY_SEPARATOR,
-            array_filter([
-                $this->getConfigValueForKey('dump.baseDirectory'),
-                $subFolder,
-                $fileName,
-            ])
-        );
-    }
-
-    /**
      * Public function to create a dump for the given configuration.
      *
      * @throws FailedDumpGenerationException
@@ -155,7 +127,7 @@ class Protector
      */
     public function createDump(array $options = []): string
     {
-        if (!$this->connectionConfig) {
+        if (!$this->config->getConnectionConfig()) {
             throw new InvalidConnectionException('Connection is not configured properly.');
         }
 
@@ -170,7 +142,7 @@ class Protector
      */
     public function getDumpMetadata(string $dumpFile): bool|array
     {
-        return app(MetadataHandler::class)->getDumpMetadata($dumpFile);
+        return app()->makeWith(MetadataHandler::class, [ProtectorConfigContract::class => $this->config])->getDumpMetadata($dumpFile);
     }
 
     /**
@@ -180,7 +152,7 @@ class Protector
     {
         $files = $this->getDumpFiles($excludeFile);
 
-        $this->getDisk()->delete($files);
+        $this->config->getDisk()->delete($files);
     }
 
     /**
@@ -193,17 +165,17 @@ class Protector
      */
     public function getRemoteDump(): string
     {
-        $disk = $this->getDisk();
+        $disk = $this->config->getDisk();
 
-        if ($this->shouldEncrypt() && !$this->getPrivateKey()) {
+        if ($this->config->shouldEncrypt() && !$this->config->getPrivateKey()) {
             throw new MissingPrivateKeyException();
         }
 
-        if (!$dumpEndpointUrl = $this->getDumpEndpointUrl()) {
+        if (!$dumpEndpointUrl = $this->config->getDumpEndpointUrl()) {
             throw new MissingDumpEndpointUrlException();
         }
 
-        $this->createDirectory($this->getConfigValueForKey('dump.baseDirectory'), $disk);
+        $this->createDirectory($this->config->getBaseDirectory(), $disk);
 
         $request = $this->getConfiguredHttpRequest();
 
@@ -262,13 +234,13 @@ class Protector
     protected function generateDump(array $options = []): ?string
     {
         if ($options['no-data'] ?? false) {
-            $this->withoutData();
+            $this->config->withoutData();
         }
 
-        $schemaStateProxy = $this->getProxyForSchemaState();
+        $schemaStateProxy = $this->config->getProxyForSchemaState();
         $tempFile = tempnam('', 'protector');
 
-        $schemaStateProxy->dump(DB::connection($this->connectionName), $tempFile);
+        $schemaStateProxy->dump(DB::connection($this->config->getConnectionName()), $tempFile);
 
         if (!filesize($tempFile)) {
             unlink($tempFile);
@@ -301,8 +273,8 @@ class Protector
     {
         [$appUrl, $database, $connection, $date] = [
             parse_url(config('app.url'), PHP_URL_HOST),
-            $this->connectionConfig['database'],
-            $this->getConnectionName(),
+            $this->config->getDatabaseName(),
+            $this->config->getConnectionName(),
             now(),
         ];
 
@@ -325,25 +297,7 @@ class Protector
      */
     public function getMetadata(): array
     {
-        return app(MetadataHandler::class)->getMetadata();
-    }
-
-    /**
-     * Returns a config value for a specific key and checks for Callables.
-     */
-    protected function getConfigValueForKey(string $key, mixed $default = null): mixed
-    {
-        $value = config(sprintf('protector.%s', $key), $default);
-
-        return is_callable($value) ? $value() : $value;
-    }
-
-    /**
-     * Returns the config value for the baseDirectory key.
-     */
-    public function getBaseDirectory(): string
-    {
-        return $this->getConfigValueForKey('dump.baseDirectory') ?? '';
+        return app()->makeWith(MetadataHandler::class, [ProtectorConfigContract::class => $this->config])->getMetadata();
     }
 
     /**
@@ -363,17 +317,18 @@ class Protector
         ?string $connectionName = null
     ): Response|StreamedResponse
     {
-        $shouldEncrypt = $this->shouldEncrypt();
+        $shouldEncrypt = $this->config->shouldEncrypt();
 
         // Only proceed when either Laravel Sanctum is turned off or the user's token is valid.
         if (!$shouldEncrypt || $request->user()?->tokenCan('protector:import')) {
-            if ($this->withConnectionName($connectionName)) {
+            if ($this->config->setConnectionName($connectionName)) {
+
                 try {
                     $serverFilePath = $this->createDump();
                     $publicKey = '';
 
                     if ($shouldEncrypt) {
-                        $publicKey = app(Crypter::class)->getPublicKeyFromUser($request->user());
+                        $publicKey = app(CrypterContract::class)->getPublicKeyFromUser($request->user());
 
                         if (!$publicKey) {
                             throw new InvalidConfigurationException('The user does not have a public key, which is needed for encrypting the dump.');
@@ -393,7 +348,7 @@ class Protector
                     return response($throwable->getMessage(), 500, ['message' => 'Unknown error, please check server logs for details.']);
                 }
 
-                $chunkSize = $this->getConfigValueForKey('server.chunkSize');
+                $chunkSize = $this->config->getChunkSize();
 
                 return response()->streamDownload(
                     function () use ($publicKey, $serverFilePath, $chunkSize, $shouldEncrypt) {
@@ -404,7 +359,7 @@ class Protector
 
                             // Encrypt the data when Laravel Sanctum is active.
                             if ($shouldEncrypt) {
-                                $chunk = app(Crypter::class)->encrypt($chunk, $publicKey);
+                                $chunk = app(CrypterContract::class)->encrypt($chunk, $publicKey);
                             }
 
                             echo $chunk;
@@ -433,21 +388,11 @@ class Protector
     }
 
     /**
-     * Returns the disk which is stated in the config. If no disk is stated the default filesystem disk will be returned.
-     */
-    public function getDisk(?string $diskName = null): Filesystem
-    {
-        $diskName ??= $this->getConfigValueForKey('dump.diskName', config('filesystems.default'));
-
-        return Storage::disk($diskName);
-    }
-
-    /**
      * Creates a directory at the given path, if it doesn't exist already.
      *
      * @throws FailedCreatingDestinationPathException
      */
-    protected function createDirectory(string $destinationPath, FilesystemAdapter $disk): void
+    protected function createDirectory(string $destinationPath, Filesystem $disk): void
     {
         if ($disk->missing($destinationPath)) {
             if ($disk->makeDirectory($destinationPath) === false) {
@@ -466,16 +411,16 @@ class Protector
      */
     protected function getConfiguredHttpRequest(): PendingRequest
     {
-        $basicAuthCredentials = $this->getConfigValueForKey('client.basicAuthCredentials');
+        $basicAuthCredentials = $this->config->getBasicAuthCredentials();
 
-        if ($this->shouldEncrypt()) {
+        if ($this->config->shouldEncrypt()) {
             // Laravel Sanctum and Basic Auth cannot be used simultaneously since they use the same header.
             if ($basicAuthCredentials) {
                 throw new SanctumBasicAuthConflictException();
             }
 
             // Add Bearer token authentication to request.
-            $request = Http::withToken($this->getAuthToken());
+            $request = Http::withToken($this->config->getAuthToken());
         } elseif ($basicAuthCredentials) {
             // Add basic authentication to request.
             $credentials = explode(':', $basicAuthCredentials);
@@ -485,7 +430,7 @@ class Protector
             throw new NoAuthConfiguredException();
         }
 
-        return $request->withOptions(['stream' => true])->withHeaders(['Accept' => 'application/json'])->timeout($this->getConfigValueForKey('client.httpTimeout', 120));
+        return $request->withOptions(['stream' => true])->withHeaders(['Accept' => 'application/json'])->timeout($this->config->getHttpTimeout());
     }
 
     /**
@@ -495,8 +440,8 @@ class Protector
      */
     public function getLatestDumpName(): string
     {
-        $disk = $this->getDisk();
-        $baseDirectory = $this->getConfigValueForKey('dump.baseDirectory');
+        $disk = $this->config->getDisk();
+        $baseDirectory = $this->config->getBaseDirectory();
         $files = $disk->files($baseDirectory);
 
         if (empty($files)) {
@@ -515,7 +460,7 @@ class Protector
      */
     public function decryptString(string $encryptedString): string
     {
-        $decryptedString = app(Crypter::class)->decrypt($encryptedString, $this->getPrivateKey());
+        $decryptedString = app(CrypterContract::class)->decrypt($encryptedString, $this->config->getPrivateKey());
 
         if ($decryptedString === false) {
             throw new InvalidConfigurationException(
@@ -546,7 +491,7 @@ class Protector
             throw new Exception('Could not open temporary file for writing.');
         }
 
-        $stream = $this->getDisk()->readStream($diskFilePath);
+        $stream = $this->config->getDisk()->readStream($diskFilePath);
 
         if (!is_resource($stream)) {
             fclose($handle);
@@ -563,21 +508,13 @@ class Protector
 
     public function getDumpFiles(?string $excludeFile = null): array
     {
-        $files = $this->getDisk()->files($this->getBaseDirectory());
+        $files = $this->config->getDisk()->files($this->config->getBaseDirectory());
 
         if ($excludeFile) {
             $files = array_diff($files, [$excludeFile]);
         }
 
         return $files;
-    }
-
-    /**
-     * Returns whether the Sanctum middleware is activated in the config.
-     */
-    protected function shouldEncrypt(): bool
-    {
-        return in_array('auth:sanctum', config('protector.server.routeMiddleware'));
     }
 
     /**
@@ -616,7 +553,7 @@ class Protector
 
         return sprintf(
             '%s%s%s',
-            $this->getConfigValueForKey('dump.baseDirectory'),
+            $this->config->getBaseDirectory(),
             DIRECTORY_SEPARATOR,
             ($destinationFileName ?? 'remote_dump.sql')
         );
@@ -636,7 +573,7 @@ class Protector
     {
         $resource = StreamWrapper::getResource($stream);
 
-        $outputHandle = fopen($this->getDisk()->path($destinationFilePath), 'wb');
+        $outputHandle = fopen($this->config->getDisk()->path($destinationFilePath), 'wb');
 
         // Stop when EOF is reached or an empty chunk was read.
         while (!feof($resource) && $chunk = stream_get_contents($resource, $chunkSize)) {
@@ -653,29 +590,9 @@ class Protector
     protected function determineEncryptionOverhead(int $chunkSize, string $publicKey): int
     {
         $chunk = str_repeat('0', $chunkSize);
-        $encryptedChunk = app(Crypter::class)->encrypt($chunk, $publicKey);
+        $encryptedChunk = app(CrypterContract::class)->encrypt($chunk, $publicKey);
 
         return strlen($encryptedChunk) - $chunkSize;
-    }
-
-    /**
-     * @throws UnsupportedDatabaseException
-     */
-    protected function getProxyForSchemaState(): SchemaState
-    {
-        $connection = DB::connection($this->connectionName);
-        $schemaState = $connection->getSchemaState();
-
-        $schemaStateProxy = match (get_class($schemaState)) {
-            MySqlSchemaState::class => app(MySqlSchemaStateProxy::class, [$schemaState, $this]),
-            PostgresSchemaState::class => app(PostgresSchemaStateProxy::class, [$schemaState, $this]),
-            //            SqliteSchemaState::class => app('SqliteSchemaStateProxy', [$schemaState, $this]),
-            default => throw new UnsupportedDatabaseException('Unsupported database schema state: ' . class_basename($schemaState)),
-        };
-
-        $this->schemaStateParameters = $schemaStateProxy->getParameters();
-
-        return $schemaStateProxy;
     }
 
     protected function wipeDatabase(Connection $connection): void

@@ -9,6 +9,8 @@
 
 - The minimum required PHP version is now 8.2
 - Some config and .env keys have been renamed.
+- The `Protector` class has been refactored to separate configuration into a new `ProtectorConfig` class.
+  Configuration-related methods have been moved from `Protector` to `ProtectorConfig`.
 - The Protector dump endpoint route name has been changed.
 - Dump metadata has received a new structure.
   Legacy dumps with old metadata are still supported.
@@ -78,6 +80,41 @@ The .env keys have changed to be consistent with the config keys:
 | `PROTECTOR_DUMP_ENDPOINT_ROUTE` | `PROTECTOR_SERVER_DUMP_ENDPOINT_ROUTE` |
 | `PROTECTOR_CHUNK_SIZE`          | `PROTECTOR_SERVER_CHUNK_SIZE`          |
 
+### Protector configuration refactoring
+
+> [!NOTE]
+> Likelihood of impact: high
+>
+> Impact: Direct calls to configuration methods on the `Protector` instance will fail.
+
+The `Protector` class has been split into `Protector` and `ProtectorConfig`.
+Methods that were previously available on the `Protector` instance are now accessible through `Protector::getConfig()`.
+
+All methods of the `HasConfiguration` trait have been moved to `ProtectorConfig`.
+Some methods have been renamed:
+
+- `withAuthToken()` -> `setAuthToken()`
+- `withPrivateKey()` -> `setPrivateKey()`
+- `withConnectionName()` -> `setConnectionName()`
+- `withMaxPacketLength()` -> `setMaxPacketLength()`
+- `withDumpEndpointUrl()` -> `setDumpEndpointUrl()`
+
+If you were previously calling these methods on a `Protector` instance, you should now call them on the result of `getConfig()`:
+
+```php
+// Old
+Protector::withAuthToken($token);
+
+// New
+Protector::getConfig()->setAuthToken($token);
+```
+
+Additionally, these options can now be configured per-instance:
+
+- Chunk Size
+- Http Timeout
+- Basic Auth Credentials
+
 ### Protector dump endpoint route name
 
 > [!NOTE]
@@ -86,27 +123,6 @@ The .env keys have changed to be consistent with the config keys:
 > Impact: Using the route name for calls like `route('protectorDumpEndpointRoute')` will fail
 
 The route name has been changed to `protector.server.dump` to align it with the overall naming scheme and allow wildcard addressing.
-
-### Protector dump metadata
-
-> [!NOTE]
-> Likelihood of impact: low
->
-> Impact: Dump metadata may be wrong
-
-Dump metadata can now be configured using metadata providers in the config.
-
-The implementation expects the `Protector` to be used as a singleton (which was always intended).
-It makes use of the Laravel Service Container to inject the `Protector` instance.
-
-If you have code which uses the `Protector` without using the Service Container or the Facade,
-you will need to adjust your code.
-
-For example, instead of using `new Protector()`, you should be using either of the following options:
-
-- `app(Protector::class)`
-- `app('protector')`
-- `Protector` facade.
 
 ### Protector::getMetaData()
 
@@ -209,6 +225,25 @@ The method now throws a `EmptyDumpDirectoryException` instead of a `FileNotFound
 > Impact: Command calls using the `--dump` option will fail
 
 The `protector:import` command no longer supports the `--dump` option. The `--file` option now accepts both a relative and an absolute path.
+
+### Protector::createDestinationFilePath()
+
+> [!NOTE]
+> Likelihood of impact: low
+>
+> Impact: Calls to `Protector::createDestinationFilePath()` will fail
+
+The `createDestinationFilePath()` method has been removed from the `Protector` class as it was redundant and intended for internal use only.
+
+### HasConfiguration trait
+
+> [!NOTE]
+> Likelihood of impact: low
+>
+> Impact: Trait is no longer available, classes using this trait will fail to work
+
+The `HasConfiguration` trait has been removed. Its functionality is now integrated directly into the `ProtectorConfig` class. If you were using this trait in your own classes, you
+will need to refactor them to use `ProtectorConfig` or implement similar logic.
 
 ---
 

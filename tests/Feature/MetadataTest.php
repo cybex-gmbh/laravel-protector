@@ -6,8 +6,8 @@ use Cybex\Protector\Classes\Metadata\Providers\DatabaseMetadataProvider;
 use Cybex\Protector\Classes\Metadata\Providers\EnvMetadataProvider;
 use Cybex\Protector\Classes\Metadata\Providers\GitMetadataProvider;
 use Cybex\Protector\Classes\Metadata\Providers\JsonFileMetadataProvider;
-use Cybex\Protector\Contracts\MetadataProvider;
-use Cybex\Protector\Protector;
+use Cybex\Protector\Contracts\MetadataProviderContract;
+use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Tests\TestCase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
@@ -42,9 +42,9 @@ class MetadataTest extends TestCase
     {
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, []);
 
-        $this->protector->withMetadataProviders([GitMetadataProvider::class]);
+        $this->protector->getConfig()->setMetadataProviders([GitMetadataProvider::class]);
 
-        $this->assertContains(GitMetadataProvider::class, $this->protector->getMetadataProviders());
+        $this->assertContains(GitMetadataProvider::class, $this->protector->getConfig()->getMetadataProviders());
     }
 
     /**
@@ -54,7 +54,7 @@ class MetadataTest extends TestCase
     {
         Config::set('protector.dump.metadata.providers', []);
 
-        $this->assertContains(DatabaseMetadataProvider::class, $this->protector->getMetadataProviders());
+        $this->assertContains(DatabaseMetadataProvider::class, $this->protector->getConfig()->getMetadataProviders());
     }
 
     /**
@@ -63,7 +63,9 @@ class MetadataTest extends TestCase
     public function includesMetadataIfShouldAppend()
     {
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [GitMetadataProvider::class]);
-        $this->partialMock(GitMetadataProvider::class, fn($mock) => $mock->shouldReceive('shouldAppend')->andReturn(true));
+        $mock = $this->partialMock(GitMetadataProvider::class, fn($mock) => $mock->shouldReceive('shouldAppend')->andReturn(true));
+        // Mocking does not work nicely with app()->makeWith()
+        app()->offsetSet(GitMetadataProvider::class, $mock);
 
         $this->assertArrayHasKey('git', $this->protector->getMetadata());
     }
@@ -74,7 +76,9 @@ class MetadataTest extends TestCase
     public function excludesMetadataIfShouldNotAppend()
     {
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [GitMetadataProvider::class]);
-        $this->partialMock(GitMetadataProvider::class, fn($mock) => $mock->shouldReceive('shouldAppend')->andReturn(false));
+        $mock = $this->partialMock(GitMetadataProvider::class, fn($mock) => $mock->shouldReceive('shouldAppend')->andReturn(false));
+        // Mocking does not work nicely with app()->makeWith()
+        app()->offsetSet(GitMetadataProvider::class, $mock);
 
         $this->assertArrayNotHasKey('git', $this->protector->getMetadata());
     }
@@ -168,7 +172,7 @@ class MetadataTest extends TestCase
 
         $this->assertArrayHasKey('custom', $metadata);
         $this->assertEquals($metadataProviders, $metadata['custom']['foo']);
-        $this->assertInstanceOf(Protector::class, app(TestCustomFooMetadataProvider::class)->protector);
+        $this->assertInstanceOf(ProtectorConfigContract::class, app(TestCustomFooMetadataProvider::class)->protectorConfig);
         $this->assertInstanceOf(Config::class, app(TestCustomFooMetadataProvider::class)->config);
     }
 
@@ -216,9 +220,9 @@ class MetadataTest extends TestCase
     }
 }
 
-class TestCustomFooMetadataProvider implements MetadataProvider
+class TestCustomFooMetadataProvider implements MetadataProviderContract
 {
-    public function __construct(public Protector $protector, public Config $config)
+    public function __construct(public ProtectorConfigContract $protectorConfig, public Config $config)
     {
     }
 
@@ -240,7 +244,7 @@ class TestCustomFooMetadataProvider implements MetadataProvider
     }
 }
 
-class TestCustomBarMetadataProvider implements MetadataProvider
+class TestCustomBarMetadataProvider implements MetadataProviderContract
 {
     public function __construct()
     {

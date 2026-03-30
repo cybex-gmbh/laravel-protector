@@ -2,9 +2,9 @@
 
 namespace Cybex\Protector\Classes;
 
-use Cybex\Protector\Contracts\Crypter;
+use Cybex\Protector\Contracts\CrypterContract;
 
-class SodiumCrypter implements Crypter
+class SodiumCrypter implements CrypterContract
 {
     public function createPrivateKey(): string
     {

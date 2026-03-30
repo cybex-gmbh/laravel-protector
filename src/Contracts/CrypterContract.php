@@ -2,7 +2,7 @@
 
 namespace Cybex\Protector\Contracts;
 
-interface Crypter
+interface CrypterContract
 {
     public function createPrivateKey(): string;
 

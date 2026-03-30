@@ -2,14 +2,14 @@
 
 namespace Cybex\Protector\Classes\Metadata;
 
-use Cybex\Protector\Contracts\MetadataProvider;
+use Cybex\Protector\Contracts\MetadataProviderContract;
+use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Exceptions\FileNotFoundException;
-use Cybex\Protector\Protector;
 use Illuminate\Support\Collection;
 
 class MetadataHandler
 {
-    public function __construct(protected Protector $protector)
+    public function __construct(protected ProtectorConfigContract $protectorConfig)
     {
     }
 
@@ -74,18 +74,18 @@ class MetadataHandler
 
     /**
      * The metadata provider classes can be configured on the protector instance, we make the actual provider classes here.
-     * @return Collection<MetadataProvider>
+     * @return Collection<MetadataProviderContract>
      */
     protected function getProviders(): Collection
     {
-        return $this->protector
+        return $this->protectorConfig
             ->getMetadataProviders()
             ->map($this->makeProvider(...));
     }
 
-    protected function makeProvider($providerClass): MetadataProvider
+    protected function makeProvider($providerClass): MetadataProviderContract
     {
-        return app($providerClass);
+        return app()->makeWith($providerClass, [ProtectorConfigContract::class => $this->protectorConfig]);
     }
 
     /**
@@ -96,7 +96,7 @@ class MetadataHandler
     protected function tail(string $file, int $lines, int $buffer = 1024): array
     {
         // Open file-handle.
-        $fileHandle = $this->protector->getDisk()->readStream($file);
+        $fileHandle = $this->protectorConfig->getDisk()->readStream($file);
 
         if (!is_resource($fileHandle)) {
             throw new FileNotFoundException($file);

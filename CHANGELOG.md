@@ -12,14 +12,18 @@ All notable changes to `protector` will be documented in this file.
 ### General
 
 - The minimum required PHP version is now 8.2
-- Restructured the `protector.php` configuration file for better organization and clarity
-- The `protector:import` command no longer supports the `--dump` option. The `--file` option now accepts both a relative and an absolute path.
+- Restructured the `Protector` class by spliting it into `Protector` and `ProtectorConfig`.
+  Configuration methods are now accessible via `Protector::getConfig()`.
+  More per-instance configuration options have been added
+- The `protector:import` command no longer supports the `--dump` option. The `--file` option now accepts both a relative and an absolute path
 - Reformatted the output of the `protector:keys` and `protector:token` commands to easier spot relevant information
 
 ### Features
 
 - The metadata which is appended at the end of a dump file can now be customized,
   see the [Dump Metadata README section](README.md#dump-metadata) for more information
+- More options can now be configured on a `Protector` instance,
+  see the [ProtectorConfigContract](src/Contracts/ProtectorConfigContract.php) for all configuration options
 
 ### Fixes
 

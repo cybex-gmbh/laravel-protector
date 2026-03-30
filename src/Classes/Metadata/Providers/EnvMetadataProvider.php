@@ -2,9 +2,9 @@
 
 namespace Cybex\Protector\Classes\Metadata\Providers;
 
-use Cybex\Protector\Contracts\MetadataProvider;
+use Cybex\Protector\Contracts\MetadataProviderContract;
 
-class EnvMetadataProvider implements MetadataProvider
+class EnvMetadataProvider implements MetadataProviderContract
 {
     protected ?string $envMetadata;
 
