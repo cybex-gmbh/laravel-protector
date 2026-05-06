@@ -15,79 +15,43 @@ use Illuminate\Database\Schema\SchemaState;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use ReflectionClass;
+use ReflectionParameter;
 
-class ProtectorConfig implements ProtectorConfigContract
+class ProtectorConfig extends AbstractProtectorConfig implements ProtectorConfigContract
 {
-    /**
-     * Cache for the current connection-name.
-     */
-    protected string $connectionName;
-
-    /**
-     * Cache for the current connection-configuration.
-     */
-    protected array|false $connectionConfig;
-
-    /**
-     * Defines whether dumps should include a DB creation statement.
-     */
-    protected bool $createDb = true;
-
-    /**
-     * Defines whether existing databases should be dropped before importing a dump.
-     * Only works if used together with the $createDb option.
-     * (PostgreSQL only, controls the --clean flag)
-     */
-    protected bool $dropDb = true;
-
-    protected string $dumpEndpointUrl = '';
-
-    protected string $authToken = '';
-
-    protected string $basicAuth = '';
-
-    protected string $privateKey = '';
-
-    protected string $maxPacketLength;
-
-    protected int $chunkSize;
-
-    protected int $httpTimeout;
-
-    /**
-     * If set to false, the --no-tablespaces dump option will be used.
-     */
-    protected bool $tablespaces = true;
-
-    /**
-     * Specifies whether comments should be added to the dump file.
-     */
-    protected bool $dumpComments = true;
-
-    /**
-     * If false, no SET NAMES statements will be written to the dump.
-     */
-    protected bool $dumpCharsets = true;
-
-    /**
-     * Specifies whether table data should be dumped.
-     */
-    protected bool $dumpData = true;
-
-    /**
-     * If true, the auto-increment state will be stripped from the dump.
-     */
-    protected bool $removeAutoIncrementingState = false;
-
-    protected array $metadataProviders;
-
     protected array $schemaStateParameters;
 
-    public function __construct(?string $connectionName = null)
+    /**
+     * @throws InvalidConnectionException
+     */
+    public function __construct(
+        ?bool $createDb = null,
+        ?bool $dropDb = null,
+        ?bool $tablespaces = null,
+        ?bool $dumpComments = null,
+        ?bool $dumpCharsets = null,
+        ?bool $dumpData = null,
+        ?bool $removeAutoIncrementingState = null,
+        ?string $connectionName = null,
+        ?string $dumpEndpointUrl = null,
+        ?string $authToken = null,
+        ?string $basicAuth = null,
+        ?string $privateKey = null,
+        ?string $maxPacketLength = null,
+        ?int $chunkSize = null,
+        ?int $httpTimeout = null,
+        ?array $metadataProviders = null
+    )
     {
-        $this->setConnectionName($connectionName)
-            ->withoutCreateDb()
-            ->withoutTablespaces();
+        $this->connectionName = $connectionName ?? config('database.default');
+        $this->connectionConfig = config(sprintf('database.connections.%s', $this->connectionName));
+
+        foreach ($this->getConstructorParameters() as $parameter) {
+            if ($$parameter !== null) {
+                $this->$parameter = $$parameter;
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -107,12 +71,6 @@ class ProtectorConfig implements ProtectorConfigContract
     /** {@inheritDoc} */
     public function getConnectionConfig(): array|false
     {
-        return $this->connectionConfig;
-    }
-
-    /** {@inheritDoc} */
-    public function getDatabaseConfig(): array|false
-    {
         return config(sprintf('database.connections.%s', $this->connectionName), false);
     }
 
@@ -127,21 +85,9 @@ class ProtectorConfig implements ProtectorConfigContract
         return $this->connectionName;
     }
 
-    /** {@inheritDoc} */
-    public function setConnectionName(?string $connectionName = null): static
-    {
-        $this->connectionName = $connectionName ?? config('database.default');
-
-        if (($this->connectionConfig = $this->getDatabaseConfig()) === false) {
-            throw new InvalidConnectionException('Invalid database configuration');
-        }
-
-        return $this;
-    }
-
     public function getAuthToken(): string
     {
-        return $this->authToken ?: $this->getConfigValueForKey('client.authToken');
+        return $this->authToken ?? $this->getConfigValueForKey('client.authToken');
     }
 
     /** {@inheritDoc} */
@@ -150,41 +96,15 @@ class ProtectorConfig implements ProtectorConfigContract
         return 'PROTECTOR_CLIENT_AUTH_TOKEN';
     }
 
-    public function setAuthToken(string $authToken): static
-    {
-        $this->authToken = $authToken;
-
-        return $this;
-    }
-
-    public function withDefaultAuthToken(): static
-    {
-        return $this->setAuthToken($this->getConfigValueForKey('client.authToken'));
-    }
-
     /** {@inheritDoc} */
     public function getBasicAuthCredentials(): ?string
     {
-        return $this->basicAuth ?: $this->getConfigValueForKey('client.basicAuthCredentials');
-    }
-
-    /** {@inheritDoc} */
-    public function setBasicAuthCredentials(string $credentials): static
-    {
-        $this->basicAuth = $credentials;
-
-        return $this;
-    }
-
-    /** {@inheritDoc} */
-    public function withDefaultBasicAuthCredentials(): static
-    {
-        return $this->setBasicAuthCredentials($this->getConfigValueForKey('client.basicAuthCredentials'));
+        return $this->basicAuth ?? $this->getConfigValueForKey('client.basicAuthCredentials');
     }
 
     public function getPrivateKey(): string
     {
-        return $this->privateKey ?: $this->getConfigValueForKey('client.privateKey');
+        return $this->privateKey ?? $this->getConfigValueForKey('client.privateKey');
     }
 
     /** {@inheritDoc} */
@@ -193,21 +113,9 @@ class ProtectorConfig implements ProtectorConfigContract
         return 'PROTECTOR_CLIENT_PRIVATE_KEY';
     }
 
-    public function setPrivateKey(string $privateKey): static
-    {
-        $this->privateKey = $privateKey;
-
-        return $this;
-    }
-
-    public function withDefaultPrivateKey(): static
-    {
-        return $this->setPrivateKey($this->getConfigValueForKey('client.privateKey'));
-    }
-
     public function getDumpEndpointUrl(): string
     {
-        return $this->dumpEndpointUrl ?: $this->getConfigValueForKey('client.dumpEndpointUrl');
+        return $this->dumpEndpointUrl ?? $this->getConfigValueForKey('client.dumpEndpointUrl');
     }
 
     /** {@inheritDoc} */
@@ -216,36 +124,10 @@ class ProtectorConfig implements ProtectorConfigContract
         return 'PROTECTOR_CLIENT_DUMP_ENDPOINT_URL';
     }
 
-    public function setDumpEndpointUrl(string $dumpEndpointUrl): static
-    {
-        $this->dumpEndpointUrl = $dumpEndpointUrl;
-
-        return $this;
-    }
-
-    public function withDefaultDumpEndpointUrl(): static
-    {
-        return $this->setDumpEndpointUrl($this->getConfigValueForKey('client.dumpEndpointUrl'));
-    }
-
     /** {@inheritDoc} */
     public function getMaxPacketLength(): string
     {
         return $this->maxPacketLength ?? $this->getConfigValueForKey('dump.maxPacketLength');
-    }
-
-    /** {@inheritDoc} */
-    public function setMaxPacketLength(string $maxPacketLength): static
-    {
-        $this->maxPacketLength = $maxPacketLength;
-
-        return $this;
-    }
-
-    /** {@inheritDoc} */
-    public function withDefaultMaxPacketLength(): static
-    {
-        return $this->setMaxPacketLength($this->getConfigValueForKey('dump.maxPacketLength'));
     }
 
     public function getChunkSize(): int
@@ -253,33 +135,9 @@ class ProtectorConfig implements ProtectorConfigContract
         return $this->chunkSize ?? $this->getConfigValueForKey('server.chunkSize');
     }
 
-    public function setChunkSize(int $chunkSize): static
-    {
-        $this->chunkSize = $chunkSize;
-
-        return $this;
-    }
-
-    public function withDefaultChunkSize(): static
-    {
-        return $this->setChunkSize($this->getConfigValueForKey('server.chunkSize'));
-    }
-
     public function getHttpTimeout(): int
     {
         return $this->httpTimeout ?? $this->getConfigValueForKey('client.httpTimeout');
-    }
-
-    public function setHttpTimeout(int $httpTimeout): static
-    {
-        $this->httpTimeout = $httpTimeout;
-
-        return $this;
-    }
-
-    public function withDefaultHttpTimeout(): static
-    {
-        return $this->setHttpTimeout($this->getConfigValueForKey('client.httpTimeout'));
     }
 
     /** {@inheritDoc} */
@@ -290,35 +148,9 @@ class ProtectorConfig implements ProtectorConfigContract
         return $additionalMetadataProviders->prepend(DatabaseMetadataProvider::class);
     }
 
-    public function setMetadataProviders(array $metadataProviders): static
-    {
-        $this->metadataProviders = $metadataProviders;
-
-        return $this;
-    }
-
-    public function withDefaultMetadataProviders(): static
-    {
-        return $this->setMetadataProviders($this->getConfigValueForKey('dump.metadata.providers'));
-    }
-
     public function shouldRemoveAutoIncrementingState(): bool
     {
         return $this->removeAutoIncrementingState;
-    }
-
-    public function withAutoIncrementingState(): static
-    {
-        $this->removeAutoIncrementingState = false;
-
-        return $this;
-    }
-
-    public function withoutAutoIncrementingState(): static
-    {
-        $this->removeAutoIncrementingState = true;
-
-        return $this;
     }
 
     public function shouldDumpCharsets(): bool
@@ -326,37 +158,9 @@ class ProtectorConfig implements ProtectorConfigContract
         return $this->dumpCharsets;
     }
 
-    public function withCharsets(): static
-    {
-        $this->dumpCharsets = true;
-
-        return $this;
-    }
-
-    public function withoutCharsets(): static
-    {
-        $this->dumpCharsets = false;
-
-        return $this;
-    }
-
     public function shouldDumpComments(): bool
     {
         return $this->dumpComments;
-    }
-
-    public function withComments(): static
-    {
-        $this->dumpComments = true;
-
-        return $this;
-    }
-
-    public function withoutComments(): static
-    {
-        $this->dumpComments = false;
-
-        return $this;
     }
 
     public function shouldCreateDb(): bool
@@ -364,37 +168,9 @@ class ProtectorConfig implements ProtectorConfigContract
         return $this->createDb;
     }
 
-    public function withCreateDb(): static
-    {
-        $this->createDb = true;
-
-        return $this;
-    }
-
-    public function withoutCreateDb(): static
-    {
-        $this->createDb = false;
-
-        return $this;
-    }
-
     public function shouldDumpData(): bool
     {
         return $this->dumpData;
-    }
-
-    public function withData(): static
-    {
-        $this->dumpData = true;
-
-        return $this;
-    }
-
-    public function withoutData(): static
-    {
-        $this->dumpData = false;
-
-        return $this;
     }
 
     public function shouldDropDb(): bool
@@ -402,39 +178,9 @@ class ProtectorConfig implements ProtectorConfigContract
         return $this->dropDb;
     }
 
-    /** {@inheritDoc} */
-    public function withDropDb(): static
-    {
-        $this->dropDb = true;
-
-        return $this;
-    }
-
-    /** {@inheritDoc} */
-    public function withoutDropDb(): static
-    {
-        $this->dropDb = false;
-
-        return $this;
-    }
-
     public function shouldUseTablespaces(): bool
     {
         return $this->tablespaces;
-    }
-
-    public function withTablespaces(): static
-    {
-        $this->tablespaces = true;
-
-        return $this;
-    }
-
-    public function withoutTablespaces(): static
-    {
-        $this->tablespaces = false;
-
-        return $this;
     }
 
     public function shouldEncrypt(): bool
@@ -460,21 +206,20 @@ class ProtectorConfig implements ProtectorConfigContract
         return $schemaStateProxy;
     }
 
-    /** {@inheritDoc} */
     public function getSchemaStateParameters(): array
     {
-        $this->getProxyForSchemaState();
+        if (!isset($this->schemaStateParameters)) {
+            $this->getProxyForSchemaState();
+        }
 
         return $this->schemaStateParameters;
     }
 
-    /**
-     * Returns a config value for a specific key and checks for Callables.
-     */
-    protected function getConfigValueForKey(string $key, mixed $default = null): mixed
+    protected function getConstructorParameters(): array
     {
-        $value = config(sprintf('protector.%s', $key), $default);
-
-        return is_callable($value) ? $value() : $value;
+        return array_map(
+            fn(ReflectionParameter $parameter) => $parameter->getName(),
+            (new ReflectionClass($this))->getConstructor()->getParameters()
+        );
     }
 }

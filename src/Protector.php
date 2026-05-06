@@ -59,14 +59,6 @@ class Protector
     }
 
     /**
-     * Returns the current configuration.
-     */
-    public function getConfig(): ProtectorConfigContract
-    {
-        return $this->config;
-    }
-
-    /**
      * Imports a specific SQL dump.
      *
      * @throws InvalidEnvironmentException
