@@ -11,6 +11,7 @@ use Cybex\Protector\Commands\ExportDump;
 use Cybex\Protector\Commands\ImportDump;
 use Cybex\Protector\Contracts\CrypterContract;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
+use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -56,6 +57,7 @@ class ProtectorServiceProvider extends ServiceProvider
 
         $this->app->singleton(CrypterContract::class, SodiumCrypter::class);
         $this->app->bind(ProtectorConfigContract::class, ProtectorConfig::class);
+        $this->app->bind(ProtectorConfiguratorContract::class, ProtectorConfigurator::class);
 
         // Register the SchemaState proxy classes.
         $this->app->bind(MySqlSchemaStateProxy::class, function ($app, array $params) {

@@ -67,7 +67,8 @@
                 "Cybex\\Protector\\ProtectorServiceProvider"
             ],
             "aliases": {
-                "Protector": "Cybex\\Protector\\ProtectorFacade"
+                "Protector": "Cybex\\Protector\\Facades\\ProtectorFacade",
+                "ProtectorConfigurator": "Cybex\\Protector\\Facades\\ProtectorConfiguratorFacade"
             }
         }
     }
