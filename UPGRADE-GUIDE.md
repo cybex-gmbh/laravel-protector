@@ -9,8 +9,7 @@
 
 - The minimum required PHP version is now 8.2
 - Some config and .env keys have been renamed.
-- The `Protector` class has been refactored to separate configuration into a new `ProtectorConfig` class.
-  Configuration-related methods have been moved from `Protector` to `ProtectorConfig`.
+- Configuration-related methods have been moved from `Protector` to a new `ProtectorConfig` class.
 - The Protector dump endpoint route name has been changed.
 - Dump metadata has received a new structure.
   Legacy dumps with old metadata are still supported.
