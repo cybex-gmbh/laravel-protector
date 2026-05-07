@@ -45,7 +45,7 @@ class ProtectorConfig extends AbstractProtectorConfig implements ProtectorConfig
     )
     {
         $this->connectionName = $connectionName ?? config('database.default');
-        $this->connectionConfig = config(sprintf('database.connections.%s', $this->connectionName));
+        $this->connectionConfig = config(sprintf('database.connections.%s', $this->connectionName), false);
 
         foreach ($this->getConstructorParameters() as $parameter) {
             if ($$parameter !== null) {
@@ -61,17 +61,20 @@ class ProtectorConfig extends AbstractProtectorConfig implements ProtectorConfig
     }
 
     /** {@inheritDoc} */
-    public function getDisk(?string $diskName = null): Filesystem
+    public function getDisk(): Filesystem
     {
-        $diskName ??= $this->getConfigValueForKey('dump.diskName', config('filesystems.default'));
+        return Storage::disk($this->getDiskName());
+    }
 
-        return Storage::disk($diskName);
+    public function getDiskName(): string
+    {
+        return $this->getConfigValueForKey('dump.diskName', config('filesystems.default'));
     }
 
     /** {@inheritDoc} */
     public function getConnectionConfig(): array|false
     {
-        return config(sprintf('database.connections.%s', $this->connectionName), false);
+        return $this->connectionConfig;
     }
 
     /** {@inheritDoc} */
