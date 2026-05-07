@@ -28,6 +28,7 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -306,74 +307,70 @@ class Protector
      */
     public function generateFileDownloadResponse(
         Request $request,
-        ?string $connectionName = null
     ): Response|StreamedResponse
     {
         $shouldEncrypt = $this->config->shouldEncrypt();
 
         // Only proceed when either Laravel Sanctum is turned off or the user's token is valid.
         if (!$shouldEncrypt || $request->user()?->tokenCan('protector:import')) {
-            if ($this->config->setConnectionName($connectionName)) {
+            try {
+                $serverFilePath = $this->createDump();
+                $publicKey = '';
 
-                try {
-                    $serverFilePath = $this->createDump();
-                    $publicKey = '';
+                if ($shouldEncrypt) {
+                    $publicKey = app(CrypterContract::class)->getPublicKeyFromUser($request->user());
 
-                    if ($shouldEncrypt) {
-                        $publicKey = app(CrypterContract::class)->getPublicKeyFromUser($request->user());
-
-                        if (!$publicKey) {
-                            throw new InvalidConfigurationException('The user does not have a public key, which is needed for encrypting the dump.');
-                        }
+                    if (!$publicKey) {
+                        throw new InvalidConfigurationException('The user does not have a public key, which is needed for encrypting the dump.');
                     }
-                } catch (InvalidConnectionException|FailedDumpGenerationException|InvalidConfigurationException $exception) {
-                    Log::error($exception);
-
-                    return response($exception->getMessage(), 500, ['message' => $exception->getMessage()]);
-                } catch (ShellAccessDeniedException $exception) {
-                    Log::error($exception);
-
-                    return response($exception->httpResponse, 500, ['message' => $exception->httpResponse]);
-                } catch (Throwable $throwable) {
-                    Log::error($throwable);
-
-                    return response($throwable->getMessage(), 500, ['message' => 'Unknown error, please check server logs for details.']);
                 }
+            } catch (InvalidConnectionException|FailedDumpGenerationException|InvalidConfigurationException $exception) {
+                Log::error($exception);
 
-                $chunkSize = $this->config->getChunkSize();
+                return response($exception->getMessage(), 500, ['message' => $exception->getMessage()]);
+            } catch (ShellAccessDeniedException $exception) {
+                Log::error($exception);
 
-                return response()->streamDownload(
-                    function () use ($publicKey, $serverFilePath, $chunkSize, $shouldEncrypt) {
-                        $inputHandle = fopen($serverFilePath, 'rb');
+                return response($exception->httpResponse, 500, ['message' => $exception->httpResponse]);
+            } catch (Throwable $throwable) {
+                Log::error($throwable);
 
-                        while (!feof($inputHandle)) {
-                            $chunk = fread($inputHandle, $chunkSize);
+                return response($throwable->getMessage(), 500, ['message' => 'Unknown error, please check server logs for details.']);
+            }
 
-                            // Encrypt the data when Laravel Sanctum is active.
-                            if ($shouldEncrypt) {
-                                $chunk = app(CrypterContract::class)->encrypt($chunk, $publicKey);
-                            }
+            $chunkSize = $this->config->getChunkSize();
 
-                            echo $chunk;
+            return response()->streamDownload(
+                function () use ($publicKey, $serverFilePath, $chunkSize, $shouldEncrypt) {
+                    $inputHandle = fopen($serverFilePath, 'rb');
+
+                    while (!feof($inputHandle)) {
+                        $chunk = fread($inputHandle, $chunkSize);
+
+                        // Encrypt the data when Laravel Sanctum is active.
+                        if ($shouldEncrypt) {
+                            $chunk = app(CrypterContract::class)->encrypt($chunk, $publicKey);
                         }
 
-                        fclose($inputHandle);
-                        unlink($serverFilePath);
-                    },
-                    $this->createFilename(),
-                    [
-                        'Content-Type' => 'text/plain',
-                        'Pragma' => 'no-cache',
-                        'Expires' => gmdate(DATE_RFC7231, time() - 3600),
-                        // Encryption adds some overhead to the chunk, which has to be considered when decrypting it.
-                        'Chunk-Size' => $shouldEncrypt ? $chunkSize + $this->determineEncryptionOverhead(
-                                $chunkSize,
-                                $publicKey
-                            ) : $chunkSize,
-                        'Sanctum-Enabled' => $shouldEncrypt,
-                    ]
-                );
-            }
+                        echo $chunk;
+                    }
+
+                    fclose($inputHandle);
+                    unlink($serverFilePath);
+                },
+                $this->createFilename(),
+                [
+                    'Content-Type' => 'text/plain',
+                    'Pragma' => 'no-cache',
+                    'Expires' => gmdate(DATE_RFC7231, time() - 3600),
+                    // Encryption adds some overhead to the chunk, which has to be considered when decrypting it.
+                    'Chunk-Size' => $shouldEncrypt ? $chunkSize + $this->determineEncryptionOverhead(
+                            $chunkSize,
+                            $publicKey
+                        ) : $chunkSize,
+                    'Sanctum-Enabled' => $shouldEncrypt,
+                ]
+            );
         }
 
         throw new UnauthorizedHttpException('', 'Unauthorized');
@@ -432,19 +429,15 @@ class Protector
      */
     public function getLatestDumpName(): string
     {
-        $disk = $this->config->getDisk();
-        $baseDirectory = $this->config->getBaseDirectory();
-        $files = $disk->files($baseDirectory);
+        $files = $this->getDumpFiles();
 
-        if (empty($files)) {
+        if ($files->isEmpty()) {
             throw new EmptyBaseDirectoryException();
         }
 
-        usort($files, function ($a, $b) use ($disk) {
-            return $disk->lastModified($b) - $disk->lastModified($a);
-        });
+        $disk = $this->config->getDisk();
 
-        return $files[0];
+        return $files->sortByDesc(fn($file) => $disk->lastModified($file))->values()[0];
     }
 
     /**
@@ -498,7 +491,7 @@ class Protector
         return $tempFilePath;
     }
 
-    public function getDumpFiles(?string $excludeFile = null): array
+    public function getDumpFiles(?string $excludeFile = null): Collection
     {
         $files = $this->config->getDisk()->files($this->config->getBaseDirectory());
 
@@ -506,7 +499,30 @@ class Protector
             $files = array_diff($files, [$excludeFile]);
         }
 
-        return $files;
+        return collect($files);
+    }
+
+    /**
+     * @throws FileNotFoundException
+     */
+    public function getDumpFile(string $fileName): string
+    {
+        $file = $this->getDumpFiles()->firstWhere(
+            fn($file) => implode(DIRECTORY_SEPARATOR, [$this->config->getBaseDirectory(), $fileName]) === $file
+        );
+
+        if (!$file) {
+            throw new FileNotFoundException($fileName);
+        }
+
+        return $file;
+    }
+
+    public function getDumpFilesWithMetadata(): Collection
+    {
+        return $this->getDumpFiles()->mapWithKeys(fn($file) => [
+            $file => $this->getDumpMetadata($file),
+        ]);
     }
 
     /**
@@ -524,6 +540,21 @@ class Protector
         if (in_array(false, $this->requiredFunctionsCache, strict: true)) {
             throw new ShellAccessDeniedException($this->requiredFunctionsCache);
         }
+    }
+
+    public function getDiskName(): string
+    {
+        return $this->config->getDiskName();
+    }
+
+    public function getDiskBaseDirectory(): string
+    {
+        return $this->config->getBaseDirectory();
+    }
+
+    public function getDatabaseName(): string
+    {
+        return $this->config->getDatabaseName();
     }
 
     /**

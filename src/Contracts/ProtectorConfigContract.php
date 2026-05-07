@@ -36,7 +36,9 @@ interface ProtectorConfigContract
     /**
      * Returns the disk which is stated in the config. If no disk is stated, the default filesystem disk will be returned.
      */
-    public function getDisk(?string $diskName = null): Filesystem;
+    public function getDisk(): Filesystem;
+
+    public function getDiskName(): string;
 
     /**
      * Returns the current connection configuration.

@@ -2,8 +2,7 @@
 
 namespace Cybex\Protector\Commands;
 
-use Carbon\Carbon;
-use Cybex\Protector\Contracts\ProtectorConfigContract;
+use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
 use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
@@ -13,7 +12,6 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
-use League\Flysystem\Local\LocalFilesystemAdapter;
 
 /**
  * Class ImportDump
@@ -49,7 +47,6 @@ class ImportDump extends Command
     protected const DOWNLOAD_REMOTE_DUMP = 'Download remote dump';
     protected const IMPORT_EXISTING_LOCAL_DUMP = 'Import existing local dump';
     protected Protector $protector;
-    protected ProtectorConfigContract $protectorConfig;
 
     /**
      * Execute the console command.
@@ -67,11 +64,14 @@ class ImportDump extends Command
             );
         }
 
-        $this->protector = app('protector');
-        $this->protectorConfig = $this->protector->getConfig();
+        $protectorConfigurator = app(ProtectorConfiguratorContract::class);
 
+        if ($this->option('connection')) {
+            $protectorConfigurator->setConnectionName($this->option('connection'));
+        }
+
+        $this->protector = $protectorConfigurator->createProtector();
         $this->protector->guardRequiredFunctionsEnabled();
-        $this->protectorConfig->setConnectionName($this->option('connection'));
 
         $hasFile = !empty(trim($this->option('file')));
 
@@ -100,22 +100,17 @@ class ImportDump extends Command
      */
     protected function getDumpFromRemote(): string
     {
-        $disk = $this->protectorConfig->getDisk();
-        $basePath = $this->protectorConfig->getBaseDirectory();
-        $dumpEndpointUrl = $this->protectorConfig->getDumpEndpointUrl();
-        $absoluteBasePath = $disk->path($basePath);
-
         $this->line(
-            sprintf('<<< Downloading dump from remote server to directory: <comment>%s</comment>', $absoluteBasePath)
+            sprintf('<<< Downloading dump from remote server to disk <comment>%s</comment>, path <comment>%s</comment>', $this->protector->getDiskName(), $this->protector->getDiskBaseDirectory())
         );
 
         $relativeRemoteDumpFilePath = $this->protector->getRemoteDump();
 
-        $this->line(sprintf('>>> Successfully retrieved remote dump from %s', $dumpEndpointUrl));
+        $this->line('>>> Successfully retrieved remote dump.');
 
         if ($this->option('flush')) {
             $this->protector->flush(excludeFile: $relativeRemoteDumpFilePath);
-            $this->warn(sprintf('Deleted all old files in %s', $absoluteBasePath));
+            $this->warn(sprintf('Deleted all old files on disk %s in path %s', $this->protector->getDiskName(), $this->protector->getDiskBaseDirectory()));
         }
 
         return $relativeRemoteDumpFilePath;
@@ -134,16 +129,16 @@ class ImportDump extends Command
         switch ($isAbsoluteFilePath) {
             case true:
                 $dumpFilePath = $this->option('file');
-                $fileExists = file_exists($dumpFilePath);
+
+                if (file_exists($dumpFilePath)) {
+                    throw new FileNotFoundException($dumpFilePath);
+                }
+
                 break;
             default:
-                $dumpFilePath = implode(DIRECTORY_SEPARATOR, [$this->protectorConfig->getBaseDirectory(), $this->option('file')]);
-                $fileExists = $this->protectorConfig->getDisk()->exists($dumpFilePath);
+                // This will throw an exception if the dump file was not found.
+                $dumpFilePath = $this->protector->getDumpFile($this->option('file'));
                 break;
-        }
-
-        if (!$fileExists) {
-            throw new FileNotFoundException($dumpFilePath);
         }
 
         // Might be absolute or relative at this point.
@@ -176,12 +171,7 @@ class ImportDump extends Command
     {
         // We need an absolute and local file path going forward. The file path may already be absolute and local, only if called with the --file option and passed an absolute path.
         if (!$this->isAbsolutePath($dumpFilePath)) {
-            // The Protector disk might be local, if not, we need to create a local temp file.
-            if (is_a($this->protectorConfig->getDisk()->getAdapter(), LocalFilesystemAdapter::class)) {
-                $dumpFilePath = $this->protectorConfig->getDisk()->path($dumpFilePath);
-            } else {
-                $absoluteTempFilePath = $this->protector->createTempFilePath($dumpFilePath);
-            }
+            $absoluteTempFilePath = $this->protector->createTempFilePath($dumpFilePath);
         }
 
         try {
@@ -196,79 +186,22 @@ class ImportDump extends Command
      */
     protected function chooseImportDump(?string $connectionName): string
     {
-        $connectionFiles = $this->getConnectionFiles($connectionName);
+        $connectionFiles = $this->getConnectionFiles($connectionName)->keys();
 
         if ($connectionFiles->count() === 1) {
-            $relativeImportFilePath = $connectionFiles->first()['path'];
+            $relativeImportFilePath = $connectionFiles->first();
 
             $this->info(sprintf('Using file "%s" because there are no other dumps.', $relativeImportFilePath));
         } else {
             $importFile = $this->choice(
                 'Which file do you want to import?',
-                $connectionFiles->map(function ($item) {
-                    return $item['file'];
-                })->toArray()
+                $connectionFiles->toArray()
             );
 
-            $relativeImportFilePath = $connectionFiles->firstWhere('file', $importFile)['path'];
+            $relativeImportFilePath = $connectionFiles->firstWhere(fn($file) => $file === $importFile);
         }
 
         return $relativeImportFilePath;
-    }
-
-    /**
-     * Reads the metadata and returns a list of the available dumps.
-     */
-    protected function getMetadataForFiles(array $directoryFiles): Collection
-    {
-        $matchingFiles = collect();
-
-        foreach ($directoryFiles as $directoryFile) {
-            $metadata = $this->protector->getDumpMetadata($directoryFile);
-
-            if ($this->option('ignore-connection-filter') || (!is_array($metadata) || empty($metadata))) {
-                $matchingFiles->push([
-                    'path' => $directoryFile,
-                    'file' => basename($directoryFile),
-                    'database' => '',
-                    'connection' => 'external_dump',
-                    'date' => '',
-                    'time' => '',
-                    'gitRevision' => '',
-                    'gitBranch' => '',
-                    'dateTime' => '',
-                ]);
-
-                continue;
-            }
-
-            // Legacy format is a flat array.
-            $isLegacyDump = !is_array($metadata['meta']['database']);
-
-            $database = Arr::get($metadata, $isLegacyDump ? 'meta.database' : 'meta.database.database');
-            $connection = Arr::get($metadata, $isLegacyDump ? 'meta.connection' : 'meta.database.connection');
-            $dumpedAtDateString = Arr::get($metadata, $isLegacyDump ? 'meta.dumpedAtDate' : 'meta.database.dumpedAtDate');
-
-            if (Arr::exists(config('database.connections'), $connection)) {
-                $dumpedAtDate = $dumpedAtDateString ? Carbon::parse($dumpedAtDateString) : null;
-
-                $fileInformation = [
-                    'path' => $directoryFile,
-                    'file' => basename($directoryFile),
-                    'database' => $database,
-                    'connection' => $connection,
-                    'date' => $dumpedAtDate?->format('Y-m-d'),
-                    'time' => $dumpedAtDate?->format('H:i:s'),
-                    'dateTime' => $dumpedAtDate?->format('Y-m-d H:i:s'),
-                ];
-
-                $matchingFiles->push($fileInformation);
-            } else {
-                $this->warn(sprintf('Skipping file "%s" because the connection "%s" is not valid.', $directoryFile, $connection));
-            }
-        }
-
-        return $matchingFiles;
     }
 
     /**
@@ -279,7 +212,7 @@ class ImportDump extends Command
         if ($optionForce || $this->confirm(
                 sprintf(
                     'Are you sure that you want to import the dump into the database: %s?',
-                    $this->protectorConfig->getDatabaseName()
+                    $this->protector->getDatabaseName()
                 )
             )) {
 
@@ -302,7 +235,22 @@ class ImportDump extends Command
      */
     protected function getConnectionFiles(?string $connectionName = null): Collection
     {
-        $sortedFiles = $this->getMetadataForFiles($this->protector->getDumpFiles())->sortByDesc('dateTime');
+        $sortedFiles = $this->protector->getDumpFilesWithMetadata()
+            ->sortByDesc(
+            // Supporting the legacy format.
+                fn($file) => Arr::get($file, 'meta.database.dumpedAtDate') ?? Arr::get($file, 'meta.dumpedAtDate')
+            )->filter(function ($fileInfo, $fileName) {
+                // Filter connections which are not defined in the database config file.
+                $connection = Arr::get($fileInfo, 'meta.database.connection') ?? Arr::get($fileInfo, 'meta.connection') ?: 'external_dump';
+
+                if ($connection === 'external_dump' || Arr::exists(config('database.connections'), $connection)) {
+                    return true;
+                }
+
+                $this->warn(sprintf('Skipping file "%s" because the connection "%s" is not valid.', $fileName, $connection));
+
+                return false;
+            });
 
         if ($sortedFiles->isEmpty()) {
             throw new EmptyBaseDirectoryException();
@@ -312,7 +260,11 @@ class ImportDump extends Command
             return $sortedFiles;
         }
 
-        $filesByConnection = $sortedFiles->groupBy('connection');
+        $filesByConnection = $sortedFiles->groupBy(
+        // Supporting the legacy format.
+            fn($file) => Arr::get($file, 'meta.database.connection') ?? Arr::get($file, 'meta.connection') ?: 'external_dump',
+            preserveKeys: true
+        );
 
         if ($connectionName && !$filesByConnection->has($connectionName)) {
             throw new InvalidConnectionException();
