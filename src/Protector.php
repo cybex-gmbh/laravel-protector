@@ -118,7 +118,7 @@ class Protector
      * @throws FailedDumpGenerationException
      * @throws InvalidConnectionException
      */
-    public function createDump(array $options = []): string
+    public function createDump(bool $tempFileOnly = true, ?string $fileName = null): string
     {
         if (!$this->config->getConnectionConfig()) {
             throw new InvalidConnectionException('Connection is not configured properly.');
@@ -126,7 +126,20 @@ class Protector
 
         $this->guardRequiredFunctionsEnabled();
 
-        return $this->generateDump($options) ?: throw new FailedDumpGenerationException('Dump could not be created.');
+        $tempFile = $this->generateDump() ?: throw new FailedDumpGenerationException('Dump could not be created.');
+
+        if ($tempFileOnly) {
+            return $tempFile;
+        }
+
+        $fileName = implode(DIRECTORY_SEPARATOR, [$this->config->getBaseDirectory(), $fileName ?? $this->createFilename()]);
+
+        $this->config->getDisk()->writeStream(
+            $fileName,
+            fopen($tempFile, 'r')
+        );
+
+        return $fileName;
     }
 
     /**
@@ -224,12 +237,8 @@ class Protector
     /**
      * Generates an SQL dump from the current app database and returns the path to the file.
      */
-    protected function generateDump(array $options = []): ?string
+    protected function generateDump(): ?string
     {
-        if ($options['no-data'] ?? false) {
-            $this->config->withoutData();
-        }
-
         $schemaStateProxy = $this->config->getProxyForSchemaState();
         $tempFile = tempnam('', 'protector');
 

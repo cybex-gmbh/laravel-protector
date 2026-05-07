@@ -2,9 +2,9 @@
 
 namespace Cybex\Protector\Commands;
 
+use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
 use Cybex\Protector\Protector;
 use Illuminate\Console\Command;
-use Illuminate\Http\File;
 
 /**
  * Class ExportDump
@@ -35,28 +35,22 @@ class ExportDump extends Command
      */
     public function handle(): int
     {
-        $this->protector = app('protector');
+        $protectorConfigurator = app(ProtectorConfiguratorContract::class);
 
-        $this->protector->guardRequiredFunctionsEnabled();
-
-        $fileName = $this->option('file') ?: $this->protector->createFilename();
-        $directory = $this->protector->getConfig()->getBaseDirectory();
-
-        if ($this->option('connection')) {
-            $connectionName = $this->option('connection');
+        if ($this->option('no-data')) {
+            $protectorConfigurator->withoutData();
         }
 
-        $options = [];
-        $options['no-data'] = $this->option('no-data') ?: false;
+        if ($this->option('connection')) {
+            $protectorConfigurator->setConnectionName($this->option('connection'));
+        }
 
-        $this->protector->getConfig()->setConnectionName($connectionName ?? null);
+        $this->protector = $protectorConfigurator->createProtector();
+        $this->protector->guardRequiredFunctionsEnabled();
 
-        $tempFilePath = $this->protector->createDump($options);
+        $filePath = $this->protector->createDump(tempFileOnly: false, fileName: $this->option('file'));
 
-        $this->protector->getConfig()->getDisk()->putFileAs($directory, new File($tempFilePath), $fileName);
-        unlink($tempFilePath);
-
-        $this->info(sprintf('Dump <comment>%s</> was created in <comment>%s</>', $fileName, $this->protector->getConfig()->getDisk()->path($directory)));
+        $this->info(sprintf('Dump <comment>%s</> was created on disk <comment>%s</>', $filePath, $this->protector->getDiskName()));
 
         return self::SUCCESS;
     }
