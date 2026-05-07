@@ -99,12 +99,6 @@ class ProtectorConfig extends AbstractProtectorConfig implements ProtectorConfig
     }
 
     /** {@inheritDoc} */
-    public function getAuthTokenKeyName(): string
-    {
-        return 'PROTECTOR_CLIENT_AUTH_TOKEN';
-    }
-
-    /** {@inheritDoc} */
     public function getBasicAuthCredentials(): ?string
     {
         return $this->basicAuth ?? $this->getConfigValueForKey('client.basicAuthCredentials');
@@ -115,21 +109,9 @@ class ProtectorConfig extends AbstractProtectorConfig implements ProtectorConfig
         return $this->privateKey ?? $this->getConfigValueForKey('client.privateKey');
     }
 
-    /** {@inheritDoc} */
-    public function getPrivateKeyName(): string
-    {
-        return 'PROTECTOR_CLIENT_PRIVATE_KEY';
-    }
-
     public function getDumpEndpointUrl(): string
     {
         return $this->dumpEndpointUrl ?? $this->getConfigValueForKey('client.dumpEndpointUrl');
-    }
-
-    /** {@inheritDoc} */
-    public function getDumpEndpointUrlKeyName(): string
-    {
-        return 'PROTECTOR_CLIENT_DUMP_ENDPOINT_URL';
     }
 
     /** {@inheritDoc} */
@@ -196,7 +178,9 @@ class ProtectorConfig extends AbstractProtectorConfig implements ProtectorConfig
         return in_array('auth:sanctum', $this->getConfigValueForKey('server.routeMiddleware', []));
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     public function getProxyForSchemaState(): SchemaState
     {
         $connection = DB::connection($this->getConnectionName());

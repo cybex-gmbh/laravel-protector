@@ -55,28 +55,13 @@ interface ProtectorConfigContract
     public function getAuthToken(): string;
 
     /**
-     * Gets the name of the .env key for the auth token.
-     */
-    public function getAuthTokenKeyName(): string;
-
-    /**
      * Basic Auth may only be used without Laravel Sanctum.
      */
     public function getBasicAuthCredentials(): ?string;
 
     public function getPrivateKey(): string;
 
-    /**
-     * Gets the name of the .env key for the Protector private key.
-     */
-    public function getPrivateKeyName(): string;
-
     public function getDumpEndpointUrl(): string;
-
-    /**
-     * Gets the name of the .env key for the Protector dump endpoint URL.
-     */
-    public function getDumpEndpointUrlKeyName(): string;
 
     /**
      * Returns the maximum packet length specified in the config.
@@ -114,9 +99,16 @@ interface ProtectorConfigContract
     public function shouldEncrypt(): bool;
 
     /**
+     * This could change anytime, do not use this.
+     *
      * @throws UnsupportedDatabaseException
      */
     public function getProxyForSchemaState(): SchemaState;
 
+    /**
+     * This could change anytime, do not use this.
+     *
+     * @throws UnsupportedDatabaseException
+     */
     public function getSchemaStateParameters(): array;
 }
