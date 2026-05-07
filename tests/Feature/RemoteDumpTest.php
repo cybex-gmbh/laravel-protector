@@ -2,6 +2,7 @@
 
 namespace Cybex\Protector\Tests\Feature;
 
+use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\InvalidConfiguration\MissingDumpEndpointUrlException;
 use Cybex\Protector\Exceptions\InvalidConfiguration\MissingPrivateKeyException;
@@ -28,12 +29,13 @@ class RemoteDumpTest extends TestCase
     {
         parent::setUp();
 
-        Config::set('protector.client.dumpEndpointUrl', 'protector.invalid/protector/exportDump');
+        $this->dumpEndpointUrl = 'protector.invalid/protector/exportDump';
+
+        Config::set('protector.client.dumpEndpointUrl', $this->dumpEndpointUrl);
         Config::set('protector.server.routeMiddleware', []);
         Config::set('protector.client.basicAuthCredentials', '1234:1234');
 
         $this->disk = Storage::disk('local');
-        $this->dumpEndpointUrl = app('protector')->getDumpEndpointUrl();
         $this->baseDirectory = Config::get('protector.dump.baseDirectory');
     }
 
@@ -63,7 +65,7 @@ class RemoteDumpTest extends TestCase
     {
         Config::set('protector.server.routeMiddleware', ['auth:sanctum']);
 
-        $shouldEncrypt = $this->runProtectedMethod('shouldEncrypt');
+        $shouldEncrypt = $this->runProtectedMethod('getConfig')->shouldEncrypt();
 
         $this->assertTrue($shouldEncrypt);
     }
@@ -75,7 +77,7 @@ class RemoteDumpTest extends TestCase
     {
         Config::set('protector.server.routeMiddleware', []);
 
-        $shouldEncrypt = $this->runProtectedMethod('shouldEncrypt');
+        $shouldEncrypt = $this->runProtectedMethod('getConfig')->shouldEncrypt();
 
         $this->assertFalse($shouldEncrypt);
     }
@@ -306,9 +308,9 @@ class RemoteDumpTest extends TestCase
     public function canReturnDatabaseName()
     {
         Config::set(sprintf('database.connections.%s.database', env('DB_CONNECTION')), __FUNCTION__);
-        $this->protector->withConnectionName();
+        $this->protector = app(ProtectorConfiguratorContract::class)->setConnectionName(env('DB_CONNECTION'))->createProtector();
 
-        $this->assertEquals(__FUNCTION__, $this->protector->getDatabaseName());
+        $this->assertEquals(__FUNCTION__, $this->runProtectedMethod('getConfig')->getDatabaseName());
     }
 
     /**
@@ -318,7 +320,7 @@ class RemoteDumpTest extends TestCase
     {
         Config::set('protector.dump.baseDirectory', __FUNCTION__);
 
-        $result = $this->runProtectedMethod('getConfigValueForKey', ['dump.baseDirectory']);
+        $result = $this->protector->getDiskBaseDirectory();
 
         $this->assertEquals(__FUNCTION__, $result);
     }
@@ -332,7 +334,7 @@ class RemoteDumpTest extends TestCase
 
         Config::set('protector.dump.baseDirectory', fn() => $functionName);
 
-        $result = $this->runProtectedMethod('getConfigValueForKey', ['dump.baseDirectory']);
+        $result = $this->protector->getDiskBaseDirectory();
 
         $this->assertEquals($functionName, $result);
     }
@@ -365,7 +367,7 @@ class RemoteDumpTest extends TestCase
      */
     public function canGetAuthToken()
     {
-        $authToken = $this->runProtectedMethod('getAuthToken');
+        $authToken = $this->runProtectedMethod('getConfig')->getAuthToken();
 
         $this->assertEquals(config('protector.client.authToken'), $authToken);
     }
@@ -375,9 +377,9 @@ class RemoteDumpTest extends TestCase
      */
     public function setAuthToken()
     {
-        $this->protector->withAuthToken(__FUNCTION__);
+        $this->protector = app(ProtectorConfiguratorContract::class)->setAuthToken(__FUNCTION__)->createProtector();
 
-        $authToken = $this->runProtectedMethod('getAuthToken');
+        $authToken = $this->runProtectedMethod('getConfig')->getAuthToken();
 
         $this->assertEquals(__FUNCTION__, $authToken);
     }
@@ -387,6 +389,6 @@ class RemoteDumpTest extends TestCase
      */
     public function canGetDumpEndpointUrl()
     {
-        $this->assertEquals(config('protector.client.dumpEndpointUrl'), $this->protector->getDumpEndpointUrl());
+        $this->assertEquals(config('protector.client.dumpEndpointUrl'), $this->runProtectedMethod('getConfig')->getDumpEndpointUrl());
     }
 }

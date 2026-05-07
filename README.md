@@ -276,13 +276,14 @@ See [cybex-gmbh/collector](https://github.com/cybex-gmbh/collector) for an examp
 
 The `protector.php` config file sets initial settings for the `Protector` instance.
 
-Additional settings can be configured on the `Protector` instance. For all available options, take a look at
-the [HasConfiguration trait](src/Traits/HasConfiguration.php).
+Generally, you should keep the `Protector` singleton instance as is.
+To create a new instance with different settings, use the `ProtectorConfigurator` class.
+For all available configuration options, take a look at the [ProtectorConfiguratorContract](src/Contracts/ProtectorConfiguratorContract.php).
 
 For example, to configure a specific auth token and dump endpoint URL:
 
 ```php
-Protector::withAuthToken($authToken)->withDumpEndpointUrl($dumpEndpointUrl);
+$protector = ProtectorConfigurator::setAuthToken($authToken)->setDumpEndpointUrl($dumpEndpointUrl)->createProtector();
 ```
 
 ### Dump metadata
@@ -300,7 +301,7 @@ Customize the metadata appended to a dump by adding providers to the `dump.metad
 Available metadata providers:
 
 1. `DatabaseMetadataProvider`: Will always be appended. Adds general information about the dump, such as the database connection and dumped at date.
-1. `ProtectorMetadataProvider`: Adds information about the settings set on the `Protector` instance.
+1. `ProtectorMetadataProvider`: Adds information about the settings set on the Protector's config.
 1. `EnvMetadataProvider`: Adds information based on an .env value. The default .env key used for this is `PROTECTOR_METADATA`.
 1. `GitMetadataProvider`: Adds information about the Git repository, such as the current branch and revision.
 1. `JsonMetadataProvider`: Adds information from a JSON file. The default file path used for this is `protector_metadata.json`.

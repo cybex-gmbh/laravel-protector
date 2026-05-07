@@ -2,6 +2,8 @@
 
 namespace Cybex\Protector\Tests\Feature;
 
+use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
+use Cybex\Protector\ProtectorConfigurator;
 use Cybex\Protector\Tests\TestCase;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\Request;
@@ -63,33 +65,6 @@ class ExportDumpTest extends TestCase
         $this->emptyDumpPath = 'testDumps/dump.sql';
     }
 
-    /**
-     * @test
-     */
-    public function createDestinationFilePath()
-    {
-        $this->disk->deleteDirectory(Config::get('protector.dump.baseDirectory'));
-
-        $filePath = $this->protector->createDestinationFilePath(__FUNCTION__);
-        $destinationFilePath = $this->disk->path($filePath);
-
-        $this->runProtectedMethod('createDirectory', [$filePath, $this->disk]);
-        $this->assertDirectoryExists($destinationFilePath);
-    }
-
-    /**
-     * @test
-     */
-    public function createDestinationFilePathWithSubFolder()
-    {
-        $this->disk->deleteDirectory(Config::get('protector.dump.baseDirectory'));
-
-        $filePath = $this->protector->createDestinationFilePath(__FUNCTION__, __FUNCTION__);
-        $destinationFilePath = $this->disk->path($filePath);
-
-        $this->runProtectedMethod('createDirectory', [$filePath, $this->disk]);
-        $this->assertDirectoryExists($destinationFilePath);
-    }
 
     /**
      * @test
@@ -108,11 +83,11 @@ class ExportDumpTest extends TestCase
         ]);
 
         // Configure protector to the invalid database connection.
-        $this->protector->withConnectionName('invalid');
+        $this->protector = app(ProtectorConfiguratorContract::class)->setConnectionName('invalid')->withoutData()->createProtector();
 
         // Expect an exception when trying to connect and determine if the connected database is a MariaDB database.
         $this->expectException(PDOException::class);
-        $this->runProtectedMethod('generateDump', [['no-data' => true]]);
+        $this->runProtectedMethod('generateDump');
     }
 
     /**
@@ -136,9 +111,10 @@ class ExportDumpTest extends TestCase
     {
         $this->configureProtector($protectorOptions);
 
-        $connection = DB::connection($this->protector->getConnectionName());
-        $schemaState = $connection->getSchemaState();
-        $schemaStateProxy = $this->runProtectedMethod('getProxyForSchemaState', [$schemaState]);
+        $config = $this->runProtectedMethod('getConfig');
+
+        $connection = DB::connection($config->getConnectionName());
+        $schemaStateProxy = $config->getProxyForSchemaState();
 
         $conditionalParameters = $schemaStateProxy->getConditionalParameters();
 
@@ -284,7 +260,7 @@ class ExportDumpTest extends TestCase
      */
     protected function configureProtector(array $protectorOptions): void
     {
-        $this->protector
+        $configurator = app(ProtectorConfigurator::class)
             ->withoutCreateDb()
             ->withoutDropDb()
             ->withoutComments()
@@ -293,7 +269,9 @@ class ExportDumpTest extends TestCase
             ->withoutTablespaces();
 
         foreach ($protectorOptions as $option) {
-            $this->protector->$option();
+            $configurator->$option();
         }
+
+        $this->protector = $configurator->createProtector();
     }
 }

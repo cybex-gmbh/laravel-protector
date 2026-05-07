@@ -27,7 +27,7 @@ class MySqlSchemaStateProxy extends AbstractMySqlSchemaStateProxy
             )
         );
 
-        if ($this->protector->shouldRemoveAutoIncrementingState()) {
+        if ($this->config->shouldRemoveAutoIncrementingState()) {
             $this->removeAutoIncrementingState($path);
         }
     }
@@ -61,7 +61,7 @@ class MySqlSchemaStateProxy extends AbstractMySqlSchemaStateProxy
             '--tz-utc',
             '--column-statistics=0',
             '--result-file="${:LARAVEL_LOAD_PATH}"',
-            '--max-allowed-packet=' . $this->protector->getMaxPacketLength(),
+            '--max-allowed-packet=' . $this->config->getMaxPacketLength(),
         ];
     }
 
@@ -69,11 +69,11 @@ class MySqlSchemaStateProxy extends AbstractMySqlSchemaStateProxy
     {
         return [
             '--set-gtid-purged=OFF' => !$this->schemaState->connection->isMaria(),
-            '--no-create-db' => !$this->protector->shouldCreateDb(),
-            '--skip-comments' => !$this->protector->shouldDumpComments(),
-            '--skip-set-charset' => !$this->protector->shouldDumpCharsets(),
-            '--no-data' => !$this->protector->shouldDumpData(),
-            '--no-tablespaces' => !$this->protector->shouldUseTablespaces(),
+            '--no-create-db' => !$this->config->shouldCreateDb(),
+            '--skip-comments' => !$this->config->shouldDumpComments(),
+            '--skip-set-charset' => !$this->config->shouldDumpCharsets(),
+            '--no-data' => !$this->config->shouldDumpData(),
+            '--no-tablespaces' => !$this->config->shouldUseTablespaces(),
         ];
     }
 }
