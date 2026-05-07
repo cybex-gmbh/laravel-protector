@@ -48,7 +48,7 @@ class CreateKeys extends Command
         $this->newLine();
 
         $this->info(sprintf('# Protector Public Key: %s', $publicKey));
-        $this->info(sprintf('%s=%s', app('protector')->getConfig()->getPrivateKeyName(), $privateKey));
+        $this->info(sprintf('%s=%s', app('protector')->getPrivateKeyEnvKeyName(), $privateKey));
 
         $this->newLine();
     }
