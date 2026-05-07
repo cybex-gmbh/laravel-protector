@@ -35,15 +35,32 @@ interface ProtectorConfiguratorContract
 
     public function setMetadataProviders(array $metadataProviders): static;
 
+    public function withAutoIncrementingState(): static;
+
     public function withoutAutoIncrementingState(): static;
 
+    public function withCharsets(): static;
+
     public function withoutCharsets(): static;
+
+    public function withComments(): static;
 
     public function withoutComments(): static;
 
     public function withCreateDb(): static;
 
+    public function withoutCreateDb(): static;
+
+    public function withData(): static;
+
     public function withoutData(): static;
+
+    /**
+     * Defines that existing databases should be dropped before importing a dump.
+     * Only works if used together with the $createDb option.
+     * (PostgreSQL only, controls the --clean flag)
+     */
+    public function withDropDb(): static;
 
     /**
      * Defines that existing databases should not be dropped before importing a dump.
@@ -53,4 +70,6 @@ interface ProtectorConfiguratorContract
     public function withoutDropDb(): static;
 
     public function withTablespaces(): static;
+
+    public function withoutTablespaces(): static;
 }

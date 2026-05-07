@@ -8,6 +8,7 @@ use Cybex\Protector\Classes\Metadata\Providers\GitMetadataProvider;
 use Cybex\Protector\Classes\Metadata\Providers\JsonFileMetadataProvider;
 use Cybex\Protector\Contracts\MetadataProviderContract;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
+use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
 use Cybex\Protector\Tests\TestCase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
@@ -42,9 +43,9 @@ class MetadataTest extends TestCase
     {
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, []);
 
-        $this->protector->getConfig()->setMetadataProviders([GitMetadataProvider::class]);
+        $this->protector = app(ProtectorConfiguratorContract::class)->setMetadataProviders([GitMetadataProvider::class])->createProtector();
 
-        $this->assertContains(GitMetadataProvider::class, $this->protector->getConfig()->getMetadataProviders());
+        $this->assertContains(GitMetadataProvider::class, $this->runProtectedMethod('getConfig')->getMetadataProviders());
     }
 
     /**
@@ -54,7 +55,7 @@ class MetadataTest extends TestCase
     {
         Config::set('protector.dump.metadata.providers', []);
 
-        $this->assertContains(DatabaseMetadataProvider::class, $this->protector->getConfig()->getMetadataProviders());
+        $this->assertContains(DatabaseMetadataProvider::class, $this->runProtectedMethod('getConfig')->getMetadataProviders());
     }
 
     /**

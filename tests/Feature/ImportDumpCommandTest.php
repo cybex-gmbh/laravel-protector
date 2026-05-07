@@ -11,7 +11,6 @@ use Cybex\Protector\Tests\TestCase;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
-use League\Flysystem\Local\LocalFilesystemAdapter;
 
 class ImportDumpCommandTest extends TestCase
 {
@@ -28,17 +27,17 @@ class ImportDumpCommandTest extends TestCase
     {
         parent::setUp();
 
-        Config::set('protector.dump.baseDirectory', 'protector');
-        Config::set('protector.client.dumpEndpointUrl', 'protector.invalid/protector/exportDump');
+        $this->dumpEndpointUrl = 'protector.invalid/protector/exportDump';
+
+        Config::set('protector.client.dumpEndpointUrl', $this->dumpEndpointUrl);
         Config::set('protector.dump.baseDirectory', static::$baseDirectory);
 
         $this->disk = $this->getFakeDumpDisk();
-        $this->dumpEndpointUrl = $this->protector->getConfig()->getDumpEndpointUrl();
 
         $this->shouldDownloadDump = 'Do you want to download and import a fresh dump from the server or an existing local dump?';
         $this->shouldImportDump = sprintf(
             'Are you sure that you want to import the dump into the database: %s?',
-            $this->protector->getConfig()->getDatabaseName()
+            $this->protector->getDatabaseName()
         );
     }
 
@@ -93,10 +92,8 @@ class ImportDumpCommandTest extends TestCase
         Config::set('protector.client.basicAuthCredentials', '1234:1234');
         Config::set('protector.server.routeMiddleware', []);
 
-        $dumpEndpointUrl = $this->protector->getConfig()->getDumpEndpointUrl();
-
         Http::fake([
-            $dumpEndpointUrl => Http::response(__FUNCTION__, 200, ['Chunk-Size' => 100]),
+            $this->dumpEndpointUrl => Http::response(__FUNCTION__, 200, ['Chunk-Size' => 100]),
         ]);
 
         $this->artisan('protector:import --remote')
@@ -122,7 +119,7 @@ class ImportDumpCommandTest extends TestCase
 
         $this->assertEquals(
             [sprintf('%s%sremote_dump.sql', Config::get('protector.dump.baseDirectory'), DIRECTORY_SEPARATOR)],
-            $this->protector->getDumpFiles()
+            $this->protector->getDumpFiles()->toArray()
         );
     }
 
@@ -157,7 +154,7 @@ class ImportDumpCommandTest extends TestCase
         $this->artisan('protector:import --latest')->expectsConfirmation($this->shouldImportDump);
 
         $this->assertEquals(
-            sprintf('%s%sdump.sql', $this->protector->getConfig()->getBaseDirectory(), DIRECTORY_SEPARATOR),
+            sprintf('%s%sdump.sql', $this->protector->getDiskBaseDirectory(), DIRECTORY_SEPARATOR),
             $this->protector->getLatestDumpName()
         );
     }
@@ -188,13 +185,5 @@ class ImportDumpCommandTest extends TestCase
             ->expectsChoice($this->shouldDownloadDump, 2, static::DUMP_SOURCE_CHOICE)
             ->expectsOutput('Using file "' . static::$baseDirectory . '/dump.sql" because there are no other dumps.')
             ->expectsConfirmation($this->shouldImportDump);
-    }
-
-    /**
-     * @test
-     */
-    public function ensureFilesystemAdapterCanBeRetrieved()
-    {
-        $this->assertTrue(is_a($this->protector->getConfig()->getDisk()->getAdapter(), LocalFilesystemAdapter::class));
     }
 }

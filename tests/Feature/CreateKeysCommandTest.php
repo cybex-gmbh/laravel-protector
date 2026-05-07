@@ -22,7 +22,7 @@ class CreateKeysCommandTest extends TestCase
         CrypterFacade::shouldReceive('createPrivateKey')->andReturn(static::PRIVATE_KEY);
         CrypterFacade::shouldReceive('getPublicKeyFromPrivateKey')->andReturn(static::PUBLIC_KEY);
 
-        $privateKeyName = $this->protector->getConfig()->getPrivateKeyName();
+        $privateKeyName = $this->protector->getPrivateKeyEnvKeyName();
 
         $this->artisan('protector:keys')
             ->expectsOutput(static::SUCCESS_MESSAGE)
