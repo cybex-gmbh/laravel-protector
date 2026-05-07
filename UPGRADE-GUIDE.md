@@ -9,7 +9,7 @@
 
 - The minimum required PHP version is now 8.2
 - Some config and .env keys have been renamed.
-- Configuration-related methods have been moved from `Protector` to a new `ProtectorConfig` class.
+- `Protector` instances can no longer be reconfigured during runtime. Create new instances using the `ProtectorConfigurator` class.
 - The Protector dump endpoint route name has been changed.
 - Dump metadata has received a new structure.
   Legacy dumps with old metadata are still supported.
@@ -84,12 +84,12 @@ The .env keys have changed to be consistent with the config keys:
 > [!NOTE]
 > Likelihood of impact: high
 >
-> Impact: Direct calls to configuration methods on the `Protector` instance will fail.
+> Impact: Calls to configuration methods on the `Protector` instance will fail.
 
-The `Protector` class has been split into `Protector` and `ProtectorConfig`.
-Methods that were previously available on the `Protector` instance are now accessible through `Protector::getConfig()`.
+The `Protector` class has been split into `Protector` `ProtectorConfigurator` and `ProtectorConfig`.
+Configuration methods that were previously available on the `Protector` instance are no longer accessible.
 
-All methods of the `HasConfiguration` trait have been moved to `ProtectorConfig`.
+All methods of the `HasConfiguration` trait have been moved to `ProtectorConfig` and `ProtectorConfigurator`.
 Some methods have been renamed:
 
 - `withAuthToken()` -> `setAuthToken()`
@@ -98,14 +98,11 @@ Some methods have been renamed:
 - `withMaxPacketLength()` -> `setMaxPacketLength()`
 - `withDumpEndpointUrl()` -> `setDumpEndpointUrl()`
 
-If you were previously calling these methods on a `Protector` instance, you should now call them on the result of `getConfig()`:
+`Protector` instances can no longer be reconfigured during runtime.
+Create new instances using the `ProtectorConfigurator` class.
 
 ```php
-// Old
-Protector::withAuthToken($token);
-
-// New
-Protector::getConfig()->setAuthToken($token);
+ProtectorConfigurator::setAuthToken('my-auth-token')->createProtector();
 ```
 
 Additionally, these options can now be configured per-instance:
