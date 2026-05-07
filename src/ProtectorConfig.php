@@ -45,6 +45,11 @@ class ProtectorConfig extends AbstractProtectorConfig implements ProtectorConfig
     )
     {
         $this->connectionName = $connectionName ?? config('database.default');
+
+        if ((config(sprintf('database.connections.%s', $this->connectionName), false)) === false) {
+            throw new InvalidConnectionException('Invalid database configuration');
+        }
+
         $this->connectionConfig = config(sprintf('database.connections.%s', $this->connectionName), false);
 
         foreach ($this->getConstructorParameters() as $parameter) {

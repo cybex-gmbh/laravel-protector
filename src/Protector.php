@@ -56,7 +56,7 @@ class Protector
      */
     public static function withConfig(ProtectorConfigContract $config): static
     {
-        return app()->makeWith('protector', [ProtectorConfigContract::class => $config]);
+        return app()->makeWith('protector', ['config' => $config]);
     }
 
     /**
@@ -148,7 +148,7 @@ class Protector
      */
     public function getDumpMetadata(string $dumpFile): bool|array
     {
-        return app()->makeWith(MetadataHandler::class, [ProtectorConfigContract::class => $this->config])->getDumpMetadata($dumpFile);
+        return app()->makeWith(MetadataHandler::class, ['protectorConfig' => $this->config])->getDumpMetadata($dumpFile);
     }
 
     /**
@@ -158,7 +158,7 @@ class Protector
     {
         $files = $this->getDumpFiles($excludeFile);
 
-        $this->config->getDisk()->delete($files);
+        $this->config->getDisk()->delete($files->toArray());
     }
 
     /**
@@ -299,7 +299,7 @@ class Protector
      */
     public function getMetadata(): array
     {
-        return app()->makeWith(MetadataHandler::class, [ProtectorConfigContract::class => $this->config])->getMetadata();
+        return app()->makeWith(MetadataHandler::class, ['protectorConfig' => $this->config])->getMetadata();
     }
 
     /**
@@ -516,12 +516,14 @@ class Protector
      */
     public function getDumpFile(string $fileName): string
     {
+        $filePathOnDisk = implode(DIRECTORY_SEPARATOR, [$this->config->getBaseDirectory(), $fileName]);
+
         $file = $this->getDumpFiles()->firstWhere(
-            fn($file) => implode(DIRECTORY_SEPARATOR, [$this->config->getBaseDirectory(), $fileName]) === $file
+            fn($file) => $filePathOnDisk === $file
         );
 
         if (!$file) {
-            throw new FileNotFoundException($fileName);
+            throw new FileNotFoundException($filePathOnDisk);
         }
 
         return $file;
@@ -651,5 +653,11 @@ class Protector
         } catch (LogicException) {
             // ignore logic exceptions.
         }
+    }
+
+    // Usage for tests only.
+    protected function getConfig(): ProtectorConfigContract
+    {
+        return $this->config;
     }
 }

@@ -3,6 +3,7 @@
 namespace Cybex\Protector\Tests\Feature;
 
 use Carbon\Carbon;
+use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
 use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
 use Cybex\Protector\Exceptions\FailedImportException;
 use Cybex\Protector\Exceptions\FailedWipeException;
@@ -150,7 +151,7 @@ class ImportDumpTest extends TestCase
     {
         Config::set('database.connections', null);
         $this->expectException(InvalidConnectionException::class);
-        $this->protector->getConfig()->setConnectionName(null);
+        app(ProtectorConfiguratorContract::class)->setConnectionName('invalid');
     }
 
     /**
@@ -171,8 +172,6 @@ class ImportDumpTest extends TestCase
     {
         Config::set('database.default', 'mysql');
         Config::set('database.connections.mysql.host', 'protector.invalid');
-
-        $this->protector->getConfig()->setConnectionName(null);
 
         $this->expectException(FailedWipeException::class);
         $this->protector->importDump($this->filePath);
@@ -233,8 +232,7 @@ class ImportDumpTest extends TestCase
     {
         $this->protector->flush($excludeFromFlush);
 
-        $baseDirectory = $this->protector->getConfig()->getBaseDirectory();
-        $dumpsAfterFlushing = $this->disk->files($baseDirectory);
+        $dumpsAfterFlushing = $this->protector->getDumpFiles()->toArray();
 
         $this->assertEquals($expected, $dumpsAfterFlushing);
     }

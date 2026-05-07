@@ -85,7 +85,7 @@ class MetadataHandler
 
     protected function makeProvider($providerClass): MetadataProviderContract
     {
-        return app()->makeWith($providerClass, [ProtectorConfigContract::class => $this->protectorConfig]);
+        return app()->makeWith($providerClass, ['protectorConfig' => $this->protectorConfig]);
     }
 
     /**

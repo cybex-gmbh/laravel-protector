@@ -91,6 +91,13 @@ class ProtectorConfigurator extends AbstractProtectorConfig implements Protector
     }
 
 
+    public function withAutoIncrementingState(): static
+    {
+        $this->removeAutoIncrementingState = false;
+
+        return $this;
+    }
+
     public function withoutAutoIncrementingState(): static
     {
         $this->removeAutoIncrementingState = true;
@@ -98,9 +105,23 @@ class ProtectorConfigurator extends AbstractProtectorConfig implements Protector
         return $this;
     }
 
+    public function withCharsets(): static
+    {
+        $this->dumpCharsets = true;
+
+        return $this;
+    }
+
     public function withoutCharsets(): static
     {
         $this->dumpCharsets = false;
+
+        return $this;
+    }
+
+    public function withComments(): static
+    {
+        $this->dumpComments = true;
 
         return $this;
     }
@@ -119,9 +140,31 @@ class ProtectorConfigurator extends AbstractProtectorConfig implements Protector
         return $this;
     }
 
+    public function withoutCreateDb(): static
+    {
+        $this->createDb = false;
+
+        return $this;
+    }
+
+    public function withData(): static
+    {
+        $this->dumpData = true;
+
+        return $this;
+    }
+
     public function withoutData(): static
     {
         $this->dumpData = false;
+
+        return $this;
+    }
+
+    /** {@inheritDoc} */
+    public function withDropDb(): static
+    {
+        $this->dropDb = true;
 
         return $this;
     }
@@ -137,6 +180,13 @@ class ProtectorConfigurator extends AbstractProtectorConfig implements Protector
     public function withTablespaces(): static
     {
         $this->tablespaces = true;
+
+        return $this;
+    }
+
+    public function withoutTablespaces(): static
+    {
+        $this->tablespaces = false;
 
         return $this;
     }
