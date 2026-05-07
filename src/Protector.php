@@ -566,6 +566,21 @@ class Protector
         return $this->config->getDatabaseName();
     }
 
+    public function getPrivateKeyEnvKeyName(): string
+    {
+        return $this->config->getPrivateKeyName();
+    }
+
+    public function getAuthTokenEnvKeyName(): string
+    {
+        return $this->config->getAuthTokenKeyName();
+    }
+
+    public function getDumpEndpointUrlEnvKeyName(): string
+    {
+        return $this->config->getDumpEndpointUrlKeyName();
+    }
+
     /**
      * Wraps function_exists to allow mocking in tests.
      */
