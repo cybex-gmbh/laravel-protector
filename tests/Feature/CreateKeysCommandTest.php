@@ -2,6 +2,7 @@
 
 namespace Cybex\Protector\Tests\Feature;
 
+use Cybex\Protector\Enums\EnvKeyName;
 use Cybex\Protector\Facades\CrypterFacade;
 use Cybex\Protector\Tests\TestCase;
 
@@ -22,14 +23,12 @@ class CreateKeysCommandTest extends TestCase
         CrypterFacade::shouldReceive('createPrivateKey')->andReturn(static::PRIVATE_KEY);
         CrypterFacade::shouldReceive('getPublicKeyFromPrivateKey')->andReturn(static::PUBLIC_KEY);
 
-        $privateKeyName = $this->protector->getPrivateKeyEnvKeyName();
-
         $this->artisan('protector:keys')
             ->expectsOutput(static::SUCCESS_MESSAGE)
             ->expectsOutput(static::SEND_TO_ADMIN)
             ->expectsOutput(static::ADD_TO_ENV)
             ->expectsOutput(sprintf('%s %s', static::PROTECTOR_PUBLIC_KEY_COMMENT, static::PUBLIC_KEY))
-            ->expectsOutput(sprintf('%s=%s', $privateKeyName, static::PRIVATE_KEY))
+            ->expectsOutput(sprintf('%s=%s', EnvKeyName::PRIVATE_KEY->value, static::PRIVATE_KEY))
             ->assertExitCode(0);
     }
 }

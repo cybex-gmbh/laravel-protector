@@ -2,6 +2,7 @@
 
 namespace Cybex\Protector\Commands;
 
+use Cybex\Protector\Enums\EnvKeyName;
 use Illuminate\Console\Command;
 
 /**
@@ -59,8 +60,8 @@ class CreateToken extends Command
         $token = $user->createToken('protector', ['protector:import']);
 
         $this->warn('The quotation marks at the start and end of the token are necessary!');
-        $this->info(sprintf('%s="%s"', app('protector')->getAuthTokenEnvKeyName(), $token->plainTextToken));
-        $this->info(sprintf('%s=%s', app('protector')->getDumpEndpointUrlEnvKeyName(), route('protector.server.dump')));
+        $this->info(sprintf('%s="%s"', EnvKeyName::AUTH_TOKEN->value, $token->plainTextToken));
+        $this->info(sprintf('%s=%s', EnvKeyName::DUMP_ENDPOINT_URL->value, route('protector.server.dump')));
 
         $this->newLine();
 

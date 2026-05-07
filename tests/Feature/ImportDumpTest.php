@@ -170,8 +170,10 @@ class ImportDumpTest extends TestCase
      */
     public function throwsExceptionOnMysqlFailedShellCommand()
     {
-        Config::set('database.default', 'mysql');
-        Config::set('database.connections.mysql.host', 'protector.invalid');
+        $connection = env('DB_CONNECTION');
+
+        Config::set('database.default', $connection);
+        Config::set(sprintf('database.connections.%s.host', $connection), 'protector.invalid');
 
         $this->expectException(FailedWipeException::class);
         $this->protector->importDump($this->filePath);
