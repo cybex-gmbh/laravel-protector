@@ -6,7 +6,7 @@ use Cybex\Protector\Protector;
 
 interface ProtectorConfiguratorContract
 {
-    public function createProtector(): Protector;
+    public function makeProtector(): Protector;
 
     public function setConnectionName(string $connectionName): static;
 

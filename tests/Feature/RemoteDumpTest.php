@@ -308,7 +308,7 @@ class RemoteDumpTest extends TestCase
     public function canReturnDatabaseName()
     {
         Config::set(sprintf('database.connections.%s.database', env('DB_CONNECTION')), __FUNCTION__);
-        $this->protector = app(ProtectorConfiguratorContract::class)->setConnectionName(env('DB_CONNECTION'))->createProtector();
+        $this->protector = app(ProtectorConfiguratorContract::class)->setConnectionName(env('DB_CONNECTION'))->makeProtector();
 
         $this->assertEquals(__FUNCTION__, $this->runProtectedMethod('getConfig')->getDatabaseName());
     }
@@ -377,7 +377,7 @@ class RemoteDumpTest extends TestCase
      */
     public function setAuthToken()
     {
-        $this->protector = app(ProtectorConfiguratorContract::class)->setAuthToken(__FUNCTION__)->createProtector();
+        $this->protector = app(ProtectorConfiguratorContract::class)->setAuthToken(__FUNCTION__)->makeProtector();
 
         $authToken = $this->runProtectedMethod('getConfig')->getAuthToken();
 

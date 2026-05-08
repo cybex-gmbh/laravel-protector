@@ -8,7 +8,7 @@ use Cybex\Protector\Exceptions\InvalidConnectionException;
 
 class ProtectorConfigurator extends AbstractProtectorConfig implements ProtectorConfiguratorContract
 {
-    public function createProtector(): Protector
+    public function makeProtector(): Protector
     {
         return Protector::withConfig(app()->makeWith(ProtectorConfigContract::class, get_object_vars($this)));
     }

@@ -45,7 +45,7 @@ class ExportDump extends Command
             $protectorConfigurator->setConnectionName($this->option('connection'));
         }
 
-        $this->protector = $protectorConfigurator->createProtector();
+        $this->protector = $protectorConfigurator->makeProtector();
         $this->protector->guardRequiredFunctionsEnabled();
 
         $filePath = $this->protector->createDump(tempFileOnly: false, fileName: $this->option('file'));

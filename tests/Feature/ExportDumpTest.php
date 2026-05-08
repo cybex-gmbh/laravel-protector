@@ -83,7 +83,7 @@ class ExportDumpTest extends TestCase
         ]);
 
         // Configure protector to the invalid database connection.
-        $this->protector = app(ProtectorConfiguratorContract::class)->setConnectionName('invalid')->withoutData()->createProtector();
+        $this->protector = app(ProtectorConfiguratorContract::class)->setConnectionName('invalid')->withoutData()->makeProtector();
 
         // Expect an exception when trying to connect and determine if the connected database is a MariaDB database.
         $this->expectException(PDOException::class);
@@ -272,6 +272,6 @@ class ExportDumpTest extends TestCase
             $configurator->$option();
         }
 
-        $this->protector = $configurator->createProtector();
+        $this->protector = $configurator->makeProtector();
     }
 }

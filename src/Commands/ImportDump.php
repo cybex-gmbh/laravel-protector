@@ -70,7 +70,7 @@ class ImportDump extends Command
             $protectorConfigurator->setConnectionName($this->option('connection'));
         }
 
-        $this->protector = $protectorConfigurator->createProtector();
+        $this->protector = $protectorConfigurator->makeProtector();
         $this->protector->guardRequiredFunctionsEnabled();
 
         $hasFile = !empty(trim($this->option('file')));
