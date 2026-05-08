@@ -3,7 +3,7 @@
 namespace Cybex\Protector\Commands;
 
 use Cybex\Protector\Contracts\CrypterContract;
-use Cybex\Protector\Enums\EnvKeyName;
+use Cybex\Protector\Enums\ProtectorEnv;
 use Illuminate\Console\Command;
 
 /**
@@ -49,7 +49,7 @@ class CreateKeys extends Command
         $this->newLine();
 
         $this->info(sprintf('# Protector Public Key: %s', $publicKey));
-        $this->info(sprintf('%s=%s', EnvKeyName::PRIVATE_KEY->value, $privateKey));
+        $this->info(sprintf('%s=%s', ProtectorEnv::PRIVATE_KEY->key(), $privateKey));
 
         $this->newLine();
     }

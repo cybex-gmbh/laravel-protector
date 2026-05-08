@@ -1,5 +1,7 @@
 <?php
 
+use Cybex\Protector\Enums\ProtectorEnv;
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -40,8 +42,8 @@ return [
         | By default, the default filesystem disk stated in your filesystems-config will be used.
         |
         */
-        'baseDirectory' => env('PROTECTOR_DUMP_BASE_DIRECTORY', 'protector'),
-        // 'diskName' => env('PROTECTOR_DUMP_DISK_NAME', 'protector'),
+        'baseDirectory' => ProtectorEnv::BASE_DIRECTORY->get(default: 'protector'),
+        // 'diskName' => ProtectorEnv::DISK_NAME->value(default: 'protector'),
 
         /*
         |--------------------------------------------------------------------------
@@ -52,7 +54,7 @@ return [
         | Note: The maximum packet length is defined by the system generating the dump.
         |
         */
-        'maxPacketLength' => env('PROTECTOR_DUMP_MAX_PACKET_LENGTH', '8M'),
+        'maxPacketLength' => ProtectorEnv::MAX_PACKET_LENGTH->get(default: '8M'),
 
         /*
         |--------------------------------------------------------------------------
@@ -90,7 +92,7 @@ return [
             | This .env value will be used by the EnvMetadataProvider to add metadata to the dump file.
             |
             */
-            'envValue' => env('PROTECTOR_DUMP_METADATA'),
+            'envValue' => ProtectorEnv::METADATA->get(),
 
             /*
             |--------------------------------------------------------------------------
@@ -100,7 +102,7 @@ return [
             | This JSON file will be used by the JsonFileMetadataProvider to add metadata to the dump file.
             |
             */
-            'jsonFilePath' => env('PROTECTOR_DUMP_METADATA_JSON_FILE_PATH', 'protector_metadata.json'),
+            'jsonFilePath' => ProtectorEnv::METADATA_JSON_FILE_PATH->get(default: 'protector_metadata.json'),
         ],
     ],
 
@@ -123,7 +125,7 @@ return [
         | The .env key name should not be changed.
         |
         */
-        'dumpEndpointUrl' => env('PROTECTOR_CLIENT_DUMP_ENDPOINT_URL'),
+        'dumpEndpointUrl' => ProtectorEnv::DUMP_ENDPOINT_URL->get(),
 
         /*
         |--------------------------------------------------------------------------
@@ -135,7 +137,7 @@ return [
         | The .env key name should not be changed.
         |
         */
-        'authToken' => env('PROTECTOR_CLIENT_AUTH_TOKEN'),
+        'authToken' => ProtectorEnv::AUTH_TOKEN->get(),
 
         /*
         |--------------------------------------------------------------------------
@@ -147,7 +149,7 @@ return [
         | The .env key name should not be changed.
         |
         */
-        'privateKey' => env('PROTECTOR_CLIENT_PRIVATE_KEY'),
+        'privateKey' => ProtectorEnv::PRIVATE_KEY->get(),
 
         /*
         |--------------------------------------------------------------------------
@@ -159,7 +161,7 @@ return [
         | The value format should be "<username>:<password>".
         |
         */
-        'basicAuthCredentials' => env('PROTECTOR_CLIENT_BASIC_AUTH_CREDENTIALS'),
+        'basicAuthCredentials' => ProtectorEnv::BASIC_AUTH->get(),
 
         /*
         |--------------------------------------------------------------------------
@@ -170,7 +172,7 @@ return [
         | The default is 120 seconds.
         |
         */
-        'httpTimeout' => env('PROTECTOR_CLIENT_HTTP_TIMEOUT', 120),
+        'httpTimeout' => ProtectorEnv::HTTP_TIMEOUT->get(default: 120),
     ],
 
     /*
@@ -190,7 +192,7 @@ return [
         | Here you may customize the route for the dump endpoint.
         |
         */
-        'dumpEndpointRoute' => env('PROTECTOR_SERVER_DUMP_ENDPOINT_ROUTE', '/protector/exportDump'),
+        'dumpEndpointRoute' => ProtectorEnv::DUMP_ENDPOINT_ROUTE->get('/protector/exportDump'),
 
         /*
         |--------------------------------------------------------------------------
@@ -215,6 +217,6 @@ return [
         | By default, the chunk size is set to 20MB.
         |
         */
-        'chunkSize' => env('PROTECTOR_SERVER_CHUNK_SIZE', 20 * 1024 * 1024),
+        'chunkSize' => ProtectorEnv::CHUNK_SIZE->get(default: 20 * 1024 * 1024),
     ],
 ];
