@@ -5,6 +5,7 @@ namespace Cybex\Protector;
 use Cybex\Protector\Classes\Metadata\MetadataHandler;
 use Cybex\Protector\Classes\SchemaState\MySql\MySqlSchemaStateProxy;
 use Cybex\Protector\Classes\SchemaState\Postgres\PostgresSchemaStateProxy;
+use Cybex\Protector\Contracts\Crypter;
 use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
 use Cybex\Protector\Exceptions\FailedDumpGenerationException;
 use Cybex\Protector\Exceptions\FailedImportException;
@@ -41,7 +42,6 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use LogicException;
 use Psr\Http\Message\StreamInterface;
-use SodiumException;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -369,7 +369,15 @@ class Protector
             if ($this->withConnectionName($connectionName)) {
                 try {
                     $serverFilePath = $this->createDump();
-                    $publicKey = $this->getPublicKey($request);
+                    $publicKey = '';
+
+                    if ($shouldEncrypt) {
+                        $publicKey = app(Crypter::class)->getPublicKeyFromUser($request->user());
+
+                        if (!$publicKey) {
+                            throw new InvalidConfigurationException('The user does not have a public key, which is needed for encrypting the dump.');
+                        }
+                    }
                 } catch (InvalidConnectionException|FailedDumpGenerationException|InvalidConfigurationException $exception) {
                     Log::error($exception);
 
@@ -378,6 +386,10 @@ class Protector
                     Log::error($exception);
 
                     return response($exception->httpResponse, 500, ['message' => $exception->httpResponse]);
+                } catch (Throwable $throwable) {
+                    Log::error($throwable);
+
+                    return response($throwable->getMessage(), 500, ['message' => 'Unknown error, please check server logs for details.']);
                 }
 
                 $chunkSize = $this->getConfigValueForKey('server.chunkSize');
@@ -391,7 +403,7 @@ class Protector
 
                             // Encrypt the data when Laravel Sanctum is active.
                             if ($shouldEncrypt) {
-                                $chunk = sodium_crypto_box_seal($chunk, $publicKey);
+                                $chunk = app(Crypter::class)->encrypt($chunk, $publicKey);
                             }
 
                             echo $chunk;
@@ -502,7 +514,7 @@ class Protector
      */
     public function decryptString(string $encryptedString): string
     {
-        $decryptedString = sodium_crypto_box_seal_open($encryptedString, sodium_hex2bin($this->getPrivateKey()));
+        $decryptedString = app(Crypter::class)->decrypt($encryptedString, $this->getPrivateKey());
 
         if ($decryptedString === false) {
             throw new InvalidConfigurationException(
@@ -511,22 +523,6 @@ class Protector
         }
 
         return $decryptedString;
-    }
-
-    /**
-     * @throws InvalidConfigurationException
-     */
-    protected function getPublicKey(Request $request): string
-    {
-        try {
-            $publicKey = sodium_hex2bin($request->user()?->protector_public_key);
-        } catch (SodiumException) {
-            throw new InvalidConfigurationException(
-                'There was an error receiving the crypto keys. This might be due to mismatching crypto keys.'
-            );
-        }
-
-        return $publicKey;
     }
 
     /**
@@ -656,7 +652,7 @@ class Protector
     protected function determineEncryptionOverhead(int $chunkSize, string $publicKey): int
     {
         $chunk = str_repeat('0', $chunkSize);
-        $encryptedChunk = sodium_crypto_box_seal($chunk, $publicKey);
+        $encryptedChunk = app(Crypter::class)->encrypt($chunk, $publicKey);
 
         return strlen($encryptedChunk) - $chunkSize;
     }

@@ -199,7 +199,6 @@ return [
         |
         | Here you may customize middleware that will be applied.
         | By default, the auth:sanctum middleware is active and prevents the dump API from being public!
-        | Note: The middleware of client and server should match, because it also controls whether dumps are encrypted or not.
         |
         */
         'routeMiddleware' => [

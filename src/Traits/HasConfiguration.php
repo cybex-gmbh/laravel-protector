@@ -302,7 +302,7 @@ trait HasConfiguration
     }
 
     /**
-     * Retrieves the private key for Sodium encryption.
+     * Retrieves the private key for encryption.
      */
     protected function getPrivateKey(): string
     {

@@ -17,7 +17,7 @@ class CreateToken extends Command
      */
     protected $signature = 'protector:token
                 {userId : The user id the token is created for.}
-                {--p|publicKey= : The sodium public key for the user.}';
+                {--p|publicKey= : The public key for the user.}';
 
     /**
      * The console command description.

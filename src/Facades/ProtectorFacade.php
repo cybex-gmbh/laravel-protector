@@ -1,7 +1,8 @@
 <?php
 
-namespace Cybex\Protector;
+namespace Cybex\Protector\Facades;
 
+use Cybex\Protector\Protector;
 use Illuminate\Support\Facades\Facade;
 
 /**
