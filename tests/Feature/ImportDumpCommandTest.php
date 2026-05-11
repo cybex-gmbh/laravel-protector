@@ -148,6 +148,28 @@ class ImportDumpCommandTest extends TestCase
     /**
      * @test
      */
+    public function failOptionFileOnNonExistingAbsoluteFilePath()
+    {
+        $fileName = $this->disk->path('thisDumpDoesNotExist.sql');
+
+        $this->expectExceptionObject(new FileNotFoundException(path: $fileName));
+
+        $this->artisan(sprintf('protector:import --file=%s --force', $fileName))->assertFailed();
+    }
+
+    /**
+     * @test
+     */
+    public function canImportDumpOnOptionFileWithExistingAbsoluteFilePath()
+    {
+        $fileName = $this->disk->path($this->protector->getDumpFile('dump.sql'));
+
+        $this->artisan(sprintf('protector:import --file=%s --force', $fileName))->assertOk();
+    }
+
+    /**
+     * @test
+     */
     public function canImportDumpOnOptionLatest()
     {
         $this->artisan('protector:import --latest')->expectsConfirmation($this->shouldImportDump);

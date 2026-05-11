@@ -130,7 +130,7 @@ class ImportDump extends Command
             case true:
                 $dumpFilePath = $this->option('file');
 
-                if (file_exists($dumpFilePath)) {
+                if (!file_exists($dumpFilePath)) {
                     throw new FileNotFoundException($dumpFilePath);
                 }
 
