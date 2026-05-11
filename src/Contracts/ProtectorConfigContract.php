@@ -52,16 +52,16 @@ interface ProtectorConfigContract
 
     public function getConnectionName(): string;
 
-    public function getAuthToken(): string;
+    public function getAuthToken(): ?string;
 
     /**
      * Basic Auth may only be used without Laravel Sanctum.
      */
     public function getBasicAuthCredentials(): ?string;
 
-    public function getPrivateKey(): string;
+    public function getPrivateKey(): ?string;
 
-    public function getDumpEndpointUrl(): string;
+    public function getDumpEndpointUrl(): ?string;
 
     /**
      * Returns the maximum packet length specified in the config.

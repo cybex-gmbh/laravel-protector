@@ -93,7 +93,7 @@ class ProtectorConfig extends AbstractProtectorConfig implements ProtectorConfig
         return $this->connectionName;
     }
 
-    public function getAuthToken(): string
+    public function getAuthToken(): ?string
     {
         return $this->authToken ?? $this->getConfigValueForKey('client.authToken');
     }
@@ -104,12 +104,12 @@ class ProtectorConfig extends AbstractProtectorConfig implements ProtectorConfig
         return $this->basicAuth ?? $this->getConfigValueForKey('client.basicAuthCredentials');
     }
 
-    public function getPrivateKey(): string
+    public function getPrivateKey(): ?string
     {
         return $this->privateKey ?? $this->getConfigValueForKey('client.privateKey');
     }
 
-    public function getDumpEndpointUrl(): string
+    public function getDumpEndpointUrl(): ?string
     {
         return $this->dumpEndpointUrl ?? $this->getConfigValueForKey('client.dumpEndpointUrl');
     }
