@@ -17,6 +17,8 @@
 - To support config caching, .env key names can no longer be changed during runtime.
   If you previously relied on setting .env key names,
   you will now have to set the values directly instead.
+- Some functions throw different or more detailed exceptions.
+- The `protector:import` command no longer supports the `--dump` option.
 
 > [!IMPORTANT]
 > The `protector.php` config structure and keys have changed.
@@ -189,6 +191,24 @@ use the following methods instead:
 
 - Protector::withPrivateKey()
 - Protector::withAuthToken()
+
+### Protector::getLatestDumpName()
+
+> [!NOTE]
+> Likelihood of impact: low
+>
+> Impact: Error handling based on the `FileNotFoundException` will no longer work
+
+The method now throws a `EmptyDumpDirectoryException` instead of a `FileNotFoundException` when no dumps are found in the base directory.
+
+### protector:import command
+
+> [!NOTE]
+> Likelihood of impact: low
+>
+> Impact: Command calls using the `--dump` option will fail
+
+The `protector:import` command no longer supports the `--dump` option. The `--file` option now accepts both a relative and an absolute path.
 
 ---
 

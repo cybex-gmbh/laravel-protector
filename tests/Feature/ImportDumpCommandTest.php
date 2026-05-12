@@ -3,6 +3,7 @@
 namespace Cybex\Protector\Tests\Feature;
 
 use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
+use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
@@ -10,6 +11,7 @@ use Cybex\Protector\Tests\TestCase;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
+use League\Flysystem\Local\LocalFilesystemAdapter;
 
 class ImportDumpCommandTest extends TestCase
 {
@@ -19,6 +21,8 @@ class ImportDumpCommandTest extends TestCase
     protected string $shouldDownloadDump;
     protected string $shouldImportDump;
     protected static string $baseDirectory = 'dumps';
+
+    protected const DUMP_SOURCE_CHOICE = ['Download remote dump', 'Import existing local dump'];
 
     protected function setUp(): void
     {
@@ -66,7 +70,7 @@ class ImportDumpCommandTest extends TestCase
         $this->expectException(InvalidConnectionException::class);
 
         $this->artisan('protector:import --connection=sqlite')
-            ->expectsChoice($this->shouldDownloadDump, 2, ['Download remote dump', 'Import existing local dump']);
+            ->expectsChoice($this->shouldDownloadDump, 2, static::DUMP_SOURCE_CHOICE);
     }
 
     /**
@@ -127,11 +131,9 @@ class ImportDumpCommandTest extends TestCase
      */
     public function failGetRemoteOnDumpWithNoResponse()
     {
-        $this->artisan('protector:import --remote')
-            ->expectsOutput(
-                "Error retrieving dump from remote server: Could not fetch database from remote server: The scheme '' is not supported."
-            )
-            ->assertFailed();
+        $this->expectException(FailedRemoteDatabaseFetchingException::class);
+
+        $this->artisan('protector:import --remote')->assertFailed();
     }
 
     /**
@@ -141,18 +143,9 @@ class ImportDumpCommandTest extends TestCase
     {
         $fileName = 'thisDumpDoesNotExist.sql';
 
-        $this->artisan(sprintf('protector:import --file=%s --ignore-connection-filter --force', $fileName))
-            ->expectsOutput(sprintf('The file "%s" was not found.', $fileName));
-    }
+        $this->expectExceptionObject(new FileNotFoundException(path: sprintf('%s%s%s', static::$baseDirectory, DIRECTORY_SEPARATOR, $fileName)));
 
-    /**
-     * @test
-     */
-    public function failOptionDumpOnNonExistingDump()
-    {
-        $this->expectException(FileNotFoundException::class);
-
-        $this->artisan('protector:import --dump=thisFileDoesNotExist');
+        $this->artisan(sprintf('protector:import --file=%s --force', $fileName))->assertFailed();
     }
 
     /**
@@ -161,6 +154,7 @@ class ImportDumpCommandTest extends TestCase
     public function canImportDumpOnOptionLatest()
     {
         $this->artisan('protector:import --latest')->expectsConfirmation($this->shouldImportDump);
+
         $this->assertEquals(
             sprintf('%s%sdump.sql', $this->protector->getBaseDirectory(), DIRECTORY_SEPARATOR),
             $this->protector->getLatestDumpName()
@@ -177,7 +171,7 @@ class ImportDumpCommandTest extends TestCase
         $this->expectException(EmptyBaseDirectoryException::class);
 
         $this->artisan('protector:import')
-            ->expectsChoice($this->shouldDownloadDump, 2, ['Download remote Dump']);
+            ->expectsChoice($this->shouldDownloadDump, 2, static::DUMP_SOURCE_CHOICE);
     }
 
     /**
@@ -190,8 +184,16 @@ class ImportDumpCommandTest extends TestCase
         $this->assertCount(1, $this->protector->getDumpFiles());
 
         $this->artisan('protector:import')
-            ->expectsChoice($this->shouldDownloadDump, 2, ['Download remote dump', 'Import existing local dump'])
+            ->expectsChoice($this->shouldDownloadDump, 2, static::DUMP_SOURCE_CHOICE)
             ->expectsOutput('Using file "' . static::$baseDirectory . '/dump.sql" because there are no other dumps.')
             ->expectsConfirmation($this->shouldImportDump);
+    }
+
+    /**
+     * @test
+     */
+    public function ensureFilesystemAdapterCanBeRetrieved()
+    {
+        $this->assertTrue(is_a($this->protector->getDisk()->getAdapter(), LocalFilesystemAdapter::class));
     }
 }

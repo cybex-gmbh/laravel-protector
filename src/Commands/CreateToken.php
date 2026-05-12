@@ -29,9 +29,9 @@ class CreateToken extends Command
     /**
      * Execute the console command.
      *
-     * @return void
+     * @return int
      */
-    public function handle(): void
+    public function handle(): int
     {
         $publicKey = $this->option('publicKey');
         $user = config('auth.providers.users.model')::findOrFail($this->argument('userId'));
@@ -42,7 +42,9 @@ class CreateToken extends Command
         $this->warn(sprintf('Executing for User %s|%s (%s)', $user->id, $user->name, $user->email));
 
         if (!$user->protector_public_key && !$publicKey) {
-            $this->fail('The user doesn\'t have a protector public key and none was specified. Please provide a public key for the user.');
+            $this->error('The user doesn\'t have a protector public key and none was specified. Please provide a public key for the user.');
+
+            return self::FAILURE;
         }
 
         if ($publicKey) {
@@ -61,5 +63,7 @@ class CreateToken extends Command
         $this->info(sprintf('%s=%s', app('protector')->getDumpEndpointUrlKeyName(), route('protector.server.dump')));
 
         $this->newLine();
+
+        return self::SUCCESS;
     }
 }
