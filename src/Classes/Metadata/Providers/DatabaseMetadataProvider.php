@@ -2,12 +2,12 @@
 
 namespace Cybex\Protector\Classes\Metadata\Providers;
 
-use Cybex\Protector\Contracts\MetadataProvider;
-use Cybex\Protector\Protector;
+use Cybex\Protector\Contracts\MetadataProviderContract;
+use Cybex\Protector\Contracts\ProtectorConfigContract;
 
-class DatabaseMetadataProvider implements MetadataProvider
+class DatabaseMetadataProvider implements MetadataProviderContract
 {
-    public function __construct(protected Protector $protector)
+    public function __construct(protected ProtectorConfigContract $protectorConfig)
     {
     }
 
@@ -33,10 +33,10 @@ class DatabaseMetadataProvider implements MetadataProvider
     public function getMetadata(): array|string
     {
         return [
-            'database' => $this->protector->getDatabaseName(),
-            'connection' => $this->protector->getConnectionName(),
+            'database' => $this->protectorConfig->getDatabaseName(),
+            'connection' => $this->protectorConfig->getConnectionName(),
             'dumpedAtDate' => now(),
-            'dumpParameters' => $this->protector->getSchemaStateParameters(),
+            'dumpParameters' => $this->protectorConfig->getSchemaStateParameters(),
         ];
     }
 }

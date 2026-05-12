@@ -2,12 +2,12 @@
 
 namespace Cybex\Protector\Classes\Metadata\Providers;
 
-use Cybex\Protector\Contracts\MetadataProvider;
-use Cybex\Protector\Protector;
+use Cybex\Protector\Contracts\MetadataProviderContract;
+use Cybex\Protector\Contracts\ProtectorConfigContract;
 
-class ProtectorMetadataProvider implements MetadataProvider
+class ProtectorMetadataProvider implements MetadataProviderContract
 {
-    public function __construct(protected Protector $protector)
+    public function __construct(protected ProtectorConfigContract $protectorConfig)
     {
     }
 
@@ -33,17 +33,17 @@ class ProtectorMetadataProvider implements MetadataProvider
     public function getMetadata(): array|string
     {
         return [
-            'maxPacketLength' => $this->protector->getMaxPacketLength(),
-            'connectionName' => $this->protector->getConnectionName(),
-            'databaseName' => $this->protector->getDatabaseName(),
-            'dumpCharsets' => $this->protector->shouldDumpCharsets(),
-            'dumpComments' => $this->protector->shouldDumpComments(),
-            'createDb' => $this->protector->shouldCreateDb(),
-            'dropDb' => $this->protector->shouldDropDb(),
-            'dumpData' => $this->protector->shouldDumpData(),
-            'removeAutoIncrementingState' => $this->protector->shouldRemoveAutoIncrementingState(),
-            'useTablespaces' => $this->protector->shouldUseTablespaces(),
-            'metadataProviders' => $this->protector->getMetadataProviders(),
+            'maxPacketLength' => $this->protectorConfig->getMaxPacketLength(),
+            'connectionName' => $this->protectorConfig->getConnectionName(),
+            'databaseName' => $this->protectorConfig->getDatabaseName(),
+            'dumpCharsets' => $this->protectorConfig->shouldDumpCharsets(),
+            'dumpComments' => $this->protectorConfig->shouldDumpComments(),
+            'createDb' => $this->protectorConfig->shouldCreateDb(),
+            'dropDb' => $this->protectorConfig->shouldDropDb(),
+            'dumpData' => $this->protectorConfig->shouldDumpData(),
+            'removeAutoIncrementingState' => $this->protectorConfig->shouldRemoveAutoIncrementingState(),
+            'useTablespaces' => $this->protectorConfig->shouldUseTablespaces(),
+            'metadataProviders' => $this->protectorConfig->getMetadataProviders(),
         ];
     }
 }

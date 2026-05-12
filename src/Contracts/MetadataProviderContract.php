@@ -2,7 +2,7 @@
 
 namespace Cybex\Protector\Contracts;
 
-interface MetadataProvider
+interface MetadataProviderContract
 {
     /**
      * Identifies the provider and will be used as the key in the final metadata array.
