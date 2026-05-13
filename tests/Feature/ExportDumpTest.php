@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use PDOException;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExportDumpTest extends TestCase
@@ -20,23 +22,23 @@ class ExportDumpTest extends TestCase
     protected string $filePath;
     protected string $emptyDumpPath;
 
-    const POSTGRES_CREATE = '--create';
-    const POSTGRES_CLEAN = '--clean';
-    const POSTGRES_VERBOSE = '--verbose';
-    const POSTGRES_SCHEMA_ONLY = '--schema-only';
-    const NO_TABLESPACES = '--no-tablespaces';
-    const MYSQL_SKIP_GTID_INFO = '--set-gtid-purged=OFF';
-    const MYSQL_NO_CREATE_DB = '--no-create-db';
-    const MYSQL_SKIP_COMMENTS = '--skip-comments';
-    const MYSQL_SKIP_SET_CHARSET = '--skip-set-charset';
-    const MYSQL_NO_DATA = '--no-data';
-    const PROTECTOR_WITH_CREATE_DB = 'withCreateDb';
-    const PROTECTOR_WITH_DROP_DB = 'withDropDb';
-    const PROTECTOR_WITH_COMMENTS = 'withComments';
-    const PROTECTOR_WITH_CHARSETS = 'withCharsets';
-    const PROTECTOR_WITH_DATA = 'withData';
-    const PROTECTOR_WITH_TABLESPACES = 'withTablespaces';
-    const PROTECTOR_CONFIG_BASELINE = [
+    protected const string POSTGRES_CREATE = '--create';
+    protected const string POSTGRES_CLEAN = '--clean';
+    protected const string POSTGRES_VERBOSE = '--verbose';
+    protected const string POSTGRES_SCHEMA_ONLY = '--schema-only';
+    protected const string NO_TABLESPACES = '--no-tablespaces';
+    protected const string MYSQL_SKIP_GTID_INFO = '--set-gtid-purged=OFF';
+    protected const string MYSQL_NO_CREATE_DB = '--no-create-db';
+    protected const string MYSQL_SKIP_COMMENTS = '--skip-comments';
+    protected const string MYSQL_SKIP_SET_CHARSET = '--skip-set-charset';
+    protected const string MYSQL_NO_DATA = '--no-data';
+    protected const string PROTECTOR_WITH_CREATE_DB = 'withCreateDb';
+    protected const string PROTECTOR_WITH_DROP_DB = 'withDropDb';
+    protected const string PROTECTOR_WITH_COMMENTS = 'withComments';
+    protected const string PROTECTOR_WITH_CHARSETS = 'withCharsets';
+    protected const string PROTECTOR_WITH_DATA = 'withData';
+    protected const string PROTECTOR_WITH_TABLESPACES = 'withTablespaces';
+    protected const array PROTECTOR_CONFIG_BASELINE = [
         'pgsql' => [
             self::POSTGRES_CREATE => false,
             self::POSTGRES_CLEAN => false,
@@ -66,10 +68,8 @@ class ExportDumpTest extends TestCase
     }
 
 
-    /**
-     * @test
-     */
-    public function failGeneratingDumpWhenTryingToConnectToDatabase()
+    #[Test]
+    public function failGeneratingDumpWhenTryingToConnectToDatabase(): void
     {
         // Provide a database connection to a non-existing database.
         Config::set('database.connections.invalid', [
@@ -90,23 +90,19 @@ class ExportDumpTest extends TestCase
         $this->runProtectedMethod('generateDump');
     }
 
-    /**
-     * @test
-     */
-    public function createsStreamedFileDownloadResponse()
+    #[Test]
+    public function createsStreamedFileDownloadResponse(): void
     {
         Config::set('protector.server.routeMiddleware', []);
 
-        $response = $this->protector->generateFileDownloadResponse(new Request(), null);
+        $response = $this->protector->generateFileDownloadResponse(new Request());
 
         $this->assertInstanceOf(StreamedResponse::class, $response);
         $this->assertEquals(200, $response->getStatusCode());
     }
 
-    /**
-     * @test
-     * @dataProvider provideForHasCorrectConfiguration
-     */
+    #[Test]
+    #[DataProvider('provideForHasCorrectConfiguration')]
     public function hasCorrectConfiguration(array $protectorOptions, array $expected): void
     {
         $this->configureProtector($protectorOptions);

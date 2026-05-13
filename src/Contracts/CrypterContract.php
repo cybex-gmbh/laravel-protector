@@ -8,7 +8,7 @@ interface CrypterContract
 
     public function getPublicKeyFromPrivateKey(string $privateKey): string;
 
-    public function getPublicKeyFromUser($user): ?string;
+    public function getPublicKeyFromUser(mixed $user): ?string;
 
     public function encrypt(string $data, string $publicKey): string;
 

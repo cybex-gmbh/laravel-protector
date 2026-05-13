@@ -11,6 +11,7 @@ use Cybex\Protector\Tests\TestCase;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\Test;
 
 class ImportDumpCommandTest extends TestCase
 {
@@ -21,7 +22,7 @@ class ImportDumpCommandTest extends TestCase
     protected string $shouldImportDump;
     protected static string $baseDirectory = 'dumps';
 
-    protected const DUMP_SOURCE_CHOICE = ['Download remote dump', 'Import existing local dump'];
+    protected const array DUMP_SOURCE_CHOICE = ['Download remote dump', 'Import existing local dump'];
 
     protected function setUp(): void
     {
@@ -41,10 +42,8 @@ class ImportDumpCommandTest extends TestCase
         );
     }
 
-    /**
-     * @test
-     */
-    public function failOnProductionEnvironment()
+    #[Test]
+    public function failOnProductionEnvironment(): void
     {
         $this->app->detectEnvironment(fn() => 'production');
 
@@ -53,18 +52,14 @@ class ImportDumpCommandTest extends TestCase
         $this->artisan('protector:import');
     }
 
-    /**
-     * @test
-     */
-    public function failOnOptionForceIncorrectlySet()
+    #[Test]
+    public function failOnOptionForceIncorrectlySet(): void
     {
         $this->artisan('protector:import --force')->assertFailed();
     }
 
-    /**
-     * @test
-     */
-    public function failOnNoDumpHasSpecifiedConnection()
+    #[Test]
+    public function failOnNoDumpHasSpecifiedConnection(): void
     {
         $this->expectException(InvalidConnectionException::class);
 
@@ -72,22 +67,18 @@ class ImportDumpCommandTest extends TestCase
             ->expectsChoice($this->shouldDownloadDump, 2, static::DUMP_SOURCE_CHOICE);
     }
 
-    /**
-     * @test
-     */
-    public function failSettingConnectionNameOnNoConnectionsAreConfigured()
+    #[Test]
+    public function failSettingConnectionNameOnNoConnectionsAreConfigured(): void
     {
-        Config::set('database.connections', null);
+        Config::set('database.connections');
 
         $this->expectException(InvalidConnectionException::class);
 
-        $this->artisan('protector:import');
+        $this->artisan('protector:import')->assertFailed();
     }
 
-    /**
-     * @test
-     */
-    public function getRemoteDumpOnImportDumpCommand()
+    #[Test]
+    public function getRemoteDumpOnImportDumpCommand(): void
     {
         Config::set('protector.client.basicAuthCredentials', '1234:1234');
         Config::set('protector.server.routeMiddleware', []);
@@ -102,10 +93,8 @@ class ImportDumpCommandTest extends TestCase
         $this->assertFileExists($this->disk->path(static::$baseDirectory . '/remote_dump.sql'));
     }
 
-    /**
-     * @test
-     */
-    public function canGetRemoteDumpWithFlushOptionEnabled()
+    #[Test]
+    public function canGetRemoteDumpWithFlushOptionEnabled(): void
     {
         Config::set('protector.client.basicAuthCredentials', '1234:1234');
         Config::set('protector.server.routeMiddleware', []);
@@ -123,20 +112,16 @@ class ImportDumpCommandTest extends TestCase
         );
     }
 
-    /**
-     * @test
-     */
-    public function failGetRemoteOnDumpWithNoResponse()
+    #[Test]
+    public function failGetRemoteOnDumpWithNoResponse(): void
     {
         $this->expectException(FailedRemoteDatabaseFetchingException::class);
 
         $this->artisan('protector:import --remote')->assertFailed();
     }
 
-    /**
-     * @test
-     */
-    public function failOptionFileOnNonExistingDump()
+    #[Test]
+    public function failOptionFileOnNonExistingDump(): void
     {
         $fileName = 'thisDumpDoesNotExist.sql';
 
@@ -145,10 +130,8 @@ class ImportDumpCommandTest extends TestCase
         $this->artisan(sprintf('protector:import --file=%s --force', $fileName))->assertFailed();
     }
 
-    /**
-     * @test
-     */
-    public function failOptionFileOnNonExistingAbsoluteFilePath()
+    #[Test]
+    public function failOptionFileOnNonExistingAbsoluteFilePath(): void
     {
         $fileName = $this->disk->path('thisDumpDoesNotExist.sql');
 
@@ -157,20 +140,16 @@ class ImportDumpCommandTest extends TestCase
         $this->artisan(sprintf('protector:import --file=%s --force', $fileName))->assertFailed();
     }
 
-    /**
-     * @test
-     */
-    public function canImportDumpOnOptionFileWithExistingAbsoluteFilePath()
+    #[Test]
+    public function canImportDumpOnOptionFileWithExistingAbsoluteFilePath(): void
     {
         $fileName = $this->disk->path($this->protector->getDumpFile('dump.sql'));
 
         $this->artisan(sprintf('protector:import --file=%s --force', $fileName))->assertOk();
     }
 
-    /**
-     * @test
-     */
-    public function canImportDumpOnOptionLatest()
+    #[Test]
+    public function canImportDumpOnOptionLatest(): void
     {
         $this->artisan('protector:import --latest')->expectsConfirmation($this->shouldImportDump);
 
@@ -180,23 +159,19 @@ class ImportDumpCommandTest extends TestCase
         );
     }
 
-    /**
-     * @test
-     */
-    public function failChooseImportDumpOnNoFilesInBaseDirectory()
+    #[Test]
+    public function failChooseImportDumpOnNoFilesInBaseDirectory(): void
     {
         $this->clearDumpDirectory();
 
         $this->expectException(EmptyBaseDirectoryException::class);
 
         $this->artisan('protector:import')
-            ->expectsChoice($this->shouldDownloadDump, 2, static::DUMP_SOURCE_CHOICE);
+            ->expectsChoice($this->shouldDownloadDump, 2, static::DUMP_SOURCE_CHOICE)->assertFailed();
     }
 
-    /**
-     * @test
-     */
-    public function chooseImportDumpWithOnlyOneFileInBaseDirectory()
+    #[Test]
+    public function chooseImportDumpWithOnlyOneFileInBaseDirectory(): void
     {
         $this->protector->flush(static::$baseDirectory . '/dump.sql');
 

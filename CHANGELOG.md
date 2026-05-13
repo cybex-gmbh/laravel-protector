@@ -11,7 +11,9 @@ All notable changes to `protector` will be documented in this file.
 
 ### General
 
-- The minimum required PHP version is now 8.2
+- The minimum required PHP version is now 8.4
+- The minimum required Laravel version is now 12.1.1
+- Dropped support for Laravel 9, 10, and 11
 - Restructured the `Protector` class by splitting it into `Protector` and `ProtectorConfig`.
   Configuration can no longer be accessed after the `Protector` instance has been created.
 - Custom protector instances are now created through the new `ProtectorConfigurator` class
@@ -21,6 +23,7 @@ All notable changes to `protector` will be documented in this file.
 
 ### Features
 
+- Added support for Laravel 13
 - The metadata which is appended at the end of a dump file can now be customized,
   see the [Dump Metadata README section](README.md#dump-metadata) for more information
 - More options can now be configured on a `Protector` instance,

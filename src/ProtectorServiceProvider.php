@@ -84,10 +84,6 @@ class ProtectorServiceProvider extends ServiceProvider
      */
     protected function publishMigrations(): void
     {
-        if (class_exists('AddPublicKeyToUsersTable')) {
-            return;
-        }
-
         $timestamp = date('Y_m_d_His', time());
         $migrationName = 'add_public_key_to_users_table.php';
 

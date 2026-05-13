@@ -13,18 +13,17 @@ use Cybex\Protector\Tests\TestCase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
+use PHPUnit\Framework\Attributes\Test;
 use TypeError;
 
 class MetadataTest extends TestCase
 {
-    const METADATA_PROVIDER_CONFIG_KEY = 'protector.dump.metadata.providers';
-    const METADATA_ENV_VALUE_CONFIG_KEY = 'protector.dump.metadata.envValue';
-    const METADATA_JSON_FILE_PATH_CONFIG_KEY = 'protector.dump.metadata.jsonFilePath';
+    protected const string METADATA_PROVIDER_CONFIG_KEY = 'protector.dump.metadata.providers';
+    protected const string METADATA_ENV_VALUE_CONFIG_KEY = 'protector.dump.metadata.envValue';
+    protected const string METADATA_JSON_FILE_PATH_CONFIG_KEY = 'protector.dump.metadata.jsonFilePath';
 
-    /**
-     * @test
-     */
-    public function canCreateDumpMetadata()
+    #[Test]
+    public function canCreateDumpMetadata(): void
     {
         $dumpDate = now();
 
@@ -36,10 +35,8 @@ class MetadataTest extends TestCase
         $this->assertEquals($dumpDate, $metadata['database']['dumpedAtDate']);
     }
 
-    /**
-     * @test
-     */
-    public function canConfigureProtectorInstanceToUseMetadataProviders()
+    #[Test]
+    public function canConfigureProtectorInstanceToUseMetadataProviders(): void
     {
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, []);
 
@@ -48,20 +45,16 @@ class MetadataTest extends TestCase
         $this->assertContains(GitMetadataProvider::class, $this->runProtectedMethod('getConfig')->getMetadataProviders());
     }
 
-    /**
-     * @test
-     */
-    public function includesDatabaseMetadataProviderByDefault()
+    #[Test]
+    public function includesDatabaseMetadataProviderByDefault(): void
     {
         Config::set('protector.dump.metadata.providers', []);
 
         $this->assertContains(DatabaseMetadataProvider::class, $this->runProtectedMethod('getConfig')->getMetadataProviders());
     }
 
-    /**
-     * @test
-     */
-    public function includesMetadataIfShouldAppend()
+    #[Test]
+    public function includesMetadataIfShouldAppend(): void
     {
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [GitMetadataProvider::class]);
         $mock = $this->partialMock(GitMetadataProvider::class, fn($mock) => $mock->shouldReceive('shouldAppend')->andReturn(true));
@@ -71,10 +64,8 @@ class MetadataTest extends TestCase
         $this->assertArrayHasKey('git', $this->protector->getMetadata());
     }
 
-    /**
-     * @test
-     */
-    public function excludesMetadataIfShouldNotAppend()
+    #[Test]
+    public function excludesMetadataIfShouldNotAppend(): void
     {
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [GitMetadataProvider::class]);
         $mock = $this->partialMock(GitMetadataProvider::class, fn($mock) => $mock->shouldReceive('shouldAppend')->andReturn(false));
@@ -84,10 +75,8 @@ class MetadataTest extends TestCase
         $this->assertArrayNotHasKey('git', $this->protector->getMetadata());
     }
 
-    /**
-     * @test
-     */
-    public function includesGitMetadataIfUnderGitVersionControl()
+    #[Test]
+    public function includesGitMetadataIfUnderGitVersionControl(): void
     {
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [GitMetadataProvider::class]);
         File::shouldReceive('exists')->with(base_path('.git'))->andReturn(true);
@@ -95,10 +84,8 @@ class MetadataTest extends TestCase
         $this->assertArrayHasKey('git', $this->protector->getMetadata());
     }
 
-    /**
-     * @test
-     */
-    public function excludesGitMetadataIfNotUnderGitVersionControl()
+    #[Test]
+    public function excludesGitMetadataIfNotUnderGitVersionControl(): void
     {
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [GitMetadataProvider::class]);
         File::shouldReceive('exists')->with(base_path('.git'))->andReturn(false);
@@ -106,10 +93,8 @@ class MetadataTest extends TestCase
         $this->assertArrayNotHasKey('git', $this->protector->getMetadata());
     }
 
-    /**
-     * @test
-     */
-    public function includesEnvMetadataIfSet()
+    #[Test]
+    public function includesEnvMetadataIfSet(): void
     {
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [EnvMetadataProvider::class]);
         Config::set(static::METADATA_ENV_VALUE_CONFIG_KEY, 'test metadata');
@@ -118,21 +103,17 @@ class MetadataTest extends TestCase
         $this->assertEquals('test metadata', $this->protector->getMetadata()['env']);
     }
 
-    /**
-     * @test
-     */
-    public function excludesEnvMetadataIfNotSet()
+    #[Test]
+    public function excludesEnvMetadataIfNotSet(): void
     {
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [EnvMetadataProvider::class]);
-        Config::set(static::METADATA_ENV_VALUE_CONFIG_KEY, null);
+        Config::set(static::METADATA_ENV_VALUE_CONFIG_KEY);
 
         $this->assertArrayNotHasKey('env', $this->protector->getMetadata());
     }
 
-    /**
-     * @test
-     */
-    public function includesJsonFileMetadataIfFileExists()
+    #[Test]
+    public function includesJsonFileMetadataIfFileExists(): void
     {
         $filePath = base_path('protector_metadata.json');
 
@@ -146,10 +127,8 @@ class MetadataTest extends TestCase
         $this->assertEquals(['foo' => 'bar'], $this->protector->getMetadata()['jsonFile']);
     }
 
-    /**
-     * @test
-     */
-    public function excludeJsonFileMetadataIfFileNotExists()
+    #[Test]
+    public function excludeJsonFileMetadataIfFileNotExists(): void
     {
         $filePath = base_path('protector_metadata.json');
 
@@ -161,10 +140,8 @@ class MetadataTest extends TestCase
         $this->assertArrayNotHasKey('jsonFile', $this->protector->getMetadata());
     }
 
-    /**
-     * @test
-     */
-    public function canConfigureCustomMetadataProviderWithDependencies()
+    #[Test]
+    public function canConfigureCustomMetadataProviderWithDependencies(): void
     {
         $metadataProviders = [TestCustomFooMetadataProvider::class];
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, $metadataProviders);
@@ -177,10 +154,8 @@ class MetadataTest extends TestCase
         $this->assertInstanceOf(Config::class, app(TestCustomFooMetadataProvider::class)->config);
     }
 
-    /**
-     * @test
-     */
-    public function canConfigureMultipleMetadataProviders()
+    #[Test]
+    public function canConfigureMultipleMetadataProviders(): void
     {
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [TestCustomFooMetadataProvider::class, GitMetadataProvider::class]);
         File::shouldReceive('exists')->with(base_path('.git'))->andReturn(true);
@@ -192,9 +167,7 @@ class MetadataTest extends TestCase
         $this->assertArrayHasKey('git', $metadata);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function failsWhenProviderNotImplementingInterfaceIsConfigured(): void
     {
         $this->expectException(TypeError::class);
@@ -204,9 +177,7 @@ class MetadataTest extends TestCase
         $this->protector->getMetadata();
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function ensureDuplicateProviderKeysAreMerged(): void
     {
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [TestCustomFooMetadataProvider::class, TestCustomBarMetadataProvider::class]);
@@ -240,7 +211,7 @@ class TestCustomFooMetadataProvider implements MetadataProviderContract
     public function getMetadata(): array|string
     {
         return [
-            'foo' => $this->config::get('protector.dump.metadata.providers')
+            'foo' => $this->config::get('protector.dump.metadata.providers'),
         ];
     }
 }
@@ -264,7 +235,7 @@ class TestCustomBarMetadataProvider implements MetadataProviderContract
     public function getMetadata(): array|string
     {
         return [
-            'bar' => 'test'
+            'bar' => 'test',
         ];
     }
 }

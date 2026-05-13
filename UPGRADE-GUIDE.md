@@ -7,7 +7,9 @@
 
 #### Overview (see below for details):
 
-- The minimum required PHP version is now 8.2
+- The minimum required PHP version is now 8.4
+- The minimum required Laravel version is now 12.1.1
+- Laravel 9, 10, and 11 are no longer supported
 - Some config and .env keys have been renamed.
 - `Protector` instances can no longer be reconfigured during runtime. Create new instances using the `ProtectorConfigurator` class.
 - The Protector dump endpoint route name has been changed.
@@ -25,14 +27,14 @@
 > The `protector.php` config structure and keys have changed.
 > If you have previously published the config file, you should re-publish it and adjust the configuration accordingly.
 
-### Minimum PHP version
+### Minimum PHP and Laravel version
 
 > [!NOTE]
 > Likelihood of impact: high
 >
-> Impact: Apps running on PHP versions below 8.2 will not be able to use this version of the package.
+> Impact: Apps running on PHP versions below 8.4 and Laravel versions below 12.1.1 will not be able to use this version of the package.
 
-You need to update your system to PHP 8.2 or higher, as it is now the minimum required version.
+You need to update your system to PHP 8.4 or higher and Laravel 12.1.1 or higher, as these are now the minimum required versions.
 
 ### Renamed config keys
 

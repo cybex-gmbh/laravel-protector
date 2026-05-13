@@ -16,7 +16,7 @@ class SodiumCrypter implements CrypterContract
         return sodium_bin2hex(sodium_crypto_box_publickey(sodium_hex2bin($privateKey)));
     }
 
-    public function getPublicKeyFromUser($user): ?string
+    public function getPublicKeyFromUser(mixed $user): ?string
     {
         return $user?->protector_public_key;
     }

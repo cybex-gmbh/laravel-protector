@@ -2,45 +2,45 @@
 
 namespace Cybex\Protector\Tests\Feature;
 
-use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Exceptions\ShellAccessDeniedException;
 use Cybex\Protector\Protector;
 use Cybex\Protector\Tests\TestCase;
+use Mockery\MockInterface;
+use PHPUnit\Framework\Attributes\Test;
 
 class ShellAccessDeniedExceptionTest extends TestCase
 {
     protected function setUp(): void
     {
         parent::setUp();
-
-        $this->protector = $this->getMockBuilder(Protector::class)
-            ->setConstructorArgs([app(ProtectorConfigContract::class)])
-            ->onlyMethods(['checkFunctionExists'])
-            ->getMock();
     }
 
-    /**
-     * @test
-     */
-    public function failOnMissingFunction()
+    #[Test]
+    public function failOnMissingFunction(): void
     {
-        $this->protector->method('checkFunctionExists')
-            ->willReturn(false);
+        $mock = $this->getCheckFunctionExistsMock(returnValue: false);
 
         $this->expectException(ShellAccessDeniedException::class);
-        $this->protector->guardRequiredFunctionsEnabled();
+        $mock->guardRequiredFunctionsEnabled();
     }
 
-    /**
-     * @test
-     */
-    public function succeedWhenAllFunctionsAreAvailable()
+    #[Test]
+    public function succeedWhenAllFunctionsAreAvailable(): void
     {
-        $this->protector->method('checkFunctionExists')
-            ->willReturn(true);
+        $mock = $this->getCheckFunctionExistsMock(returnValue: true);
 
-        $this->protector->guardRequiredFunctionsEnabled();
-
+        $mock->guardRequiredFunctionsEnabled();
         $this->expectNotToPerformAssertions();
+    }
+
+    protected function getCheckFunctionExistsMock(bool $returnValue): Protector|MockInterface
+    {
+        return $this->partialMock(
+            Protector::class,
+            fn(MockInterface $mock) => $mock
+                ->shouldAllowMockingProtectedMethods()
+                ->shouldReceive('checkFunctionExists')
+                ->andReturn($returnValue)
+        );
     }
 }
