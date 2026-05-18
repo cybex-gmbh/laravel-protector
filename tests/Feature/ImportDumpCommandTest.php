@@ -74,7 +74,7 @@ class ImportDumpCommandTest extends TestCase
 
         $this->expectException(InvalidConnectionException::class);
 
-        $this->artisan('protector:import')->assertFailed();
+        $this->artisan('protector:import');
     }
 
     #[Test]
@@ -117,7 +117,7 @@ class ImportDumpCommandTest extends TestCase
     {
         $this->expectException(FailedRemoteDatabaseFetchingException::class);
 
-        $this->artisan('protector:import --remote')->assertFailed();
+        $this->artisan('protector:import --remote');
     }
 
     #[Test]
@@ -127,7 +127,7 @@ class ImportDumpCommandTest extends TestCase
 
         $this->expectExceptionObject(new FileNotFoundException(path: sprintf('%s%s%s', static::$baseDirectory, DIRECTORY_SEPARATOR, $fileName)));
 
-        $this->artisan(sprintf('protector:import --file=%s --force', $fileName))->assertFailed();
+        $this->artisan(sprintf('protector:import --file=%s --force', $fileName));
     }
 
     #[Test]
@@ -137,7 +137,7 @@ class ImportDumpCommandTest extends TestCase
 
         $this->expectExceptionObject(new FileNotFoundException(path: $fileName));
 
-        $this->artisan(sprintf('protector:import --file=%s --force', $fileName))->assertFailed();
+        $this->artisan(sprintf('protector:import --file=%s --force', $fileName));
     }
 
     #[Test]
@@ -167,7 +167,7 @@ class ImportDumpCommandTest extends TestCase
         $this->expectException(EmptyBaseDirectoryException::class);
 
         $this->artisan('protector:import')
-            ->expectsChoice($this->shouldDownloadDump, 2, static::DUMP_SOURCE_CHOICE)->assertFailed();
+            ->expectsChoice($this->shouldDownloadDump, 2, static::DUMP_SOURCE_CHOICE);
     }
 
     #[Test]
