@@ -3,6 +3,7 @@
 namespace Cybex\Protector\Tests\Feature;
 
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
+use Cybex\Protector\Contracts\SchemaStateProxyContract;
 use Cybex\Protector\ProtectorConfigurator;
 use Cybex\Protector\Tests\TestCase;
 use Illuminate\Contracts\Filesystem\Filesystem;
@@ -120,12 +121,12 @@ class ExportDumpTest extends TestCase
 
         $config = $this->runProtectedMethod('getConfig');
 
-        $connection = DB::connection($config->getConnectionName());
-        $schemaStateProxy = $config->getProxyForSchemaState();
+        $connectionName = $config->getConnectionName();
+        $schemaStateProxy = app(SchemaStateProxyContract::class, ['connection' => $connectionName, 'protectorConfig' => $config]);
 
         $conditionalParameters = $schemaStateProxy->getConditionalParameters();
 
-        $this->assertEquals($expected[$connection->getDriverName()], $conditionalParameters);
+        $this->assertEquals($expected[DB::connection($connectionName)->getDriverName()], $conditionalParameters);
     }
 
     public static function provideForHasCorrectConfiguration(): array

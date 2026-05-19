@@ -3,20 +3,15 @@
 namespace Cybex\Protector\Classes\SchemaState\Postgres;
 
 use Cybex\Protector\Contracts\ProtectorConfigContract;
+use Cybex\Protector\Contracts\SchemaStateProxyContract;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Schema\PostgresSchemaState;
 
 /**
  * This abstract class provides proxies to protected methods within the related PostgresSchemaState.
  */
-abstract class AbstractPostgresSchemaStateProxy extends PostgresSchemaState
+abstract class AbstractPostgresSchemaStateProxy extends PostgresSchemaState implements SchemaStateProxyContract
 {
-    abstract public function getParameters(): array;
-
-    abstract public function getBaseParameters(): array;
-
-    abstract public function getConditionalParameters(): array;
-
     public function __construct(protected PostgresSchemaState $schemaState, protected ProtectorConfigContract $config)
     {
         parent::__construct($schemaState->connection);

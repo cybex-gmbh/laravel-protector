@@ -13,6 +13,12 @@ use Cybex\Protector\Commands\ImportDump;
 use Cybex\Protector\Contracts\CrypterContract;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
+use Cybex\Protector\Contracts\SchemaStateProxyContract;
+use Cybex\Protector\Exceptions\UnsupportedDatabaseException;
+use Illuminate\Database\Schema\MariaDbSchemaState;
+use Illuminate\Database\Schema\MySqlSchemaState;
+use Illuminate\Database\Schema\PostgresSchemaState;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -61,16 +67,20 @@ class ProtectorServiceProvider extends ServiceProvider
         $this->app->bind(ProtectorConfiguratorContract::class, ProtectorConfigurator::class);
 
         // Register the SchemaState proxy classes.
-        $this->app->bind(MySqlSchemaStateProxy::class, function ($app, array $params) {
-            return new MySqlSchemaStateProxy(...$params);
-        });
+        $this->app->bind(SchemaStateProxyContract::class, function ($app, array $params): SchemaStateProxyContract {
+            $connectionName = $params['connection'];
+            $protectorConfig = $params['protectorConfig'];
 
-        $this->app->bind(MariaDbSchemaStateProxy::class, function ($app, array $params) {
-            return new MariaDbSchemaStateProxy(...$params);
-        });
+            $connection = DB::connection($connectionName);
+            $schemaState = $connection->getSchemaState();
 
-        $this->app->bind(PostgresSchemaStateProxy::class, function ($app, array $params) {
-            return new PostgresSchemaStateProxy(...$params);
+            return match (get_class($schemaState)) {
+                MariaDbSchemaState::class => app(MariaDbSchemaStateProxy::class, ['schemaState' => $schemaState, 'config' => $protectorConfig]),
+                MySqlSchemaState::class => app(MySqlSchemaStateProxy::class, ['schemaState' => $schemaState, 'config' => $protectorConfig]),
+                PostgresSchemaState::class => app(PostgresSchemaStateProxy::class, ['schemaState' => $schemaState, 'config' => $protectorConfig]),
+                //            SqliteSchemaState::class => app('SqliteSchemaStateProxy', ['schemaState' => $schemaState, 'config' => $protectorConfig]),
+                default => throw new UnsupportedDatabaseException('Unsupported database schema state: ' . class_basename($schemaState)),
+            };
         });
     }
 

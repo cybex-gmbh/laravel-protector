@@ -3,6 +3,7 @@
 namespace Cybex\Protector\Classes\SchemaState\MariaDb;
 
 use Cybex\Protector\Contracts\ProtectorConfigContract;
+use Cybex\Protector\Contracts\SchemaStateProxyContract;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Schema\MariaDbSchemaState;
 use Symfony\Component\Process\Process;
@@ -10,14 +11,8 @@ use Symfony\Component\Process\Process;
 /**
  * This abstract class provides proxies to protected methods within the related MariaDbSchemaState.
  */
-abstract class AbstractMariaDbSchemaStateProxy extends MariaDbSchemaState
+abstract class AbstractMariaDbSchemaStateProxy extends MariaDbSchemaState implements SchemaStateProxyContract
 {
-    abstract public function getParameters(): array;
-
-    abstract public function getBaseParameters(): array;
-
-    abstract public function getConditionalParameters(): array;
-
     public function __construct(protected MariaDbSchemaState $schemaState, protected ProtectorConfigContract $config)
     {
         parent::__construct($schemaState->connection);

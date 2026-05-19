@@ -5,6 +5,7 @@ namespace Cybex\Protector;
 use Cybex\Protector\Classes\Metadata\MetadataHandler;
 use Cybex\Protector\Contracts\CrypterContract;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
+use Cybex\Protector\Contracts\SchemaStateProxyContract;
 use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
 use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
 use Cybex\Protector\Exceptions\FailedDumpGenerationException;
@@ -95,7 +96,8 @@ class Protector
         }
 
         try {
-            $this->config->getProxyForSchemaState()->load($sourceFilePath);
+            $schemaStateProxy = app(SchemaStateProxyContract::class, ['connection' => $this->config->getConnectionName(), 'protectorConfig' => $this->config]);
+            $schemaStateProxy->load($sourceFilePath);
         } catch (Throwable $exception) {
             throw new FailedImportException($exception->getMessage());
         }
@@ -239,7 +241,7 @@ class Protector
      */
     protected function generateDump(): ?string
     {
-        $schemaStateProxy = $this->config->getProxyForSchemaState();
+        $schemaStateProxy = app(SchemaStateProxyContract::class, ['connection' => $this->config->getConnectionName(), 'protectorConfig' => $this->config]);
         $tempFile = tempnam('', 'protector');
 
         $schemaStateProxy->dump(DB::connection($this->config->getConnectionName()), $tempFile);

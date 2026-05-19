@@ -2,9 +2,7 @@
 
 namespace Cybex\Protector\Contracts;
 
-use Cybex\Protector\Exceptions\UnsupportedDatabaseException;
 use Illuminate\Contracts\Filesystem\Filesystem;
-use Illuminate\Database\Schema\SchemaState;
 use Illuminate\Support\Collection;
 
 interface ProtectorConfigContract
@@ -97,18 +95,4 @@ interface ProtectorConfigContract
     public function shouldUseTablespaces(): bool;
 
     public function shouldEncrypt(): bool;
-
-    /**
-     * This could change anytime, do not use this.
-     *
-     * @throws UnsupportedDatabaseException
-     */
-    public function getProxyForSchemaState(): SchemaState;
-
-    /**
-     * This could change anytime, do not use this.
-     *
-     * @throws UnsupportedDatabaseException
-     */
-    public function getSchemaStateParameters(): array;
 }
