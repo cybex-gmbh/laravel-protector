@@ -7,7 +7,9 @@ Adjustments:
 - Added the `cybex/laravel-protector` package using symlink (see `composer.json` config below).
     - The User model has been updated to use the `HasApiTokens` trait.
     - The .env file has been configured with the necessary `Protector` settings
-      (`PROTECTOR_CLIENT_DUMP_ENDPOINT_URL`, `PROTECTOR_CLIENT_AUTH_TOKEN`, `PROTECTOR_CLIENT_PRIVATE_KEY`).
+        - `PROTECTOR_CLIENT_DUMP_ENDPOINT_URL` 
+        - `PROTECTOR_CLIENT_AUTH_TOKEN` 
+        - `PROTECTOR_CLIENT_PRIVATE_KEY`
     - The Laravel Sanctum migrations have been published.
     - The package migrations have been published.
 - The DatabaseSeeder has been updated to provide a user with a `Protector Public Key` and a `Protector Auth Token`, matching the provided .env values.
