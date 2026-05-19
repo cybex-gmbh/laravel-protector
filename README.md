@@ -35,8 +35,8 @@ PR.
 
 > [!NOTE]
 > - Source and destination databases are not validated. Make sure you run compatible software versions to prevent issues.
-> - Because of different dump formats, dumps might not be able to be imported into a different database engine,
-    > e.g. a MariaDB dump might fail to be imported into MySQL, and vice versa.
+> - Because of different dump formats, dumps will not able to be imported into a different database engine,
+    > e.g. a MariaDB dump will fail to be imported into PostgreSQL, and vice versa.
 
 ## Notes
 
@@ -369,7 +369,7 @@ php artisan migrate --seed
 
 ### Testing
 
-Run tests on the MySQL database:
+Run tests on the MariaDB database:
 
 ```bash
 composer test
@@ -381,10 +381,15 @@ Run tests on the PostgreSQL database:
 composer test-postgres
 ```
 
-Run tests on the MariaDB database:
+Run tests on the MySQL database:
+
+> [!NOTE]
+> Running MySQL tests on the current alpine image will not work, as the MySQL CLI command is only an alias to mariadb and does not fully support the MySQL server.
+>
+> If you need to run MySQL tests, use a different image.
 
 ```bash
-composer test-mariadb
+composer test-mysql
 ```
 
 ## Contributing

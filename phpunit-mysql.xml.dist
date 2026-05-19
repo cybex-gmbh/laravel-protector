@@ -31,8 +31,8 @@
         <env name="PROTECTOR_ENCRYPTED_MESSAGE_BASE64" value="XFU+0EgjfnaP5PQVUh2noYwLMOW8k6k0/xBj+SXNTGKJtFJRS3daU3YjVQb+CsxRJqp4rFmghLb2H4E="/>
         <env name="PROTECTOR_DECRYPTED_MESSAGE" value="hello world"/>
         <env name="PROTECTOR_CLIENT_AUTH_TOKEN" value="1|bxa5BBNo7lXxgtRY4DN775JdAtQSAlN4UfgRnFhz"/>
-        <env name="DB_CONNECTION" value="mariadb"/>
-        <env name="DB_HOST" value="mariadb_testing"/>
+        <env name="DB_CONNECTION" value="mysql"/>
+        <env name="DB_HOST" value="mysql_testing"/>
         <env name="DB_DATABASE" value="protector_test"/>
         <env name="DB_USERNAME" value="protector"/>
         <env name="DB_PASSWORD" value="protector"/>
@@ -44,4 +44,3 @@
         </include>
     </source>
 </phpunit>
-
