@@ -5,7 +5,7 @@ x-db-common-values:
 
 services:
     app:
-        image: cybexwebdev/php-laravel:${DOCKER_PHP_VERSION:-8.4}-devtools
+        image: cybexwebdev/php-laravel:${DOCKER_PHP_VERSION:-8.4}-alpine-devtools
         container_name: ${COMPOSE_PROJECT_NAME}
         environment:
             APP_ENV: staging
@@ -18,6 +18,21 @@ services:
         networks:
             - internal
             - shared
+    mariadb_testing:
+        image: 'mariadb:lts-noble'
+        environment:
+            MARIADB_DATABASE: *db-name
+            MARIADB_USER: *db-user
+            MARIADB_PASSWORD: *db-pass
+            MARIADB_ROOT_PASSWORD: *db-pass
+        volumes:
+            - 'mariadb:/var/lib/mysql'
+        networks:
+            - internal
+        healthcheck:
+            test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+            retries: 3
+            timeout: 5s
     mysql_testing:
         image: 'mysql/mysql-server:8.0'
         environment:
@@ -36,7 +51,7 @@ services:
             retries: 3
             timeout: 5s
     postgres_testing:
-        image: 'postgres:17'
+        image: 'postgres:16'
         environment:
             POSTGRES_DB: *db-name
             POSTGRES_USER: *db-user
@@ -56,6 +71,8 @@ networks:
     shared:
         external: true
 volumes:
+    mariadb:
+        driver: local
     mysql:
         driver: local
     pgsql:

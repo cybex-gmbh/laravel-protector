@@ -27,6 +27,10 @@ class ExportDumpTest extends TestCase
     protected const string POSTGRES_VERBOSE = '--verbose';
     protected const string POSTGRES_SCHEMA_ONLY = '--schema-only';
     protected const string NO_TABLESPACES = '--no-tablespaces';
+    protected const string MARIADB_NO_CREATE_DB = '--no-create-db';
+    protected const string MARIADB_SKIP_COMMENTS = '--skip-comments';
+    protected const string MARIADB_SKIP_SET_CHARSET = '--skip-set-charset';
+    protected const string MARIADB_NO_DATA = '--no-data';
     protected const string MYSQL_SKIP_GTID_INFO = '--set-gtid-purged=OFF';
     protected const string MYSQL_NO_CREATE_DB = '--no-create-db';
     protected const string MYSQL_SKIP_COMMENTS = '--skip-comments';
@@ -39,6 +43,13 @@ class ExportDumpTest extends TestCase
     protected const string PROTECTOR_WITH_DATA = 'withData';
     protected const string PROTECTOR_WITH_TABLESPACES = 'withTablespaces';
     protected const array PROTECTOR_CONFIG_BASELINE = [
+        'mariadb' => [
+            self::MARIADB_NO_CREATE_DB => true,
+            self::MARIADB_SKIP_COMMENTS => true,
+            self::MARIADB_SKIP_SET_CHARSET => true,
+            self::MARIADB_NO_DATA => true,
+            self::NO_TABLESPACES => true,
+        ],
         'pgsql' => [
             self::POSTGRES_CREATE => false,
             self::POSTGRES_CLEAN => false,
@@ -130,6 +141,13 @@ class ExportDumpTest extends TestCase
                     self::PROTECTOR_WITH_TABLESPACES,
                 ],
                 'expected' => self::getExpected([
+                    'mariadb' => [
+                        self::MARIADB_NO_CREATE_DB => false,
+                        self::MARIADB_SKIP_COMMENTS => false,
+                        self::MARIADB_SKIP_SET_CHARSET => false,
+                        self::MARIADB_NO_DATA => false,
+                        self::NO_TABLESPACES => false,
+                    ],
                     'pgsql' => [
                         self::POSTGRES_CREATE => true,
                         self::POSTGRES_CLEAN => true,
@@ -157,6 +175,9 @@ class ExportDumpTest extends TestCase
                     self::PROTECTOR_WITH_DROP_DB
                 ],
                 'expected' => self::getExpected([
+                    'mariadb' => [
+                        self::MARIADB_NO_CREATE_DB => false,
+                    ],
                     'pgsql' => [
                         self::POSTGRES_CREATE => true,
                         self::POSTGRES_CLEAN => true,
@@ -171,6 +192,9 @@ class ExportDumpTest extends TestCase
                     self::PROTECTOR_WITH_CREATE_DB
                 ],
                 'expected' => self::getExpected([
+                    'mariadb' => [
+                        self::MARIADB_NO_CREATE_DB => false,
+                    ],
                     'pgsql' => [
                         self::POSTGRES_CREATE => true,
                     ],
@@ -190,6 +214,9 @@ class ExportDumpTest extends TestCase
                     self::PROTECTOR_WITH_COMMENTS
                 ],
                 'expected' => self::getExpected([
+                    'mariadb' => [
+                        self::MARIADB_SKIP_COMMENTS => false,
+                    ],
                     'pgsql' => [
                         self::POSTGRES_VERBOSE => true,
                     ],
@@ -203,6 +230,9 @@ class ExportDumpTest extends TestCase
                     self::PROTECTOR_WITH_CHARSETS
                 ],
                 'expected' => self::getExpected([
+                    'mariadb' => [
+                        self::MARIADB_SKIP_SET_CHARSET => false,
+                    ],
                     'mysql' => [
                         self::MYSQL_SKIP_SET_CHARSET => false,
                     ],
@@ -213,6 +243,9 @@ class ExportDumpTest extends TestCase
                     self::PROTECTOR_WITH_DATA
                 ],
                 'expected' => self::getExpected([
+                    'mariadb' => [
+                        self::MARIADB_NO_DATA => false,
+                    ],
                     'pgsql' => [
                         self::POSTGRES_SCHEMA_ONLY => false,
                     ],
@@ -226,6 +259,9 @@ class ExportDumpTest extends TestCase
                     self::PROTECTOR_WITH_TABLESPACES
                 ],
                 'expected' => self::getExpected([
+                    'mariadb' => [
+                        self::NO_TABLESPACES => false,
+                    ],
                     'pgsql' => [
                         self::NO_TABLESPACES => false,
                     ],

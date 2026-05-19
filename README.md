@@ -23,11 +23,20 @@ This package allows you to download, export and import your application's databa
 
 ## Supported databases
 
-- Protector only supports MySQL, MariaDB and PostgreSQL databases at the moment.
-- Source and destination databases are currently not checked. Please make sure you run the same software in the same
-  versions to prevent issues.
-- Because of different dump formats, pulling dumps from MariaDB and restoring them to MySQL will not work.
-  The same, of course, applies to cross-database operations between MySQL and PostgreSQL.
+Protector supports the following databases:
+
+| Database   | Driver    | Dump tool      | Import tool |
+|------------|-----------|----------------|-------------|
+| MariaDB    | `mariadb` | `mariadb-dump` | `mariadb`   |
+| PostgreSQL | `pgsql`   | `pg_dump`      | `psql`      |
+
+MySQL is no longer officially supported, but the Protector still has capabilities to work with Laravel's `mysql` driver. If this should break in the future, feel free to submit a
+PR.
+
+> [!NOTE]
+> - Source and destination databases are not validated. Make sure you run compatible software versions to prevent issues.
+> - Because of different dump formats, dumps might not be able to be imported into a different database engine,
+    > e.g. a MariaDB dump might fail to be imported into MySQL, and vice versa.
 
 ## Notes
 
@@ -87,10 +96,10 @@ To import a specific database file that you downloaded earlier, run
 php artisan protector:import --file=<absolute path to database file>
 ```
 
-Or just reference the database file name in the protector folder (default folder is storage/app/protector).
+Or just reference the database file name relative to the protector dump directory (default is `storage/app/private/protector`)
 
 ```bash
-php artisan protector:import --dump=<name of database file>
+php artisan protector:import --file=<name of database file>
 ```
 
 To import the latest existing database file, run
@@ -370,6 +379,12 @@ Run tests on the PostgreSQL database:
 
 ```bash
 composer test-postgres
+```
+
+Run tests on the MariaDB database:
+
+```bash
+composer test-mariadb
 ```
 
 ## Contributing

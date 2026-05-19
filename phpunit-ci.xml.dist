@@ -1,21 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" bootstrap="vendor/autoload.php" backupGlobals="false" colors="true" testdox="true" processIsolation="false" stopOnFailure="false" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd">
-  <testsuites>
-      <testsuite name="Feature">
-          <directory>tests/Feature</directory>
-      </testsuite>
-  </testsuites>
-  <php>
-    <env name="PROTECTOR_CLIENT_PRIVATE_KEY" value="e195f1252346e31fe7b87e899f69a87d6fe99f38bd6e7c3cbdde411fcd9cc93e2c1d0ea6e0f8e207b38bef11bfcd5c0615c3cf4695876631b1da523a552b6022"/>
-    <env name="PROTECTOR_PUBLIC_KEY" value="2c1d0ea6e0f8e207b38bef11bfcd5c0615c3cf4695876631b1da523a552b6022"/>
-    <env name="PROTECTOR_ENCRYPTED_MESSAGE_BASE64" value="XFU+0EgjfnaP5PQVUh2noYwLMOW8k6k0/xBj+SXNTGKJtFJRS3daU3YjVQb+CsxRJqp4rFmghLb2H4E="/>
-    <env name="PROTECTOR_DECRYPTED_MESSAGE" value="hello world"/>
-    <env name="PROTECTOR_CLIENT_AUTH_TOKEN" value="1|bxa5BBNo7lXxgtRY4DN775JdAtQSAlN4UfgRnFhz"/>
-    <env name="APP_URL" value="http://protector.invalid"/>
-  </php>
-  <source>
-    <include>
-      <directory suffix=".php">./src</directory>
-    </include>
-  </source>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         bootstrap="vendor/autoload.php"
+         backupGlobals="false"
+         colors="true"
+         testdox="true"
+         processIsolation="false"
+         stopOnFailure="false"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
+         beStrictAboutTestsThatDoNotTestAnything="false"
+         displayDetailsOnPhpunitDeprecations="false">
+    <testsuites>
+        <testsuite name="Feature">
+            <directory>tests/Feature</directory>
+        </testsuite>
+    </testsuites>
+    <php>
+        <env name="PROTECTOR_CLIENT_PRIVATE_KEY"
+             value="e195f1252346e31fe7b87e899f69a87d6fe99f38bd6e7c3cbdde411fcd9cc93e2c1d0ea6e0f8e207b38bef11bfcd5c0615c3cf4695876631b1da523a552b6022"/>
+        <env name="PROTECTOR_PUBLIC_KEY" value="2c1d0ea6e0f8e207b38bef11bfcd5c0615c3cf4695876631b1da523a552b6022"/>
+        <env name="PROTECTOR_ENCRYPTED_MESSAGE_BASE64" value="XFU+0EgjfnaP5PQVUh2noYwLMOW8k6k0/xBj+SXNTGKJtFJRS3daU3YjVQb+CsxRJqp4rFmghLb2H4E="/>
+        <env name="PROTECTOR_DECRYPTED_MESSAGE" value="hello world"/>
+        <env name="PROTECTOR_CLIENT_AUTH_TOKEN" value="1|bxa5BBNo7lXxgtRY4DN775JdAtQSAlN4UfgRnFhz"/>
+        <env name="APP_URL" value="http://protector.invalid"/>
+    </php>
+    <source>
+        <include>
+            <directory suffix=".php">./src</directory>
+        </include>
+    </source>
 </phpunit>

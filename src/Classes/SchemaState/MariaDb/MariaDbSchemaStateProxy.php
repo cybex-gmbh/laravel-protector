@@ -1,15 +1,15 @@
 <?php
 
-namespace Cybex\Protector\Classes\SchemaState\MySql;
+namespace Cybex\Protector\Classes\SchemaState\MariaDb;
 
 use Illuminate\Database\Connection;
 
 /**
- * This is a proxy to the MySqlSchemaState class which allows us to override methods to match our own requirements.
+ * This is a proxy to the MariaDbSchemaState class which allows us to override methods to match our own requirements.
  * Unfortunately, the class is not bound to the IOC container and thus cannot be switched out at framework level.
  * However, you may extend this proxy, and override its app container binding with your custom implementation.
  */
-class MySqlSchemaStateProxy extends AbstractMySqlSchemaStateProxy
+class MariaDbSchemaStateProxy extends AbstractMariaDbSchemaStateProxy
 {
     /**
      * @inheritDoc
@@ -23,7 +23,7 @@ class MySqlSchemaStateProxy extends AbstractMySqlSchemaStateProxy
             $this->schemaState->output,
             array_merge(
                 $this->baseVariables($this->schemaState->connection->getConfig()),
-                ['LARAVEL_LOAD_PATH' => $path,]
+                ['LARAVEL_LOAD_PATH' => $path]
             )
         );
 
@@ -33,14 +33,14 @@ class MySqlSchemaStateProxy extends AbstractMySqlSchemaStateProxy
     }
 
     /**
-     * Get the dump command for MySQL as a string.
+     * Get the dump command for MariaDB as a string.
      */
     protected function getCommandString(): string
     {
         // Laravel added a required parameter in v12.52.0.
         $clientVersion = method_exists($this, 'detectClientVersion') ? $this->detectClientVersion() : [];
 
-        $command = 'mysqldump ' . $this->schemaState->connectionString($clientVersion) . ' ';
+        $command = 'mariadb-dump ' . $this->schemaState->connectionString($clientVersion) . ' ';
 
         return $command . implode(' ', $this->getParameters()) . ' --databases "${:LARAVEL_LOAD_DATABASE}"';
     }
@@ -59,7 +59,6 @@ class MySqlSchemaStateProxy extends AbstractMySqlSchemaStateProxy
             '--add-locks',
             '--routines',
             '--tz-utc',
-            '--column-statistics=0',
             '--result-file="${:LARAVEL_LOAD_PATH}"',
             '--max-allowed-packet=' . $this->config->getMaxPacketLength(),
         ];
@@ -68,7 +67,6 @@ class MySqlSchemaStateProxy extends AbstractMySqlSchemaStateProxy
     public function getConditionalParameters(): array
     {
         return [
-            '--set-gtid-purged=OFF' => !$this->schemaState->connection->isMaria(),
             '--no-create-db' => !$this->config->shouldCreateDb(),
             '--skip-comments' => !$this->config->shouldDumpComments(),
             '--skip-set-charset' => !$this->config->shouldDumpCharsets(),

@@ -14,6 +14,8 @@ All notable changes to `protector` will be documented in this file.
 - The minimum required PHP version is now 8.4
 - The minimum required Laravel version is now 12.1.1
 - Dropped support for Laravel 9, 10, and 11
+- Added MariaDB driver support
+- Dropped official MySQL support
 - Restructured the `Protector` class by splitting it into `Protector` and `ProtectorConfig`.
   Configuration can no longer be accessed after the `Protector` instance has been created.
 - Custom protector instances are now created through the new `ProtectorConfigurator` class
@@ -24,6 +26,7 @@ All notable changes to `protector` will be documented in this file.
 ### Features
 
 - Added support for Laravel 13
+- Added MariaDB support via Laravel's `mariadb` driver and dedicated `MariaDbSchemaStateProxy`
 - The metadata which is appended at the end of a dump file can now be customized,
   see the [Dump Metadata README section](README.md#dump-metadata) for more information
 - More options can now be configured on a `Protector` instance,
@@ -32,10 +35,12 @@ All notable changes to `protector` will be documented in this file.
 ### Fixes
 
 - Fixed an issue where the Protector would not work when caching the config using `php artisan config:cache` or similar
+- Fixed an issue for MySQL where `CREATE DATABASE` statements were never included despite being enabled in the configuration
 
 ### Development
 
 - The dev image has been updated and Laravel Sail has been removed. Please check the [development section of the README](README.md#development) for usage.
+- Running MySQL tests on the new image will no longer work, as the MySQL CLI command is only an alias to mariadb and does not fully support the MySQL server.
 
 ## [v3.2.1 - 2026-02-02](https://github.com/cybex-gmbh/laravel-protector/compare/v3.2.0...v3.2.1)
 

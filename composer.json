@@ -53,7 +53,8 @@
     },
     "scripts": {
         "test": "vendor/bin/phpunit",
-        "test-postgres": "vendor/bin/phpunit -c phpunit-postgres.xml.dist"
+        "test-postgres": "vendor/bin/phpunit -c phpunit-postgres.xml.dist",
+        "test-mariadb": "vendor/bin/phpunit -c phpunit-mariadb.xml.dist"
     },
     "config": {
         "sort-packages": true,

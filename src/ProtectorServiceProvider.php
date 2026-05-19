@@ -2,6 +2,7 @@
 
 namespace Cybex\Protector;
 
+use Cybex\Protector\Classes\SchemaState\MariaDb\MariaDbSchemaStateProxy;
 use Cybex\Protector\Classes\SchemaState\MySql\MySqlSchemaStateProxy;
 use Cybex\Protector\Classes\SchemaState\Postgres\PostgresSchemaStateProxy;
 use Cybex\Protector\Classes\SodiumCrypter;
@@ -62,6 +63,10 @@ class ProtectorServiceProvider extends ServiceProvider
         // Register the SchemaState proxy classes.
         $this->app->bind(MySqlSchemaStateProxy::class, function ($app, array $params) {
             return new MySqlSchemaStateProxy(...$params);
+        });
+
+        $this->app->bind(MariaDbSchemaStateProxy::class, function ($app, array $params) {
+            return new MariaDbSchemaStateProxy(...$params);
         });
 
         $this->app->bind(PostgresSchemaStateProxy::class, function ($app, array $params) {

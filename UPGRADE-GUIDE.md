@@ -10,6 +10,7 @@
 - The minimum required PHP version is now 8.4
 - The minimum required Laravel version is now 12.1.1
 - Laravel 9, 10, and 11 are no longer supported
+- MySQL is no longer officially supported
 - Some config and .env keys have been renamed.
 - `Protector` instances can no longer be reconfigured during runtime. Create new instances using the `ProtectorConfigurator` class.
 - The Protector dump endpoint route name has been changed.
@@ -35,6 +36,18 @@
 > Impact: Apps running on PHP versions below 8.4 and Laravel versions below 12.1.1 will not be able to use this version of the package.
 
 You need to update your system to PHP 8.4 or higher and Laravel 12.1.1 or higher, as these are now the minimum required versions.
+
+### MySQL support dropped
+
+> [!NOTE]
+> Likelihood of impact: high
+>
+> Impact: MySQL is no longer supported and might break in the future.
+
+Due to the lack of support for the mysql-client (it's aliasing to mariadb) in recent Linux distribution versions, official MySQL support has been dropped.
+
+We will no longer run dedicated tests for MySQL. The package might still work with MySQL databases, but it might break in the future.
+Migrate to MariaDB or PostgreSQL to continue receiving updates and support.
 
 ### Renamed config keys
 

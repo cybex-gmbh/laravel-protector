@@ -30,6 +30,10 @@ on:
                 description: The database client version to use.
                 required: false
                 type: string
+            LINUX_PACKAGES:
+                description: A space separated list of Linux packages which should be installed.
+                required: false
+                type: string
 
 jobs:
     execute-test-matrix:
@@ -53,3 +57,4 @@ jobs:
             LARAVEL_VERSION: ${{ matrix.laravel }}
             DEPENDENCY_VERSION: ${{ matrix.dependency-version }}
             TEST_COMMANDS: vendor/bin/phpunit -c phpunit-ci.xml.dist
+            LINUX_PACKAGES: ${{ inputs.LINUX_PACKAGES }}
