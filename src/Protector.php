@@ -96,8 +96,7 @@ class Protector
         }
 
         try {
-            $schemaStateProxy = app(SchemaStateProxyContract::class, ['connection' => $this->config->getConnectionName(), 'protectorConfig' => $this->config]);
-            $schemaStateProxy->load($sourceFilePath);
+            $this->getSchemaStateProxy()->load($sourceFilePath);
         } catch (Throwable $exception) {
             throw new FailedImportException($exception->getMessage());
         }
@@ -241,10 +240,9 @@ class Protector
      */
     protected function generateDump(): ?string
     {
-        $schemaStateProxy = app(SchemaStateProxyContract::class, ['connection' => $this->config->getConnectionName(), 'protectorConfig' => $this->config]);
         $tempFile = tempnam('', 'protector');
 
-        $schemaStateProxy->dump(DB::connection($this->config->getConnectionName()), $tempFile);
+        $this->getSchemaStateProxy()->dump(DB::connection($this->config->getConnectionName()), $tempFile);
 
         if (!filesize($tempFile)) {
             unlink($tempFile);
@@ -656,5 +654,10 @@ class Protector
     protected function getConfig(): ProtectorConfigContract
     {
         return $this->config;
+    }
+
+    protected function getSchemaStateProxy(): SchemaStateProxyContract
+    {
+        return app(SchemaStateProxyContract::class, ['protectorConfig' => $this->config]);
     }
 }

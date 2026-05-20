@@ -68,10 +68,10 @@ class ProtectorServiceProvider extends ServiceProvider
 
         // Register the SchemaState proxy classes.
         $this->app->bind(SchemaStateProxyContract::class, function ($app, array $params): SchemaStateProxyContract {
-            $connectionName = $params['connection'];
+            /** @var ProtectorConfig $protectorConfig */
             $protectorConfig = $params['protectorConfig'];
 
-            $connection = DB::connection($connectionName);
+            $connection = DB::connection($protectorConfig->getConnectionName());
             $schemaState = $connection->getSchemaState();
 
             return match (get_class($schemaState)) {

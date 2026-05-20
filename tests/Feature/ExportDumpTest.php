@@ -122,7 +122,7 @@ class ExportDumpTest extends TestCase
         $config = $this->runProtectedMethod('getConfig');
 
         $connectionName = $config->getConnectionName();
-        $schemaStateProxy = app(SchemaStateProxyContract::class, ['connection' => $connectionName, 'protectorConfig' => $config]);
+        $schemaStateProxy = app(SchemaStateProxyContract::class, ['protectorConfig' => $config]);
 
         $conditionalParameters = $schemaStateProxy->getConditionalParameters();
 
