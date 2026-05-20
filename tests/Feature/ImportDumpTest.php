@@ -14,10 +14,12 @@ use Cybex\Protector\Protector;
 use Cybex\Protector\Tests\TestCase;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Config;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
 
 class ImportDumpTest extends TestCase
 {
-    const DUMP_DATE = '2022-06-29 12:43:24';
+    protected const string DUMP_DATE = '2022-06-29 12:43:24';
 
     protected Filesystem $disk;
     protected static string $baseDirectory = 'dumps';
@@ -41,7 +43,7 @@ class ImportDumpTest extends TestCase
     {
         return [
             [
-                static::$baseDirectory . "/dump.sql",
+                static::$baseDirectory . '/dump.sql',
                 [
                     'meta' => [
                         'database' => [
@@ -55,18 +57,17 @@ class ImportDumpTest extends TestCase
                             'branch' => '',
                             'revisionDate' => '',
                         ],
-                    ]
-                ]
+                    ],
+                ],
             ],
             [
-                static::$baseDirectory . "/dumpWithGit.sql",
+                static::$baseDirectory . '/dumpWithGit.sql',
                 [
                     'meta' => [
                         'git' => [
                             'revision' => '2aae6c35c94fcfb415dbe95f408b9ce91ee846ed',
                             'branch' => 'feature/tests',
                             'revisionDate' => '2022-07-12 08:00:00 +0200',
-
                         ],
                         'database' => [
                             'database' => 'protector-tests',
@@ -74,19 +75,19 @@ class ImportDumpTest extends TestCase
                             'maxPacketLength' => '8M',
                             'dumpedAtDate' => Carbon::parse(static::DUMP_DATE)->toDateTimeString(),
                         ],
-                    ]
-                ]
+                    ],
+                ],
             ],
             [
-                static::$baseDirectory . "/dumpWithoutMetadata.sql",
-                []
+                static::$baseDirectory . '/dumpWithoutMetadata.sql',
+                [],
             ],
             [
-                static::$baseDirectory . "/dumpWithIncorrectMetadata.sql",
-                false
+                static::$baseDirectory . '/dumpWithIncorrectMetadata.sql',
+                false,
             ],
             [
-                static::$baseDirectory . "/legacyDump.sql",
+                static::$baseDirectory . '/legacyDump.sql',
                 [
                     'options' => [
                         'no-data' => false,
@@ -99,44 +100,30 @@ class ImportDumpTest extends TestCase
                         'gitBranch' => '',
                         'gitRevisionDate' => '',
                         'dumpedAtDate' => Carbon::parse(static::DUMP_DATE)->toDateTimeString(),
-                    ]
-                ]
-            ]
+                    ],
+                ],
+            ],
         ];
     }
 
     public static function provideEmptyDumpsWhenReceivingTheLatestDumpName(): array
     {
         return [
-            [
-                static::$baseDirectory . '/dump.sql',
-                false
-            ],
-            [
-                static::$baseDirectory . '/secondDump.sql',
-                true
-            ]
+            [static::$baseDirectory . '/dump.sql', false],
+            [static::$baseDirectory . '/secondDump.sql', true],
         ];
     }
 
     public static function provideEmptyDumpsForFlushingDumps(): array
     {
         return [
-            [
-                [],
-                null
-            ],
-            [
-                [static::$baseDirectory . '/emptyDump.sql'],
-                static::$baseDirectory . '/emptyDump.sql'
-            ]
+            [[], null],
+            [[static::$baseDirectory . '/emptyDump.sql'], static::$baseDirectory . '/emptyDump.sql'],
         ];
     }
 
-    /**
-     * @test
-     */
-    public function failOnProductionEnvironment()
+    #[Test]
+    public function failOnProductionEnvironment(): void
     {
         $this->app->detectEnvironment(fn() => 'production');
 
@@ -144,20 +131,16 @@ class ImportDumpTest extends TestCase
         $this->protector->importDump($this->filePath);
     }
 
-    /**
-     * @test
-     */
-    public function failOnInvalidConnectionConfig()
+    #[Test]
+    public function failOnInvalidConnectionConfig(): void
     {
-        Config::set('database.connections', null);
+        Config::set('database.connections');
         $this->expectException(InvalidConnectionException::class);
         app(ProtectorConfiguratorContract::class)->setConnectionName('invalid');
     }
 
-    /**
-     * @test
-     */
-    public function throwsExceptionOnFileNotFound()
+    #[Test]
+    public function throwsExceptionOnFileNotFound(): void
     {
         $path = 'thisFileDoesNotExist';
 
@@ -165,10 +148,8 @@ class ImportDumpTest extends TestCase
         $this->protector->importDump($path);
     }
 
-    /**
-     * @test
-     */
-    public function throwsExceptionOnMysqlFailedShellCommand()
+    #[Test]
+    public function throwsExceptionOnMysqlFailedShellCommand(): void
     {
         $connection = env('DB_CONNECTION');
 
@@ -178,16 +159,13 @@ class ImportDumpTest extends TestCase
         $this->expectException(FailedWipeException::class);
         $this->protector->importDump($this->filePath);
 
-        // Without wiping the database, we expect the import to fail instead.
         $this->expectException(FailedImportException::class);
         $this->protector->importDump($this->filePath, ['no-wipe' => true]);
     }
 
-    /**
-     * @test
-     * @dataProvider provideEmptyDumpsWhenReceivingTheLatestDumpName
-     */
-    public function canReturnLatestFileName(string $expectedFileName, bool $shouldModify)
+    #[Test]
+    #[DataProvider('provideEmptyDumpsWhenReceivingTheLatestDumpName')]
+    public function canReturnLatestFileName(string $expectedFileName, bool $shouldModify): void
     {
         if ($shouldModify) {
             touch($this->disk->path($expectedFileName), time() + 60);
@@ -199,38 +177,30 @@ class ImportDumpTest extends TestCase
         $this->assertIsString($fileName);
     }
 
-    /**
-     * @test
-     */
-    public function throwsExceptionIfNoFileExists()
+    #[Test]
+    public function throwsExceptionIfNoFileExists(): void
     {
         $this->clearDumpDirectory();
         $this->expectException(EmptyBaseDirectoryException::class);
         $this->protector->getLatestDumpName();
     }
 
-    /**
-     * @test
-     * @dataProvider provideDumpMetadata
-     */
-    public function verifyDumpDateMetadata($filePath, $expectedMetadata)
+    #[Test]
+    #[DataProvider('provideDumpMetadata')]
+    public function verifyDumpDateMetadata(string $filePath, array|bool $expectedMetadata): void
     {
         $this->assertEquals($expectedMetadata, $this->protector->getDumpMetadata($filePath));
     }
 
-    /**
-     * @test
-     */
-    public function failGetDumpMetadataOnResponseHasNotEnoughLines()
+    #[Test]
+    public function failGetDumpMetadataOnResponseHasNotEnoughLines(): void
     {
-        $this->assertEquals(false, $this->protector->getDumpMetadata(static::$baseDirectory . '/emptyDump.sql'));
+        $this->assertFalse($this->protector->getDumpMetadata(static::$baseDirectory . '/emptyDump.sql'));
     }
 
-    /**
-     * @test
-     * @dataProvider provideEmptyDumpsForFlushingDumps
-     */
-    public function flushDumps($expected, $excludeFromFlush)
+    #[Test]
+    #[DataProvider('provideEmptyDumpsForFlushingDumps')]
+    public function flushDumps(array $expected, ?string $excludeFromFlush): void
     {
         $this->protector->flush($excludeFromFlush);
 

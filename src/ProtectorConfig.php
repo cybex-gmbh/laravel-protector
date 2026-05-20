@@ -211,7 +211,7 @@ class ProtectorConfig extends AbstractProtectorConfig implements ProtectorConfig
     {
         return array_map(
             fn(ReflectionParameter $parameter) => $parameter->getName(),
-            (new ReflectionClass($this))->getConstructor()->getParameters()
+            new ReflectionClass($this)->getConstructor()->getParameters()
         );
     }
 }

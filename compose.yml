@@ -5,7 +5,7 @@ x-db-common-values:
 
 services:
     app:
-        image: cybexwebdev/php-laravel:${DOCKER_PHP_VERSION:-8.2}-devtools
+        image: cybexwebdev/php-laravel:${DOCKER_PHP_VERSION:-8.4}-devtools
         container_name: ${COMPOSE_PROJECT_NAME}
         environment:
             APP_ENV: staging

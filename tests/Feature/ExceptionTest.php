@@ -4,16 +4,15 @@ namespace Cybex\Protector\Tests\Feature;
 
 use Cybex\Protector\Tests\TestCase;
 use LogicException;
+use PHPUnit\Framework\Attributes\Test;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 class ExceptionTest extends TestCase
 {
-    /**
-     * @test
-     */
-    public function ensureExternalExceptionsWork()
+    #[Test]
+    public function ensureExternalExceptionsWork(): void
     {
         try {
             throw new HttpException(200);

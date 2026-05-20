@@ -1,5 +1,9 @@
 <?php
 
+use Cybex\Protector\Classes\Metadata\Providers\EnvMetadataProvider;
+use Cybex\Protector\Classes\Metadata\Providers\GitMetadataProvider;
+use Cybex\Protector\Classes\Metadata\Providers\JsonFileMetadataProvider;
+use Cybex\Protector\Classes\Metadata\Providers\ProtectorMetadataProvider;
 use Cybex\Protector\Enums\ProtectorEnv;
 
 return [
@@ -78,10 +82,10 @@ return [
             |
             */
             'providers' => [
-                \Cybex\Protector\Classes\Metadata\Providers\ProtectorMetadataProvider::class,
-                \Cybex\Protector\Classes\Metadata\Providers\EnvMetadataProvider::class,
-                \Cybex\Protector\Classes\Metadata\Providers\GitMetadataProvider::class,
-                \Cybex\Protector\Classes\Metadata\Providers\JsonFileMetadataProvider::class,
+                ProtectorMetadataProvider::class,
+                EnvMetadataProvider::class,
+                GitMetadataProvider::class,
+                JsonFileMetadataProvider::class,
             ],
 
             /*

@@ -16,7 +16,7 @@ class ShellAccessDeniedException extends Exception
 {
     public string $httpResponse = 'Configuration error on the server';
 
-    public function __construct(array $functions, $code = 0, Throwable $previous = null)
+    public function __construct(array $functions, $code = 0, ?Throwable $previous = null)
     {
         $missingFunctions = implode(', ', array_keys($functions, filter_value: false, strict: true));
 

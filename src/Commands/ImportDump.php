@@ -44,8 +44,8 @@ class ImportDump extends Command
      */
     protected $description = 'Imports a local or remote database dump.';
 
-    protected const DOWNLOAD_REMOTE_DUMP = 'Download remote dump';
-    protected const IMPORT_EXISTING_LOCAL_DUMP = 'Import existing local dump';
+    protected const string DOWNLOAD_REMOTE_DUMP = 'Download remote dump';
+    protected const string IMPORT_EXISTING_LOCAL_DUMP = 'Import existing local dump';
     protected Protector $protector;
 
     /**
@@ -304,7 +304,7 @@ class ImportDump extends Command
     protected function chooseConnectionName(Collection $connectionNames): string
     {
         if ($connectionNames->count() === 1) {
-            $connectionName = $connectionNames->first();
+            $connectionName = $connectionNames->firstOrFail();
 
             $this->info(
                 sprintf(
