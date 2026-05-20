@@ -33,12 +33,11 @@ class DatabaseMetadataProvider implements MetadataProviderContract
      */
     public function getMetadata(): array|string
     {
-        $connectionName = $this->protectorConfig->getConnectionName();
         $schemaState = app(SchemaStateProxyContract::class, ['protectorConfig' => $this->protectorConfig]);
 
         return [
             'database' => $this->protectorConfig->getDatabaseName(),
-            'connection' => $connectionName,
+            'connection' => $this->protectorConfig->getConnectionName(),
             'dumpedAtDate' => now(),
             'dumpParameters' => $schemaState->getParameters(),
         ];
