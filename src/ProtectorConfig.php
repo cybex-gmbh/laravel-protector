@@ -3,27 +3,16 @@
 namespace Cybex\Protector;
 
 use Cybex\Protector\Classes\Metadata\Providers\DatabaseMetadataProvider;
-use Cybex\Protector\Classes\SchemaState\MariaDb\MariaDbSchemaStateProxy;
-use Cybex\Protector\Classes\SchemaState\MySql\MySqlSchemaStateProxy;
-use Cybex\Protector\Classes\SchemaState\Postgres\PostgresSchemaStateProxy;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
-use Cybex\Protector\Exceptions\UnsupportedDatabaseException;
 use Illuminate\Contracts\Filesystem\Filesystem;
-use Illuminate\Database\Schema\MariaDbSchemaState;
-use Illuminate\Database\Schema\MySqlSchemaState;
-use Illuminate\Database\Schema\PostgresSchemaState;
-use Illuminate\Database\Schema\SchemaState;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use ReflectionClass;
 use ReflectionParameter;
 
 class ProtectorConfig extends AbstractProtectorConfig implements ProtectorConfigContract
 {
-    protected array $schemaStateParameters;
-
     /**
      * @throws InvalidConnectionException
      */
@@ -178,36 +167,6 @@ class ProtectorConfig extends AbstractProtectorConfig implements ProtectorConfig
     public function shouldEncrypt(): bool
     {
         return in_array('auth:sanctum', $this->getConfigValueForKey('server.routeMiddleware', []));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getProxyForSchemaState(): SchemaState
-    {
-        $connection = DB::connection($this->getConnectionName());
-        $schemaState = $connection->getSchemaState();
-
-        $schemaStateProxy = match (get_class($schemaState)) {
-            MariaDbSchemaState::class => app(MariaDbSchemaStateProxy::class, [$schemaState, $this]),
-            MySqlSchemaState::class => app(MySqlSchemaStateProxy::class, [$schemaState, $this]),
-            PostgresSchemaState::class => app(PostgresSchemaStateProxy::class, [$schemaState, $this]),
-            //            SqliteSchemaState::class => app('SqliteSchemaStateProxy', [$schemaState, $this]),
-            default => throw new UnsupportedDatabaseException('Unsupported database schema state: ' . class_basename($schemaState)),
-        };
-
-        $this->schemaStateParameters = $schemaStateProxy->getParameters();
-
-        return $schemaStateProxy;
-    }
-
-    public function getSchemaStateParameters(): array
-    {
-        if (!isset($this->schemaStateParameters)) {
-            $this->getProxyForSchemaState();
-        }
-
-        return $this->schemaStateParameters;
     }
 
     protected function getConstructorParameters(): array

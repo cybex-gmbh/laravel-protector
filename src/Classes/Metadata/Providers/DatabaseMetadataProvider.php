@@ -4,6 +4,7 @@ namespace Cybex\Protector\Classes\Metadata\Providers;
 
 use Cybex\Protector\Contracts\MetadataProviderContract;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
+use Cybex\Protector\Contracts\SchemaStateProxyContract;
 
 class DatabaseMetadataProvider implements MetadataProviderContract
 {
@@ -32,11 +33,13 @@ class DatabaseMetadataProvider implements MetadataProviderContract
      */
     public function getMetadata(): array|string
     {
+        $schemaState = app(SchemaStateProxyContract::class, ['protectorConfig' => $this->protectorConfig]);
+
         return [
             'database' => $this->protectorConfig->getDatabaseName(),
             'connection' => $this->protectorConfig->getConnectionName(),
             'dumpedAtDate' => now(),
-            'dumpParameters' => $this->protectorConfig->getSchemaStateParameters(),
+            'dumpParameters' => $schemaState->getParameters(),
         ];
     }
 }
