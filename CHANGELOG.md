@@ -35,7 +35,7 @@ All notable changes to `protector` will be documented in this file.
 ### Fixes
 
 - Fixed an issue where the Protector would not work when caching the config using `php artisan config:cache` or similar
-- Fixed an issue for MySQL where `CREATE DATABASE` statements were never included despite being enabled in the configuration
+- Fixed an issue for MySQL where `CREATE DATABASE` statements were not included despite being enabled in the configuration
 
 ### Development
 

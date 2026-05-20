@@ -30,8 +30,8 @@ Protector supports the following databases:
 | MariaDB    | `mariadb` | `mariadb-dump` | `mariadb`   |
 | PostgreSQL | `pgsql`   | `pg_dump`      | `psql`      |
 
-MySQL is no longer officially supported, but the Protector still has capabilities to work with Laravel's `mysql` driver. If this should break in the future, feel free to submit a
-PR.
+MySQL is no longer officially supported, but the Protector still has capabilities to work with Laravel's `mysql` driver.
+If this should break in the future, feel free to submit a PR.
 
 > [!NOTE]
 > - Source and destination databases are not validated. Make sure you run compatible software versions to prevent issues.
