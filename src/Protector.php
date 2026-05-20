@@ -633,7 +633,17 @@ class Protector
     {
         try {
             $connection->getSchemaBuilder()->dropAllViews();
+        } catch (LogicException) {
+            // ignore logic exceptions.
+        }
+
+        try {
             $connection->getSchemaBuilder()->dropAllTables();
+        } catch (LogicException) {
+            // ignore logic exceptions.
+        }
+
+        try {
             $connection->getSchemaBuilder()->dropAllTypes();
         } catch (LogicException) {
             // ignore logic exceptions.

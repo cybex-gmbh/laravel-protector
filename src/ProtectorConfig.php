@@ -3,12 +3,14 @@
 namespace Cybex\Protector;
 
 use Cybex\Protector\Classes\Metadata\Providers\DatabaseMetadataProvider;
+use Cybex\Protector\Classes\SchemaState\MariaDb\MariaDbSchemaStateProxy;
 use Cybex\Protector\Classes\SchemaState\MySql\MySqlSchemaStateProxy;
 use Cybex\Protector\Classes\SchemaState\Postgres\PostgresSchemaStateProxy;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\UnsupportedDatabaseException;
 use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Database\Schema\MariaDbSchemaState;
 use Illuminate\Database\Schema\MySqlSchemaState;
 use Illuminate\Database\Schema\PostgresSchemaState;
 use Illuminate\Database\Schema\SchemaState;
@@ -187,6 +189,7 @@ class ProtectorConfig extends AbstractProtectorConfig implements ProtectorConfig
         $schemaState = $connection->getSchemaState();
 
         $schemaStateProxy = match (get_class($schemaState)) {
+            MariaDbSchemaState::class => app(MariaDbSchemaStateProxy::class, [$schemaState, $this]),
             MySqlSchemaState::class => app(MySqlSchemaStateProxy::class, [$schemaState, $this]),
             PostgresSchemaState::class => app(PostgresSchemaStateProxy::class, [$schemaState, $this]),
             //            SqliteSchemaState::class => app('SqliteSchemaStateProxy', [$schemaState, $this]),

@@ -14,6 +14,16 @@
             <directory>tests/Feature</directory>
         </testsuite>
     </testsuites>
+    <coverage>
+        <report>
+            <html outputDirectory="build/coverage"/>
+            <text outputFile="build/coverage.txt"/>
+            <clover outputFile="build/logs/clover.xml"/>
+        </report>
+    </coverage>
+    <logging>
+        <junit outputFile="build/report.junit.xml"/>
+    </logging>
     <php>
         <env name="PROTECTOR_CLIENT_PRIVATE_KEY"
              value="e195f1252346e31fe7b87e899f69a87d6fe99f38bd6e7c3cbdde411fcd9cc93e2c1d0ea6e0f8e207b38bef11bfcd5c0615c3cf4695876631b1da523a552b6022"/>
@@ -21,6 +31,11 @@
         <env name="PROTECTOR_ENCRYPTED_MESSAGE_BASE64" value="XFU+0EgjfnaP5PQVUh2noYwLMOW8k6k0/xBj+SXNTGKJtFJRS3daU3YjVQb+CsxRJqp4rFmghLb2H4E="/>
         <env name="PROTECTOR_DECRYPTED_MESSAGE" value="hello world"/>
         <env name="PROTECTOR_CLIENT_AUTH_TOKEN" value="1|bxa5BBNo7lXxgtRY4DN775JdAtQSAlN4UfgRnFhz"/>
+        <env name="DB_CONNECTION" value="mysql"/>
+        <env name="DB_HOST" value="mysql_testing"/>
+        <env name="DB_DATABASE" value="protector_test"/>
+        <env name="DB_USERNAME" value="protector"/>
+        <env name="DB_PASSWORD" value="protector"/>
         <env name="APP_URL" value="http://protector.invalid"/>
     </php>
     <source>
