@@ -1,14 +1,17 @@
 # Example App
 
-This is a Laravel 12 Scaffold.
+This is a Laravel 13 Scaffold.
 
 Adjustments:
 
 - Added the `cybex/laravel-protector` package using symlink (see `composer.json` config below).
-  - The User model has been updated to use the `HasApiTokens` trait.
-  - The .env file has been configured with the necessary `Protector` settings (`PROTECTOR_SERVER_URL`, `PROTECTOR_AUTH_TOKEN`, `PROTECTOR_PRIVATE_KEY`).
-  - The Laravel Sanctum migrations have been published.
-  - The package migrations have been published.
+    - The User model has been updated to use the `HasApiTokens` trait.
+    - The .env file has been configured with the necessary `Protector` settings
+        - `PROTECTOR_CLIENT_DUMP_ENDPOINT_URL` 
+        - `PROTECTOR_CLIENT_AUTH_TOKEN` 
+        - `PROTECTOR_CLIENT_PRIVATE_KEY`
+    - The Laravel Sanctum migrations have been published.
+    - The package migrations have been published.
 - The DatabaseSeeder has been updated to provide a user with a `Protector Public Key` and a `Protector Auth Token`, matching the provided .env values.
 - The package's test database is used as the default database for this scaffold.
 - Composer scripts have been added to run the package's tests (see `composer.json` config below).
