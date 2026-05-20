@@ -50,6 +50,7 @@ services:
             test: [ "CMD", "mysqladmin", "ping", "-pprotector" ]
             retries: 3
             timeout: 5s
+        profiles: [ mysql ]
     postgres_testing:
         image: 'postgres:18'
         environment:

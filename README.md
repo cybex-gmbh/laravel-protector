@@ -387,6 +387,7 @@ Run tests on the MySQL database:
 > Running MySQL tests on the current alpine image will not work, as the MySQL CLI command is only an alias to mariadb and does not fully support the MySQL server.
 >
 > If you need to run MySQL tests, use a different image.
+> To start up the mysql server, use `docker compose --profile mysql up -d`
 
 ```bash
 composer test-mysql
