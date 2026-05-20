@@ -51,14 +51,14 @@ services:
             retries: 3
             timeout: 5s
     postgres_testing:
-        image: 'postgres:16'
+        image: 'postgres:18'
         environment:
             POSTGRES_DB: *db-name
             POSTGRES_USER: *db-user
             POSTGRES_PASSWORD: *db-pass
             POSTGRES_HOST_AUTH_METHOD: 'trust'
         volumes:
-            - 'pgsql:/var/lib/postgresql/data'
+            - 'pgsql:/var/lib/postgresql'
         networks:
             - internal
         healthcheck:
