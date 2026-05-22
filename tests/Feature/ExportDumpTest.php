@@ -114,16 +114,16 @@ class ExportDumpTest extends TestCase
     }
 
     #[Test]
-    public function exportWritesMetadataSidecarWithIdenticalPayload(): void
+    public function exportWritesMetadataFileWithIdenticalPayload(): void
     {
         $exportedDumpPath = $this->protector->export(filePath: $this->filePath);
-        $metadataSidecarPath = $exportedDumpPath . '.meta';
+        $metadataFilePath = $exportedDumpPath . '.meta';
         $parsedDumpMetadata = $this->protector->getDumpMetadata($exportedDumpPath);
-        $decodedSidecarMetadata = json_decode($this->disk->get($metadataSidecarPath), true);
+        $decodedMetadataFile = json_decode($this->disk->get($metadataFilePath), true);
 
         $this->assertIsArray($parsedDumpMetadata);
-        $this->assertIsArray($decodedSidecarMetadata);
-        $this->assertEquals($parsedDumpMetadata['meta'], $decodedSidecarMetadata);
+        $this->assertIsArray($decodedMetadataFile);
+        $this->assertEquals($parsedDumpMetadata, $decodedMetadataFile);
     }
 
     #[Test]

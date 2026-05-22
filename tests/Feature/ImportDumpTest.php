@@ -233,7 +233,7 @@ class ImportDumpTest extends TestCase
     }
 
     #[Test]
-    public function dumpFilesWithMetadataUseUnknownConnectionWhenSidecarIsMissing(): void
+    public function dumpFilesWithMetadataUseUnknownConnectionWhenMetadataFileIsMissing(): void
     {
         $dumpFile = static::$baseDirectory . '/dump.sql';
 
@@ -241,20 +241,22 @@ class ImportDumpTest extends TestCase
 
         $dumpFilesWithMetadata = $this->protector->getDumpFilesWithMetadata();
 
-        $this->assertEquals('unknown_connection', Arr::get($dumpFilesWithMetadata->get($dumpFile), 'meta.connection'));
+        $this->assertSame([], $dumpFilesWithMetadata->get($dumpFile));
     }
 
     #[Test]
-    public function dumpFilesWithMetadataPreferMetadataSidecarPayload(): void
+    public function dumpFilesWithMetadataPreferMetadataFilePayload(): void
     {
         $dumpFile = static::$baseDirectory . '/dump.sql';
-        $sidecarPayload = [
-            'database' => [
-                'connection' => 'pgsql',
+        $metadataFilePayload = [
+            'meta' => [
+                'database' => [
+                    'connection' => 'pgsql',
+                ],
             ],
         ];
 
-        $this->disk->put($dumpFile . '.meta', json_encode($sidecarPayload, JSON_UNESCAPED_UNICODE));
+        $this->disk->put($dumpFile . '.meta', json_encode($metadataFilePayload, JSON_UNESCAPED_UNICODE));
 
         $dumpFilesWithMetadata = $this->protector->getDumpFilesWithMetadata();
 

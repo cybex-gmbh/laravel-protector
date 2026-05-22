@@ -86,6 +86,12 @@ To download and import in one step, run
 php artisan protector:download --import
 ```
 
+Each stored dump also has a matching metadata file with the `.meta` suffix (for example `dump.sql.meta`).
+The metadata file stores the same metadata object that is embedded in the SQL dump footer under `meta`.
+
+Interactive import reads metadata from these metadata files. If a metadata file is missing, the dump can still be selected,
+and it is grouped as an unknown connection.
+
 ### Import
 
 Run the following command for an interactive shell

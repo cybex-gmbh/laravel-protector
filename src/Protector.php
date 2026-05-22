@@ -12,6 +12,7 @@ use Cybex\Protector\Exceptions\FailedDumpGenerationException;
 use Cybex\Protector\Exceptions\FailedImportException;
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\FailedWipeException;
+use Cybex\Protector\Exceptions\FailedWritingMetadataFileException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConfiguration\MissingDumpEndpointUrlException;
 use Cybex\Protector\Exceptions\InvalidConfiguration\MissingPrivateKeyException;
@@ -48,8 +49,7 @@ use function stream_get_contents;
 
 class Protector
 {
-    protected const string METADATA_SIDECAR_SUFFIX = '.meta';
-    protected const string UNKNOWN_CONNECTION_NAME = 'unknown_connection';
+    protected const string METADATA_FILE_SUFFIX = '.meta';
 
     protected array $requiredFunctionsCache;
 
@@ -180,8 +180,6 @@ class Protector
                 $disk,
                 $filePath,
                 $metadata,
-                FailedDumpGenerationException::class,
-                'Could not write metadata sidecar file for exported dump.'
             );
         } finally {
             fclose($stream);
@@ -553,25 +551,9 @@ class Protector
 
     public function getDumpFilesWithMetadata(): Collection
     {
-        return $this->getDumpFiles()->mapWithKeys(function (string $dumpFilePath) {
-            $metadataPayload = $this->getMetadataPayloadFromSidecar($dumpFilePath);
-
-            if (!is_array($metadataPayload)) {
-                return [
-                    $dumpFilePath => [
-                        'meta' => [
-                            'connection' => static::UNKNOWN_CONNECTION_NAME,
-                        ],
-                    ],
-                ];
-            }
-
-            return [
-                $dumpFilePath => [
-                    'meta' => $metadataPayload,
-                ],
-            ];
-        });
+        return $this->getDumpFiles()->mapWithKeys(fn(string $dumpFilePath) => [
+            $dumpFilePath => $this->getMetadataFromMetaFile($dumpFilePath) ?? [],
+        ]);
     }
 
     /**
@@ -773,13 +755,7 @@ class Protector
                 throw new FailedRemoteDatabaseFetchingException('Could not write staged dump file to destination storage disk.');
             }
 
-            $this->writeMetadataFile(
-                $disk,
-                $destinationFilePath,
-                $metadataPayload,
-                FailedRemoteDatabaseFetchingException::class,
-                'Could not write metadata sidecar file for downloaded dump.'
-            );
+            $this->writeMetadataFile($disk, $destinationFilePath, $metadataPayload);
 
             if ($disk->size($destinationFilePath) === 0) {
                 $disk->delete([$destinationFilePath, $this->createMetadataFilePath($destinationFilePath)]);
@@ -844,24 +820,24 @@ class Protector
 
     protected function createMetadataFilePath(string $dumpFilePath): string
     {
-        return $dumpFilePath . static::METADATA_SIDECAR_SUFFIX;
+        return $dumpFilePath . static::METADATA_FILE_SUFFIX;
     }
 
     protected function isMetadataFile(string $filePath): bool
     {
-        return Str::endsWith($filePath, static::METADATA_SIDECAR_SUFFIX);
+        return Str::endsWith($filePath, static::METADATA_FILE_SUFFIX);
     }
 
-    protected function getMetadataPayloadFromSidecar(string $dumpFilePath): ?array
+    protected function getMetadataFromMetaFile(string $dumpFilePath): ?array
     {
-        $sidecarPath = $this->createMetadataFilePath($dumpFilePath);
+        $metadataFilePath = $this->createMetadataFilePath($dumpFilePath);
         $disk = $this->config->getStorageDisk();
 
-        if (!$disk->exists($sidecarPath)) {
+        if (!$disk->exists($metadataFilePath)) {
             return null;
         }
 
-        $stream = $disk->readStream($sidecarPath);
+        $stream = $disk->readStream($metadataFilePath);
 
         if (!is_resource($stream)) {
             return null;
@@ -883,23 +859,17 @@ class Protector
     }
 
     /**
-     * @param class-string<Throwable> $exceptionClass
+     * @throws FailedWritingMetadataFileException
      */
-    protected function writeMetadataFile(
-        Filesystem $disk,
-        string $dumpFilePath,
-        array $metadataPayload,
-        string $exceptionClass,
-        string $exceptionMessage
-    ): void
+    protected function writeMetadataFile(Filesystem $disk, string $dumpFilePath, array $metadataPayload): void
     {
         $metadataFilePath = $this->createMetadataFilePath($dumpFilePath);
-        $encodedMetadata = json_encode($metadataPayload, JSON_UNESCAPED_UNICODE);
+        $encodedMetadata = json_encode(['meta' => $metadataPayload], JSON_UNESCAPED_UNICODE);
 
         if ($disk->put($metadataFilePath, $encodedMetadata) === false) {
             $disk->delete([$dumpFilePath, $metadataFilePath]);
 
-            throw new $exceptionClass($exceptionMessage);
+            throw new FailedWritingMetadataFileException($dumpFilePath);
         }
     }
 }

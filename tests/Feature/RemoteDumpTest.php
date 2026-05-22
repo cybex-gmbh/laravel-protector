@@ -203,16 +203,16 @@ class RemoteDumpTest extends TestCase
         ]);
 
         $destinationFilepath = $this->protector->download();
-        $metadataSidecarPath = $destinationFilepath . '.meta';
-        $decodedSidecarMetadata = json_decode($this->disk->get($metadataSidecarPath), true);
+        $metadataFilePath = $destinationFilepath . '.meta';
+        $decodedMetadataFile = json_decode($this->disk->get($metadataFilePath), true);
         $parsedDumpMetadata = $this->protector->getDumpMetadata($destinationFilepath);
 
         $this->assertFileExists($this->disk->path($destinationFilepath));
-        $this->assertFileExists($this->disk->path($metadataSidecarPath));
+        $this->assertFileExists($this->disk->path($metadataFilePath));
         $this->assertEquals($message, $this->disk->get($destinationFilepath));
         $this->assertIsArray($parsedDumpMetadata);
-        $this->assertIsArray($decodedSidecarMetadata);
-        $this->assertEquals($parsedDumpMetadata['meta'], $decodedSidecarMetadata);
+        $this->assertIsArray($decodedMetadataFile);
+        $this->assertEquals($parsedDumpMetadata, $decodedMetadataFile);
     }
 
     #[Test]
@@ -259,14 +259,14 @@ class RemoteDumpTest extends TestCase
         ]);
 
         $downloadedFilePath = $this->protector->download();
-        $metadataSidecarPath = $downloadedFilePath . '.meta';
-        $decodedSidecarMetadata = json_decode($this->disk->get($metadataSidecarPath), true);
+        $metadataFilePath = $downloadedFilePath . '.meta';
+        $decodedMetadataFile = json_decode($this->disk->get($metadataFilePath), true);
         $parsedDumpMetadata = $this->protector->getDumpMetadata($downloadedFilePath);
 
         $this->assertEquals($filesBeforeDownload, $localDisk->allFiles($localBaseDirectory));
         $this->assertIsArray($parsedDumpMetadata);
-        $this->assertIsArray($decodedSidecarMetadata);
-        $this->assertEquals($parsedDumpMetadata['meta'], $decodedSidecarMetadata);
+        $this->assertIsArray($decodedMetadataFile);
+        $this->assertEquals($parsedDumpMetadata, $decodedMetadataFile);
     }
 
     #[Test]
