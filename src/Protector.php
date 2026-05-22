@@ -45,7 +45,6 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Throwable;
-use function stream_get_contents;
 
 class Protector
 {
@@ -846,25 +845,11 @@ class Protector
             return null;
         }
 
-        $stream = $disk->readStream($metadataFilePath);
-
-        if (!is_resource($stream)) {
+        if (!$metadata = $disk->get($metadataFilePath)) {
             return null;
         }
 
-        try {
-            $contents = stream_get_contents($stream);
-        } finally {
-            fclose($stream);
-        }
-
-        if (!is_string($contents) || $contents === '') {
-            return null;
-        }
-
-        $decodedContents = json_decode($contents, true);
-
-        return is_array($decodedContents) ? $decodedContents : null;
+        return json_decode($metadata, true);
     }
 
     /**
