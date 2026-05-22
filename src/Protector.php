@@ -542,9 +542,9 @@ class Protector
 
     public function getDumpFilesWithMetadata(): Collection
     {
-        return $this->getDumpFiles()->mapWithKeys(fn(string $dumpFilePath) => [
-            $dumpFilePath => $this->getMetadataFromMetaFile($dumpFilePath) ?? [],
-        ]);
+        return $this->getDumpFiles()->mapWithKeys(
+            fn(string $dumpFilePath) => [$dumpFilePath => $this->getMetadataFromMetaFile($dumpFilePath) ?? []]
+        );
     }
 
     /**
