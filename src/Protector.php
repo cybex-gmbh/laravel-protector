@@ -218,13 +218,7 @@ class Protector
      */
     public function download(?Filesystem $disk = null, ?string $filePath = null): string
     {
-        if ($this->config->shouldEncrypt() && !$this->config->getPrivateKey()) {
-            throw new MissingPrivateKeyException();
-        }
-
-        if (!$dumpEndpointUrl = $this->config->getDumpEndpointUrl()) {
-            throw new MissingDumpEndpointUrlException();
-        }
+        $this->guardDownload();
 
         // Telescope is interfering with the request / response.
         $telescopeWasRecording = $this->stopTelescopeRecording();
@@ -232,11 +226,9 @@ class Protector
         $request = $this->getConfiguredHttpRequest();
 
         try {
-            $response = $request->withoutRedirecting()->post($dumpEndpointUrl);
+            $response = $request->withoutRedirecting()->post($this->config->getDumpEndpointUrl());
         } catch (Exception $exception) {
-            throw new FailedRemoteDatabaseFetchingException(
-                sprintf('Could not fetch database from remote server: %s', $exception->getMessage())
-            );
+            throw new FailedRemoteDatabaseFetchingException($exception->getMessage());
         } finally {
             $this->startTelescopeRecording($telescopeWasRecording);
         }
@@ -752,6 +744,8 @@ class Protector
             }
 
             if (!$disk->writeStream($destinationFilePath, $localFileStream)) {
+                $disk->delete($destinationFilePath);
+
                 throw new FailedRemoteDatabaseFetchingException('Could not write staged dump file to destination storage disk.');
             }
 
@@ -760,7 +754,7 @@ class Protector
             if ($disk->size($destinationFilePath) === 0) {
                 $disk->delete([$destinationFilePath, $this->createMetadataFilePath($destinationFilePath)]);
 
-                throw new FailedRemoteDatabaseFetchingException(sprintf('Retrieved empty response from %s', $this->config->getDumpEndpointUrl()));
+                throw new FailedRemoteDatabaseFetchingException('Writing to the storage disk failed.');
             }
         } finally {
             if (is_resource($localFileStream)) {
@@ -805,6 +799,21 @@ class Protector
     {
         if ($wasRecording) {
             \Laravel\Telescope\Telescope::startRecording();
+        }
+    }
+
+    /**
+     * @throws MissingDumpEndpointUrlException
+     * @throws MissingPrivateKeyException
+     */
+    protected function guardDownload(): void
+    {
+        if ($this->config->shouldEncrypt() && !$this->config->getPrivateKey()) {
+            throw new MissingPrivateKeyException();
+        }
+
+        if (!$this->config->getDumpEndpointUrl()) {
+            throw new MissingDumpEndpointUrlException();
         }
     }
 

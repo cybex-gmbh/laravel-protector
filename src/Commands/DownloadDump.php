@@ -7,6 +7,7 @@ use Cybex\Protector\Protector;
 use Illuminate\Console\Command;
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\info;
+use function Laravel\Prompts\spin;
 use function Laravel\Prompts\warning;
 
 class DownloadDump extends Command
@@ -29,9 +30,12 @@ class DownloadDump extends Command
     {
         $this->configureProtector();
 
-        info(sprintf('Downloading dump to disk %s, path %s', $this->protector->getStorageDiskName(), $this->protector->getStorageDiskBaseDirectory()));
+        $filePath = spin(
+            callback: fn() => $this->protector->download(filePath: $this->option('file')),
+            message: 'Downloading dump...'
+        );
 
-        $filePath = $this->protector->download(filePath: $this->option('file'));
+        info('Successfully downloaded dump to disk.');
 
         if ($this->option('flush')) {
             $this->protector->flush(excludeFile: $filePath);
@@ -39,24 +43,9 @@ class DownloadDump extends Command
             warning('Storage directory has been flushed. Downloaded dump was retained.');
         }
 
-        if (!$this->option('import')) {
-            return self::SUCCESS;
+        if ($this->option('import')) {
+            return $this->import($filePath);
         }
-
-        if ($this->option('force') || confirm(sprintf('Import downloaded dump into the database: %s?', $this->protector->getDatabaseName()))) {
-            $this->protector->import(
-                $filePath,
-                noWipe: $this->option('no-wipe'),
-                migrate: $this->option('migrate'),
-                allowProduction: $this->option('allow-production'),
-            );
-
-            info('Import done!');
-
-            return self::SUCCESS;
-        }
-
-        info('Import aborted');
 
         return self::SUCCESS;
     }
@@ -70,6 +59,33 @@ class DownloadDump extends Command
         }
 
         $this->protector = $protectorConfigurator->makeProtector();
+    }
+
+    /**
+     * @param string $filePath
+     * @return int
+     */
+    protected function import(string $filePath): int
+    {
+        if ($this->option('force') || confirm(sprintf('Import downloaded dump into the database: %s?', $this->protector->getDatabaseName()))) {
+            spin(
+                callback: fn() => $this->protector->import(
+                    $filePath,
+                    noWipe: $this->option('no-wipe'),
+                    migrate: $this->option('migrate'),
+                    allowProduction: $this->option('allow-production'),
+                ),
+                message: 'Importing...'
+            );
+
+            info('Import done!');
+
+            return self::SUCCESS;
+        }
+
+        info('Import aborted');
+
+        return self::SUCCESS;
     }
 }
 

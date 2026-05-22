@@ -236,7 +236,7 @@ class RemoteDumpTest extends TestCase
         $expectedFilePath = sprintf('%s%s%s', $this->baseDirectory, DIRECTORY_SEPARATOR, 'invalid-metadata.sql');
 
         $this->expectException(FailedRemoteDatabaseFetchingException::class);
-        $this->expectExceptionMessage('Retrieved incomplete decrypted dump metadata.');
+        $this->expectExceptionMessage('Could not fetch database from remote server. Retrieved incomplete decrypted dump metadata.');
 
         try {
             $this->protector->download();
