@@ -50,21 +50,34 @@ class ProtectorConfig extends AbstractProtectorConfig implements ProtectorConfig
         }
     }
 
-    /** {@inheritDoc} */
-    public function getBaseDirectory(): string
+    public function getLocalBaseDirectory(): string
     {
-        return $this->getConfigValueForKey('dump.baseDirectory') ?? '';
+        return $this->getConfigValueForKey('dump.disks.local.baseDirectory') ?? '';
     }
 
-    /** {@inheritDoc} */
-    public function getDisk(): Filesystem
+    public function getLocalDisk(): Filesystem
     {
-        return Storage::disk($this->getDiskName());
+        return Storage::disk($this->getLocalDiskName());
     }
 
-    public function getDiskName(): string
+    public function getLocalDiskName(): string
     {
-        return $this->getConfigValueForKey('dump.diskName', config('filesystems.default'));
+        return $this->getConfigValueForKey('dump.disks.local.disk', 'local');
+    }
+
+    public function getStorageBaseDirectory(): string
+    {
+        return $this->getConfigValueForKey('dump.disks.storage.baseDirectory') ?? '';
+    }
+
+    public function getStorageDisk(): Filesystem
+    {
+        return Storage::disk($this->getStorageDiskName());
+    }
+
+    public function getStorageDiskName(): string
+    {
+        return $this->getConfigValueForKey('dump.disks.storage.disk', config('filesystems.default'));
     }
 
     /** {@inheritDoc} */

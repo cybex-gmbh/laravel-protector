@@ -8,6 +8,7 @@ use Cybex\Protector\Classes\SchemaState\Postgres\PostgresSchemaStateProxy;
 use Cybex\Protector\Classes\SodiumCrypter;
 use Cybex\Protector\Commands\CreateKeys;
 use Cybex\Protector\Commands\CreateToken;
+use Cybex\Protector\Commands\DownloadDump;
 use Cybex\Protector\Commands\ExportDump;
 use Cybex\Protector\Commands\ImportDump;
 use Cybex\Protector\Contracts\CrypterContract;
@@ -35,6 +36,7 @@ class ProtectorServiceProvider extends ServiceProvider
         $this->commands([
             CreateKeys::class,
             CreateToken::class,
+            DownloadDump::class,
             ExportDump::class,
             ImportDump::class,
         ]);

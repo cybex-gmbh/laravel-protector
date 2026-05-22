@@ -5,6 +5,7 @@ namespace Cybex\Protector\Commands;
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
 use Cybex\Protector\Protector;
 use Illuminate\Console\Command;
+use function Laravel\Prompts\info;
 
 /**
  * Class ExportDump
@@ -48,9 +49,9 @@ class ExportDump extends Command
         $this->protector = $protectorConfigurator->makeProtector();
         $this->protector->guardRequiredFunctionsEnabled();
 
-        $filePath = $this->protector->createDump(tempFileOnly: false, fileName: $this->option('file'));
+        $filePath = $this->protector->export(filePath: $this->option('file'));
 
-        $this->info(sprintf('Dump <comment>%s</> was created on disk <comment>%s</>', $filePath, $this->protector->getDiskName()));
+        info(sprintf('Dump %s was created on disk %s', $filePath, $this->protector->getStorageDiskName()));
 
         return self::SUCCESS;
     }

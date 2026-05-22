@@ -26,17 +26,17 @@ interface ProtectorConfigContract
         ?array $metadataProviders = null
     );
 
-    /**
-     * Returns the config value for the baseDirectory key.
-     */
-    public function getBaseDirectory(): string;
+    public function getLocalBaseDirectory(): string;
 
-    /**
-     * Returns the disk which is stated in the config. If no disk is stated, the default filesystem disk will be returned.
-     */
-    public function getDisk(): Filesystem;
+    public function getLocalDisk(): Filesystem;
 
-    public function getDiskName(): string;
+    public function getLocalDiskName(): string;
+
+    public function getStorageBaseDirectory(): string;
+
+    public function getStorageDisk(): Filesystem;
+
+    public function getStorageDiskName(): string;
 
     /**
      * Returns the current connection configuration.

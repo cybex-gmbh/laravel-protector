@@ -42,12 +42,20 @@ return [
         | Disk Configuration
         |--------------------------------------------------------------------------
         |
-        | Here you may customize the base directory and the disk in which database dumps are stored.
-        | By default, the default filesystem disk stated in your filesystems-config will be used.
+        | Local disk is used for staging and temporary file handling.
+        | Storage disk is used for persisted dump files.
         |
         */
-        'baseDirectory' => ProtectorEnv::BASE_DIRECTORY->get(default: 'protector'),
-        // 'diskName' => ProtectorEnv::DISK_NAME->value(default: 'protector'),
+        'disks' => [
+            'local' => [
+                'disk' => ProtectorEnv::LOCAL_DISK->get(default: 'local'),
+                'baseDirectory' => ProtectorEnv::LOCAL_BASE_DIRECTORY->get(default: 'protector/local'),
+            ],
+            'storage' => [
+                'disk' => ProtectorEnv::STORAGE_DISK->get(default: 'local'),
+                'baseDirectory' => ProtectorEnv::STORAGE_BASE_DIRECTORY->get(default: 'protector'),
+            ],
+        ],
 
         /*
         |--------------------------------------------------------------------------

@@ -96,7 +96,11 @@ class MetadataHandler
     protected function tail(string $file, int $lines, int $buffer = 1024): array
     {
         // Open file-handle.
-        $fileHandle = $this->protectorConfig->getDisk()->readStream($file);
+        if ($this->isAbsolutePath($file)) {
+            $fileHandle = fopen($file, 'rb');
+        } else {
+            $fileHandle = $this->protectorConfig->getStorageDisk()->readStream($file);
+        }
 
         if (!is_resource($fileHandle)) {
             throw new FileNotFoundException($file);
@@ -126,7 +130,15 @@ class MetadataHandler
             $linesToRead -= substr_count($chunk, "\n");
         }
 
+        fclose($fileHandle);
+
         // Get the last x lines from file.
         return array_slice(explode("\n", $contents), -$lines);
+    }
+
+    protected function isAbsolutePath(string $filePath): bool
+    {
+        return str_starts_with($filePath, DIRECTORY_SEPARATOR)
+            || preg_match('/^[A-Za-z]:[\\\\\/]/', $filePath) === 1;
     }
 }

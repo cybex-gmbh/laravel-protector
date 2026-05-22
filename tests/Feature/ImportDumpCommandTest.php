@@ -11,6 +11,7 @@ use Cybex\Protector\Tests\TestCase;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 
 class ImportDumpCommandTest extends TestCase
@@ -22,7 +23,7 @@ class ImportDumpCommandTest extends TestCase
     protected string $shouldImportDump;
     protected static string $baseDirectory = 'dumps';
 
-    protected const array DUMP_SOURCE_CHOICE = ['Download remote dump', 'Import existing local dump'];
+    protected const array DUMP_SOURCE_CHOICE = ['Download remote dump', 'Import existing dump'];
 
     protected function setUp(): void
     {
@@ -31,11 +32,11 @@ class ImportDumpCommandTest extends TestCase
         $this->dumpEndpointUrl = 'protector.invalid/protector/exportDump';
 
         Config::set('protector.client.dumpEndpointUrl', $this->dumpEndpointUrl);
-        Config::set('protector.dump.baseDirectory', static::$baseDirectory);
+        Config::set('protector.dump.disks.storage.baseDirectory', static::$baseDirectory);
 
         $this->disk = $this->getFakeDumpDisk();
 
-        $this->shouldDownloadDump = 'Do you want to download and import a fresh dump from the server or an existing local dump?';
+        $this->shouldDownloadDump = 'Do you want to download and import a fresh dump from the server or an existing dump?';
         $this->shouldImportDump = sprintf(
             'Are you sure that you want to import the dump into the database: %s?',
             $this->protector->getDatabaseName()
@@ -83,14 +84,19 @@ class ImportDumpCommandTest extends TestCase
         Config::set('protector.client.basicAuthCredentials', '1234:1234');
         Config::set('protector.server.routeMiddleware', []);
 
+        $dump = file_get_contents(__DIR__ . '/../dumps/dump.sql');
+
         Http::fake([
-            $this->dumpEndpointUrl => Http::response(__FUNCTION__, 200, ['Chunk-Size' => 100]),
+            $this->dumpEndpointUrl => Http::response($dump, 200, ['Chunk-Size' => 1024]),
         ]);
 
         $this->artisan('protector:import --remote')
             ->expectsConfirmation($this->shouldImportDump);
 
-        $this->assertFileExists($this->disk->path(static::$baseDirectory . '/remote_dump.sql'));
+        $this->assertFileDoesNotExist($this->disk->path(static::$baseDirectory . '/remote_dump.sql'));
+
+        $localFiles = Storage::disk($this->protector->getLocalDiskName())->files($this->protector->getLocalDiskBaseDirectory());
+        $this->assertCount(0, $localFiles);
     }
 
     #[Test]
@@ -99,17 +105,16 @@ class ImportDumpCommandTest extends TestCase
         Config::set('protector.client.basicAuthCredentials', '1234:1234');
         Config::set('protector.server.routeMiddleware', []);
 
+        $dump = file_get_contents(__DIR__ . '/../dumps/dump.sql');
+
         Http::fake([
-            $this->dumpEndpointUrl => Http::response(__FUNCTION__, 200, ['Chunk-Size' => 100]),
+            $this->dumpEndpointUrl => Http::response($dump, 200, ['Chunk-Size' => 1024]),
         ]);
 
         $this->artisan('protector:import --remote --flush')
             ->expectsConfirmation($this->shouldImportDump);
 
-        $this->assertEquals(
-            [sprintf('%s%sremote_dump.sql', Config::get('protector.dump.baseDirectory'), DIRECTORY_SEPARATOR)],
-            $this->protector->getDumpFiles()->toArray()
-        );
+        $this->assertCount(0, $this->protector->getDumpFiles()->toArray());
     }
 
     #[Test]
@@ -149,13 +154,24 @@ class ImportDumpCommandTest extends TestCase
     }
 
     #[Test]
+    public function canImportDumpOnOptionFileWithExistingNestedRelativeFilePath(): void
+    {
+        $nestedRelativeFilePath = 'nested/dump.sql';
+        $storageFilePath = sprintf('%s%s%s', static::$baseDirectory, DIRECTORY_SEPARATOR, $nestedRelativeFilePath);
+
+        $this->disk->put($storageFilePath, file_get_contents(__DIR__ . '/../dumps/dump.sql'));
+
+        $this->artisan(sprintf('protector:import --file=%s --force', $nestedRelativeFilePath))->assertOk();
+    }
+
+    #[Test]
     public function canImportDumpOnOptionLatest(): void
     {
         $this->artisan('protector:import --latest')->expectsConfirmation($this->shouldImportDump);
 
-        $this->assertEquals(
-            sprintf('%s%sdump.sql', $this->protector->getDiskBaseDirectory(), DIRECTORY_SEPARATOR),
-            $this->protector->getLatestDumpName()
+        $this->assertContains(
+            sprintf('%s%sdump.sql', $this->protector->getStorageDiskBaseDirectory(), DIRECTORY_SEPARATOR),
+            $this->protector->getDumpFiles()->toArray()
         );
     }
 
@@ -179,7 +195,6 @@ class ImportDumpCommandTest extends TestCase
 
         $this->artisan('protector:import')
             ->expectsChoice($this->shouldDownloadDump, 2, static::DUMP_SOURCE_CHOICE)
-            ->expectsOutput('Using file "' . static::$baseDirectory . '/dump.sql" because there are no other dumps.')
             ->expectsConfirmation($this->shouldImportDump);
     }
 }

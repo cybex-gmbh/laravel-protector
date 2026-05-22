@@ -74,7 +74,7 @@ class ExportDumpTest extends TestCase
 
         $this->disk = $this->getFakeDumpDisk();
 
-        $this->baseDirectory = Config::get('protector.dump.baseDirectory');
+        $this->baseDirectory = Config::get('protector.dump.disks.storage.baseDirectory');
         $this->filePath = sprintf('%s/dump.sql', $this->baseDirectory);
         $this->emptyDumpPath = 'testDumps/dump.sql';
     }
@@ -99,7 +99,7 @@ class ExportDumpTest extends TestCase
 
         // Expect an exception when trying to connect and determine if the connected database is a MariaDB database.
         $this->expectException(PDOException::class);
-        $this->runProtectedMethod('generateDump');
+        $this->runProtectedMethod('generateDump', [$this->protector->getMetadata()]);
     }
 
     #[Test]
@@ -111,6 +111,19 @@ class ExportDumpTest extends TestCase
 
         $this->assertInstanceOf(StreamedResponse::class, $response);
         $this->assertEquals(200, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function exportWritesMetadataSidecarWithIdenticalPayload(): void
+    {
+        $exportedDumpPath = $this->protector->export(filePath: $this->filePath);
+        $metadataSidecarPath = $exportedDumpPath . '.meta';
+        $parsedDumpMetadata = $this->protector->getDumpMetadata($exportedDumpPath);
+        $decodedSidecarMetadata = json_decode($this->disk->get($metadataSidecarPath), true);
+
+        $this->assertIsArray($parsedDumpMetadata);
+        $this->assertIsArray($decodedSidecarMetadata);
+        $this->assertEquals($parsedDumpMetadata['meta'], $decodedSidecarMetadata);
     }
 
     #[Test]

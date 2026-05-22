@@ -72,6 +72,20 @@ You can configure the target disk, filename, etc. by publishing the protector co
 artisan vendor:publish --tag=protector.config
 ```
 
+### Download from remote
+
+To download the newest remote dump without importing it, run
+
+```bash
+php artisan protector:download
+```
+
+To download and import in one step, run
+
+```bash
+php artisan protector:download --import
+```
+
 ### Import
 
 Run the following command for an interactive shell
@@ -87,6 +101,8 @@ To download and import the server database in one go, run
 ```bash
 php artisan protector:import --remote
 ```
+
+`protector:import` does not keep downloaded dump files on storage or local staging disks.
 
 When used with other options, remote will serve as fallback behavior.
 
@@ -148,9 +164,17 @@ composer require cybex/laravel-protector
 You can optionally publish the protector config to set the following options
 
 - `fileName`: the file name of the database dump
-- `baseDirectory`: where files are being stored
-- `diskName`: a dedicated Laravel disk defined in config/filesystems.php. These can point to a specific local folder or
-  a cloud file bucket like AWS S3
+- `disks.local.baseDirectory`: local staging directory for temp and processing files
+- `disks.local.disk`: local staging disk (defaults to Laravel's `local` disk)
+- `disks.storage.baseDirectory`: where persistent dump files are stored
+- `disks.storage.disk`: storage disk for persistent dumps (local or cloud, e.g. S3)
+
+Related `.env` keys:
+
+- `PROTECTOR_DUMP_DISKS_LOCAL_DISK`
+- `PROTECTOR_DUMP_DISKS_LOCAL_BASE_DIRECTORY`
+- `PROTECTOR_DUMP_DISKS_STORAGE_DISK`
+- `PROTECTOR_DUMP_DISKS_STORAGE_BASE_DIRECTORY`
 
 ```bash
 artisan vendor:publish --tag=protector.config

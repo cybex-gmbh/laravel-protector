@@ -81,7 +81,7 @@ class TestCase extends OrchestraTestCase
     protected function getFakeDumpDisk(): Filesystem
     {
         $disk = $this->getDumpDisk();
-        $baseDirectory = $this->protector->getDiskBaseDirectory();
+        $baseDirectory = $this->protector->getStorageDiskBaseDirectory();
 
         foreach (glob(__DIR__ . '/dumps/*.sql') as $filename) {
             $disk->putFileAs($baseDirectory, $filename, basename($filename));
@@ -92,11 +92,11 @@ class TestCase extends OrchestraTestCase
 
     protected function getDumpDisk(): Filesystem
     {
-        return Storage::fake($this->protector->getDiskName());
+        return Storage::fake($this->protector->getStorageDiskName());
     }
 
     protected function clearDumpDirectory(): void
     {
-        $this->getDumpDisk()->deleteDirectory($this->protector->getDiskBaseDirectory());
+        $this->getDumpDisk()->deleteDirectory($this->protector->getStorageDiskBaseDirectory());
     }
 }

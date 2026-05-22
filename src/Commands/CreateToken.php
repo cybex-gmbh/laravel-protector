@@ -4,6 +4,9 @@ namespace Cybex\Protector\Commands;
 
 use Cybex\Protector\Enums\ProtectorEnv;
 use Illuminate\Console\Command;
+use function Laravel\Prompts\error;
+use function Laravel\Prompts\info;
+use function Laravel\Prompts\intro;
 
 /**
  * Class CreateToken
@@ -38,12 +41,10 @@ class CreateToken extends Command
         $user = config('auth.providers.users.model')::findOrFail($this->argument('userId'));
         $user->tokens()->whereAbilities('["protector:import"]')->delete();
 
-        $this->newLine();
-
-        $this->warn(sprintf('Executing for User %s|%s (%s)', $user->id, $user->name, $user->email));
+        intro(sprintf('Executing for User %s|%s (%s)', $user->id, $user->name, $user->email));
 
         if (!$user->protector_public_key && !$publicKey) {
-            $this->error('The user doesn\'t have a protector public key and none was specified. Please provide a public key for the user.');
+            error('The user doesn\'t have a protector public key and none was specified. Please provide a public key for the user.');
 
             return self::FAILURE;
         }
@@ -52,10 +53,8 @@ class CreateToken extends Command
             $user->protector_public_key = $publicKey;
             $user->save();
 
-            $this->info('Protector public key was set.');
+            info('Protector public key was set.');
         }
-
-        $this->newLine();
 
         $token = $user->createToken('protector', ['protector:import']);
 

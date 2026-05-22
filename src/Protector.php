@@ -22,10 +22,10 @@ use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Cybex\Protector\Exceptions\ShellAccessDeniedException;
 use Exception;
-use GuzzleHttp\Psr7\StreamWrapper;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Connection;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response as DownloadResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
@@ -35,6 +35,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use LogicException;
 use Psr\Http\Message\StreamInterface;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -43,9 +44,13 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Throwable;
+use function stream_get_contents;
 
 class Protector
 {
+    protected const string METADATA_SIDECAR_SUFFIX = '.meta';
+    protected const string UNKNOWN_CONNECTION_NAME = 'unknown_connection';
+
     protected array $requiredFunctionsCache;
 
     public function __construct(protected ProtectorConfigContract $config)
@@ -62,6 +67,7 @@ class Protector
 
     /**
      * Imports a specific SQL dump.
+     * The source file path can either be a local absolute path, or a relative path on the passed disk (defaults to the storage disk).
      *
      * @throws InvalidEnvironmentException
      * @throws InvalidConnectionException
@@ -70,12 +76,18 @@ class Protector
      * @throws FailedImportException
      * @throws FailedWipeException
      */
-    public function importDump(string $sourceFilePath, array $options = []): void
+    public function import(
+        string $filePath,
+        ?Filesystem $disk = null,
+        ?bool $noWipe = false,
+        ?bool $migrate = false,
+        ?bool $allowProduction = false,
+    ): void
     {
         $this->guardRequiredFunctionsEnabled();
 
         // Production environment is not allowed unless set in options.
-        if (App::environment('production') && !Arr::get($options, 'allow-production')) {
+        if (App::environment('production') && !$allowProduction) {
             throw new InvalidEnvironmentException('Production environment is not allowed and option was not set.');
         }
 
@@ -83,11 +95,24 @@ class Protector
             throw new InvalidConnectionException('Connection is not configured properly');
         }
 
-        if (!file_exists($sourceFilePath)) {
-            throw new FileNotFoundException($sourceFilePath);
+        $absoluteImportFilePath = $filePath;
+
+        if (!$this->isAbsolutePath($filePath)) {
+            $disk ??= $this->config->getStorageDisk();
+
+            $localFilePath = $this->copyStorageToLocal(
+                $filePath,
+                $disk,
+            );
+
+            $absoluteImportFilePath = $this->config->getLocalDisk()->path($localFilePath);
         }
 
-        if (!Arr::get($options, 'no-wipe')) {
+        if (!file_exists($absoluteImportFilePath)) {
+            throw new FileNotFoundException($absoluteImportFilePath);
+        }
+
+        if (!$noWipe) {
             try {
                 $this->wipeDatabase(DB::connection($this->config->getConnectionName()));
             } catch (Throwable $exception) {
@@ -96,12 +121,16 @@ class Protector
         }
 
         try {
-            $this->getSchemaStateProxy()->load($sourceFilePath);
+            $this->getSchemaStateProxy()->load($absoluteImportFilePath);
         } catch (Throwable $exception) {
             throw new FailedImportException($exception->getMessage());
+        } finally {
+            if (!$this->isAbsolutePath($filePath)) {
+                $this->config->getLocalDisk()->delete($localFilePath);
+            }
         }
 
-        if (Arr::get($options, 'migrate')) {
+        if ($migrate) {
             $output = new BufferedOutput;
 
             Artisan::call('migrate', [], $output);
@@ -119,33 +148,51 @@ class Protector
      * @throws FailedDumpGenerationException
      * @throws InvalidConnectionException
      */
-    public function createDump(bool $tempFileOnly = true, ?string $fileName = null): string
+    public function export(?string $filePath = null, ?Filesystem $disk = null): string
     {
+        $this->guardRequiredFunctionsEnabled();
+
         if (!$this->config->getConnectionConfig()) {
             throw new InvalidConnectionException('Connection is not configured properly.');
         }
 
-        $this->guardRequiredFunctionsEnabled();
+        $metadata = $this->getMetadata();
+        $localDumpFile = $this->generateDump($metadata) ?: throw new FailedDumpGenerationException('Dump could not be created.');
 
-        $tempFile = $this->generateDump() ?: throw new FailedDumpGenerationException('Dump could not be created.');
+        $disk ??= $this->config->getStorageDisk();
+        $filePath ??= implode(DIRECTORY_SEPARATOR, [$this->config->getStorageBaseDirectory(), $this->createFilename()]);
 
-        if ($tempFileOnly) {
-            return $tempFile;
+        $localDisk = $this->config->getLocalDisk();
+        $stream = $localDisk->readStream($localDumpFile);
+
+        try {
+            if (!is_resource($stream)) {
+                throw new FailedDumpGenerationException('Could not read generated dump file from local disk.');
+            }
+
+            if (!$disk->writeStream($filePath, $stream)) {
+                $disk->delete($filePath);
+
+                throw new FailedDumpGenerationException('Could not write generated dump file to the storage disk.');
+            }
+
+            $this->writeMetadataFile(
+                $disk,
+                $filePath,
+                $metadata,
+                FailedDumpGenerationException::class,
+                'Could not write metadata sidecar file for exported dump.'
+            );
+        } finally {
+            fclose($stream);
+            $localDisk->delete($localDumpFile);
         }
 
-        $fileName = implode(DIRECTORY_SEPARATOR, [$this->config->getBaseDirectory(), $fileName ?? $this->createFilename()]);
-
-        $this->config->getDisk()->writeStream(
-            $fileName,
-            fopen($tempFile, 'r')
-        );
-
-        return $fileName;
+        return $filePath;
     }
 
     /**
      * Returns the appended metadata from a file.
-     * The file path starts with the configured protector base directory.
      */
     public function getDumpMetadata(string $dumpFile): bool|array
     {
@@ -157,23 +204,22 @@ class Protector
      */
     public function flush(?string $excludeFile = null): void
     {
-        $files = $this->getDumpFiles($excludeFile);
+        $files = $this->getDumpFiles($excludeFile)
+            ->flatMap(fn(string $dumpFilePath) => [$dumpFilePath, $this->createMetadataFilePath($dumpFilePath)]);
 
-        $this->config->getDisk()->delete($files->toArray());
+        $this->config->getStorageDisk()->delete($files->toArray());
     }
 
     /**
-     * Reads the remote dump file and stores it on the client disk.
+     * Reads the remote dump file and stores it on the specified disk or the storage disk.
      *
      * @throws FailedRemoteDatabaseFetchingException
      * @throws MissingPrivateKeyException
      * @throws MissingDumpEndpointUrlException
      * @throws InvalidEnvironmentException
      */
-    public function getRemoteDump(): string
+    public function download(?Filesystem $disk = null, ?string $filePath = null): string
     {
-        $disk = $this->config->getDisk();
-
         if ($this->config->shouldEncrypt() && !$this->config->getPrivateKey()) {
             throw new MissingPrivateKeyException();
         }
@@ -182,15 +228,10 @@ class Protector
             throw new MissingDumpEndpointUrlException();
         }
 
-        $this->createDirectory($this->config->getBaseDirectory(), $disk);
+        // Telescope is interfering with the request / response.
+        $telescopeWasRecording = $this->stopTelescopeRecording();
 
         $request = $this->getConfiguredHttpRequest();
-
-        if ($isTelescopeRecording = class_exists(
-                \Laravel\Telescope\Telescope::class
-            ) && \Laravel\Telescope\Telescope::isRecording()) {
-            \Laravel\Telescope\Telescope::stopRecording();
-        }
 
         try {
             $response = $request->withoutRedirecting()->post($dumpEndpointUrl);
@@ -199,73 +240,51 @@ class Protector
                 sprintf('Could not fetch database from remote server: %s', $exception->getMessage())
             );
         } finally {
-            if ($isTelescopeRecording) {
-                \Laravel\Telescope\Telescope::startRecording();
-            }
+            $this->startTelescopeRecording($telescopeWasRecording);
         }
 
         if (!$response->ok()) {
-            $httpCode = $response->status();
-
-            throw match ($httpCode) {
-                401, 403 => new UnauthorizedHttpException('', $httpCode . ' Unauthorized access'),
-                404 => new NotFoundHttpException('404 Not found: ' . $dumpEndpointUrl),
-                500 => new FailedRemoteDatabaseFetchingException($response->header('message')),
-                default => new HttpException($httpCode, 'Status code ' . $httpCode),
-            };
+            $this->handleDownloadResponseError($response);
         }
 
-        $destinationFilePath = $this->getDumpDestinationFilePath($response->header('Content-Disposition'));
-        $stream = $response->toPsrResponse()->getBody();
-
-        $this->writeDumpFile(
-            $stream,
-            $destinationFilePath,
-            $response->header('Chunk-Size'),
-            $response->header('Sanctum-Enabled')
-        );
-        $stream->close();
-
-        if ($disk->size($destinationFilePath) === 0) {
-            $disk->delete($destinationFilePath);
-
-            throw new FailedRemoteDatabaseFetchingException(sprintf('Retrieved empty response from %s', $dumpEndpointUrl));
-        }
-
-        return $destinationFilePath;
+        return $this->transferDownloadToStorage($response, $disk, $filePath);
     }
 
     /**
-     * Generates an SQL dump from the current app database and returns the path to the file.
+     * Generates an SQL dump from the current app database on the local disk and returns the relative path to the file.
      */
-    protected function generateDump(): ?string
+    protected function generateDump(?array $metadata = null): false|string
     {
-        $tempFile = tempnam('', 'protector');
+        $localDisk = $this->config->getLocalDisk();
+        $localFilePath = $this->createLocalFilePath();
 
-        $this->getSchemaStateProxy()->dump(DB::connection($this->config->getConnectionName()), $tempFile);
+        $this->getSchemaStateProxy()->dump(
+            connection: DB::connection($this->config->getConnectionName()),
+            path: $this->config->getLocalDisk()->path($localFilePath)
+        );
 
-        if (!filesize($tempFile)) {
-            unlink($tempFile);
+        if (!$localDisk->exists($localFilePath) || !$localDisk->size($localFilePath)) {
+            $this->config->getLocalDisk()->delete($localFilePath);
 
-            $tempFile = null;
+            return false;
         }
 
         try {
             // Append some import/export-metadata to the end.
-            $metadata = sprintf(
+            $metadataToAppend = sprintf(
                 "\n-- meta:%s",
-                json_encode($this->getMetadata(), JSON_UNESCAPED_UNICODE)
+                json_encode($metadata ?? $this->getMetadata(), JSON_UNESCAPED_UNICODE)
             );
 
-            file_put_contents($tempFile, $metadata, FILE_APPEND);
+            $localDisk->append($localFilePath, $metadataToAppend);
         } catch (Exception $exception) {
             Log::error($exception);
+            $this->config->getLocalDisk()->delete($localFilePath);
 
-            unlink($tempFile);
-            $tempFile = null;
+            return false;
         }
 
-        return $tempFile;
+        return $localFilePath;
     }
 
     /**
@@ -323,8 +342,12 @@ class Protector
         // Only proceed when either Laravel Sanctum is turned off or the user's token is valid.
         if (!$shouldEncrypt || $request->user()?->tokenCan('protector:import')) {
             try {
-                $serverFilePath = $this->createDump();
+                $serverFile = $this->generateDump();
                 $publicKey = '';
+
+                if (!$serverFile) {
+                    throw new FailedDumpGenerationException('Dump could not be created.');
+                }
 
                 if ($shouldEncrypt) {
                     $publicKey = app(CrypterContract::class)->getPublicKeyFromUser($request->user());
@@ -350,8 +373,12 @@ class Protector
             $chunkSize = $this->config->getChunkSize();
 
             return response()->streamDownload(
-                function () use ($publicKey, $serverFilePath, $chunkSize, $shouldEncrypt) {
-                    $inputHandle = fopen($serverFilePath, 'rb');
+                function () use ($publicKey, $serverFile, $chunkSize, $shouldEncrypt) {
+                    $inputHandle = $this->config->getLocalDisk()->readStream($serverFile);
+
+                    if (!is_resource($inputHandle)) {
+                        throw new FailedDumpGenerationException('Could not read generated dump file from local disk.');
+                    }
 
                     while (!feof($inputHandle)) {
                         $chunk = fread($inputHandle, $chunkSize);
@@ -365,7 +392,7 @@ class Protector
                     }
 
                     fclose($inputHandle);
-                    unlink($serverFilePath);
+                    $this->config->getLocalDisk()->delete($serverFile);
                 },
                 $this->createFilename(),
                 [
@@ -444,7 +471,7 @@ class Protector
             throw new EmptyBaseDirectoryException();
         }
 
-        $disk = $this->config->getDisk();
+        $disk = $this->config->getStorageDisk();
 
         return $files->sortByDesc(fn($file) => $disk->lastModified($file))->values()[0];
     }
@@ -468,41 +495,36 @@ class Protector
     /**
      * Copies the specified dump to a local temporary file, in case the dump is stored remotely.
      *
-     * @throws Exception
      * @throws FileNotFoundException
+     * @throws Throwable
      */
-    public function createTempFilePath(string $diskFilePath): string
+    protected function copyStorageToLocal(string $storageFilePath, ?Filesystem $storageDisk = null): string
     {
-        $tempFilePath = tempnam('', 'protector') . '.sql';
+        $storageDisk ??= $this->config->getStorageDisk();
+        $localDisk = $this->config->getLocalDisk();
+        $localFilePath = $this->createLocalFilePath();
 
-        if ($tempFilePath === false) {
-            throw new Exception('Could not create a temporary file for dump.');
-        }
-
-        $handle = fopen($tempFilePath, 'w');
-
-        if ($handle === false) {
-            throw new Exception('Could not open temporary file for writing.');
-        }
-
-        $stream = $this->config->getDisk()->readStream($diskFilePath);
+        $stream = $storageDisk->readStream($storageFilePath);
 
         if (!is_resource($stream)) {
-            fclose($handle);
-
-            throw new FileNotFoundException($diskFilePath);
+            throw new FileNotFoundException($storageFilePath);
         }
 
-        stream_copy_to_stream($stream, $handle);
+        if (!$localDisk->writeStream($localFilePath, $stream)) {
+            $localDisk->delete($localFilePath);
+        }
 
-        fclose($handle);
+        fclose($stream);
 
-        return $tempFilePath;
+        return $localFilePath;
     }
 
     public function getDumpFiles(?string $excludeFile = null): Collection
     {
-        $files = $this->config->getDisk()->files($this->config->getBaseDirectory());
+        $files = array_values(array_filter(
+            $this->config->getStorageDisk()->allFiles($this->config->getStorageBaseDirectory()),
+            fn(string $filePath) => !$this->isMetadataFile($filePath)
+        ));
 
         if ($excludeFile) {
             $files = array_diff($files, [$excludeFile]);
@@ -516,7 +538,7 @@ class Protector
      */
     public function getDumpFile(string $fileName): string
     {
-        $filePathOnDisk = implode(DIRECTORY_SEPARATOR, [$this->config->getBaseDirectory(), $fileName]);
+        $filePathOnDisk = implode(DIRECTORY_SEPARATOR, [$this->config->getStorageBaseDirectory(), $fileName]);
 
         $file = $this->getDumpFiles()->firstWhere(
             fn($file) => $filePathOnDisk === $file
@@ -531,9 +553,25 @@ class Protector
 
     public function getDumpFilesWithMetadata(): Collection
     {
-        return $this->getDumpFiles()->mapWithKeys(fn($file) => [
-            $file => $this->getDumpMetadata($file),
-        ]);
+        return $this->getDumpFiles()->mapWithKeys(function (string $dumpFilePath) {
+            $metadataPayload = $this->getMetadataPayloadFromSidecar($dumpFilePath);
+
+            if (!is_array($metadataPayload)) {
+                return [
+                    $dumpFilePath => [
+                        'meta' => [
+                            'connection' => static::UNKNOWN_CONNECTION_NAME,
+                        ],
+                    ],
+                ];
+            }
+
+            return [
+                $dumpFilePath => [
+                    'meta' => $metadataPayload,
+                ],
+            ];
+        });
     }
 
     /**
@@ -553,14 +591,34 @@ class Protector
         }
     }
 
-    public function getDiskName(): string
+    public function getStorageDiskName(): string
     {
-        return $this->config->getDiskName();
+        return $this->config->getStorageDiskName();
     }
 
-    public function getDiskBaseDirectory(): string
+    public function getLocalDiskName(): string
     {
-        return $this->config->getBaseDirectory();
+        return $this->config->getLocalDiskName();
+    }
+
+    public function getStorageDiskBaseDirectory(): string
+    {
+        return $this->config->getStorageBaseDirectory();
+    }
+
+    public function getLocalDiskBaseDirectory(): string
+    {
+        return $this->config->getLocalBaseDirectory();
+    }
+
+    public function getLocalDisk(): Filesystem
+    {
+        return $this->config->getLocalDisk();
+    }
+
+    public function getStorageDisk(): Filesystem
+    {
+        return $this->config->getStorageDisk();
     }
 
     public function getDatabaseName(): string
@@ -587,7 +645,7 @@ class Protector
 
         return sprintf(
             '%s%s%s',
-            $this->config->getBaseDirectory(),
+            $this->config->getStorageBaseDirectory(),
             DIRECTORY_SEPARATOR,
             ($destinationFileName ?? 'remote_dump.sql')
         );
@@ -598,19 +656,17 @@ class Protector
      * Contents are retrieved in chunks from the provided stream.
      * When the database dump is encrypted (indicated by whether Laravel Sanctum is enabled or not) those chunks will also be decrypted.
      */
-    protected function writeDumpFile(
+    protected function writeDumpToLocal(
         StreamInterface $stream,
         string $destinationFilePath,
         int $chunkSize,
         bool $sanctumEnabled
     ): void
     {
-        $resource = StreamWrapper::getResource($stream);
-
-        $outputHandle = fopen($this->config->getDisk()->path($destinationFilePath), 'wb');
+        $outputHandle = fopen($this->config->getLocalDisk()->path($destinationFilePath), 'wb');
 
         // Stop when EOF is reached or an empty chunk was read.
-        while (!feof($resource) && $chunk = stream_get_contents($resource, $chunkSize)) {
+        while (!$stream->eof() && ($chunk = $stream->read($chunkSize)) !== '') {
             if ($sanctumEnabled) {
                 $chunk = $this->decryptString($chunk);
             }
@@ -619,6 +675,21 @@ class Protector
         }
 
         fclose($outputHandle);
+    }
+
+    public function createLocalFilePath(): string
+    {
+        $localDisk = $this->config->getLocalDisk();
+        $baseDirectory = $this->config->getLocalBaseDirectory();
+
+        $this->createDirectory($baseDirectory, $localDisk);
+
+        return implode(DIRECTORY_SEPARATOR, [$baseDirectory, uniqid('protector_', true) . '.' . 'sql']);
+    }
+
+    protected function isAbsolutePath(string $filePath): bool
+    {
+        return Str::startsWith($filePath, DIRECTORY_SEPARATOR);
     }
 
     protected function determineEncryptionOverhead(int $chunkSize, string $publicKey): int
@@ -651,6 +722,116 @@ class Protector
     }
 
     // Usage for tests only.
+
+    /**
+     * @param DownloadResponse $response
+     * @param Filesystem|null $disk
+     * @param string|null $filePath
+     * @return string
+     * @throws FailedRemoteDatabaseFetchingException
+     */
+    protected function transferDownloadToStorage(DownloadResponse $response, ?Filesystem $disk = null, ?string $filePath = null): string
+    {
+        $stream = $response->toPsrResponse()->getBody();
+
+        $disk ??= $this->config->getStorageDisk();
+        $localDisk = $this->config->getLocalDisk();
+
+        $destinationFilePath = $filePath ?? $this->getDumpDestinationFilePath($response->header('Content-Disposition'));
+        $localFilePath = $this->createLocalFilePath();
+        $localFileStream = null;
+
+        try {
+            // Needs to be stored local first to validate and extract metadata.
+            $this->writeDumpToLocal(
+                $stream,
+                $localFilePath,
+                $response->header('Chunk-Size'),
+                $response->header('Sanctum-Enabled'),
+            );
+
+            if ($localDisk->size($localFilePath) === 0) {
+                $localDisk->delete($localFilePath);
+                throw new FailedRemoteDatabaseFetchingException(sprintf('Retrieved empty response from %s', $this->config->getDumpEndpointUrl()));
+            }
+
+            // Validate metadata
+            $dumpMetadata = $this->getDumpMetadata($localDisk->path($localFilePath));
+            $metadataPayload = Arr::get($dumpMetadata, 'meta');
+
+            if (!is_array($metadataPayload)) {
+                throw new FailedRemoteDatabaseFetchingException('Retrieved incomplete decrypted dump metadata.');
+            }
+
+            $localFileStream = $localDisk->readStream($localFilePath);
+
+            if (!is_resource($localFileStream)) {
+                throw new FailedRemoteDatabaseFetchingException('Could not read staged dump file from local disk.');
+            }
+
+            if (!$disk->writeStream($destinationFilePath, $localFileStream)) {
+                throw new FailedRemoteDatabaseFetchingException('Could not write staged dump file to destination storage disk.');
+            }
+
+            $this->writeMetadataFile(
+                $disk,
+                $destinationFilePath,
+                $metadataPayload,
+                FailedRemoteDatabaseFetchingException::class,
+                'Could not write metadata sidecar file for downloaded dump.'
+            );
+
+            if ($disk->size($destinationFilePath) === 0) {
+                $disk->delete([$destinationFilePath, $this->createMetadataFilePath($destinationFilePath)]);
+
+                throw new FailedRemoteDatabaseFetchingException(sprintf('Retrieved empty response from %s', $this->config->getDumpEndpointUrl()));
+            }
+        } finally {
+            if (is_resource($localFileStream)) {
+                fclose($localFileStream);
+            }
+
+            $localDisk->delete($localFilePath);
+
+            $stream->close();
+        }
+
+        return $destinationFilePath;
+    }
+
+    /**
+     * @throws FailedRemoteDatabaseFetchingException
+     */
+    protected function handleDownloadResponseError(DownloadResponse $response): void
+    {
+        $httpCode = $response->status();
+
+        throw match ($httpCode) {
+            401, 403 => new UnauthorizedHttpException('', $httpCode . ' Unauthorized access'),
+            404 => new NotFoundHttpException('404 Not found: ' . $this->config->getDumpEndpointUrl()),
+            500 => new FailedRemoteDatabaseFetchingException($response->header('message')),
+            default => new HttpException($httpCode, 'Status code ' . $httpCode),
+        };
+    }
+
+    protected function stopTelescopeRecording(): bool
+    {
+        if ($isTelescopeRecording = class_exists(
+                \Laravel\Telescope\Telescope::class
+            ) && \Laravel\Telescope\Telescope::isRecording()) {
+            \Laravel\Telescope\Telescope::stopRecording();
+        }
+
+        return $isTelescopeRecording;
+    }
+
+    protected function startTelescopeRecording(bool $wasRecording): void
+    {
+        if ($wasRecording) {
+            \Laravel\Telescope\Telescope::startRecording();
+        }
+    }
+
     protected function getConfig(): ProtectorConfigContract
     {
         return $this->config;
@@ -659,5 +840,66 @@ class Protector
     protected function getSchemaStateProxy(): SchemaStateProxyContract
     {
         return app(SchemaStateProxyContract::class, ['protectorConfig' => $this->config]);
+    }
+
+    protected function createMetadataFilePath(string $dumpFilePath): string
+    {
+        return $dumpFilePath . static::METADATA_SIDECAR_SUFFIX;
+    }
+
+    protected function isMetadataFile(string $filePath): bool
+    {
+        return Str::endsWith($filePath, static::METADATA_SIDECAR_SUFFIX);
+    }
+
+    protected function getMetadataPayloadFromSidecar(string $dumpFilePath): ?array
+    {
+        $sidecarPath = $this->createMetadataFilePath($dumpFilePath);
+        $disk = $this->config->getStorageDisk();
+
+        if (!$disk->exists($sidecarPath)) {
+            return null;
+        }
+
+        $stream = $disk->readStream($sidecarPath);
+
+        if (!is_resource($stream)) {
+            return null;
+        }
+
+        try {
+            $contents = stream_get_contents($stream);
+        } finally {
+            fclose($stream);
+        }
+
+        if (!is_string($contents) || $contents === '') {
+            return null;
+        }
+
+        $decodedContents = json_decode($contents, true);
+
+        return is_array($decodedContents) ? $decodedContents : null;
+    }
+
+    /**
+     * @param class-string<Throwable> $exceptionClass
+     */
+    protected function writeMetadataFile(
+        Filesystem $disk,
+        string $dumpFilePath,
+        array $metadataPayload,
+        string $exceptionClass,
+        string $exceptionMessage
+    ): void
+    {
+        $metadataFilePath = $this->createMetadataFilePath($dumpFilePath);
+        $encodedMetadata = json_encode($metadataPayload, JSON_UNESCAPED_UNICODE);
+
+        if ($disk->put($metadataFilePath, $encodedMetadata) === false) {
+            $disk->delete([$dumpFilePath, $metadataFilePath]);
+
+            throw new $exceptionClass($exceptionMessage);
+        }
     }
 }

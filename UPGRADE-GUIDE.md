@@ -23,6 +23,8 @@
   you will now have to set the values directly instead.
 - Some functions throw different or more detailed exceptions.
 - The `protector:import` command no longer supports the `--dump` option.
+- The dump file handling APIs and disk config structure changed.
+- A new `protector:download` command was added.
 
 > [!IMPORTANT]
 > The `protector.php` config structure and keys have changed.
@@ -73,6 +75,27 @@ you should re-publish it and adjust the configuration accordingly.
 | `protector.routeMiddleware`              | `protector.server.routeMiddleware`      |
 | `protector.chunkSize`                    | `protector.server.chunkSize`            |
 
+### Dump disk config refactor
+
+> [!NOTE]
+> Likelihood of impact: high
+>
+> Impact: Published config files using old dump disk keys will fail.
+
+The dump disk configuration now uses dedicated local and storage disks under `dump.disks`.
+
+The old keys were removed for this feature:
+
+- `protector.dump.baseDirectory`
+- `protector.dump.diskName`
+
+Use:
+
+- `protector.dump.disks.local.disk`
+- `protector.dump.disks.local.baseDirectory`
+- `protector.dump.disks.storage.disk`
+- `protector.dump.disks.storage.baseDirectory`
+
 ### Renamed .env keys
 
 > [!NOTE]
@@ -93,6 +116,53 @@ The .env keys have changed to be consistent with the config keys:
 | `PROTECTOR_HTTP_TIMEOUT`        | `PROTECTOR_CLIENT_HTTP_TIMEOUT`        |
 | `PROTECTOR_DUMP_ENDPOINT_ROUTE` | `PROTECTOR_SERVER_DUMP_ENDPOINT_ROUTE` |
 | `PROTECTOR_CHUNK_SIZE`          | `PROTECTOR_SERVER_CHUNK_SIZE`          |
+
+For dump disk handling, use these keys:
+
+- `PROTECTOR_DUMP_DISKS_LOCAL_DISK`
+- `PROTECTOR_DUMP_DISKS_LOCAL_BASE_DIRECTORY`
+- `PROTECTOR_DUMP_DISKS_STORAGE_DISK`
+- `PROTECTOR_DUMP_DISKS_STORAGE_BASE_DIRECTORY`
+
+`PROTECTOR_DUMP_DISK_NAME` and `PROTECTOR_DUMP_BASE_DIRECTORY` are no longer used for this feature.
+
+### Refactored Protector dump methods
+
+> [!NOTE]
+> Likelihood of impact: high
+>
+> Impact: Calls to removed methods will fail.
+
+The following methods were removed:
+
+- `Protector::createDump()`
+- `Protector::importDump()`
+- `Protector::getRemoteDump()`
+
+Use these methods instead:
+
+- `Protector::export()`
+- `Protector::import()`
+- `Protector::download()`
+
+### protector:download command
+
+> [!NOTE]
+> Likelihood of impact: low
+>
+> Impact: New command available for download-only and download+import workflows.
+
+You can now download the newest remote dump without importing it:
+
+```bash
+php artisan protector:download
+```
+
+Or download and import in one step:
+
+```bash
+php artisan protector:download --import
+```
 
 ### Protector configuration refactoring
 

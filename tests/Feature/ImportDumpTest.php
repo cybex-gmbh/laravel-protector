@@ -13,7 +13,9 @@ use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Cybex\Protector\Protector;
 use Cybex\Protector\Tests\TestCase;
 use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -32,7 +34,7 @@ class ImportDumpTest extends TestCase
 
         $this->protector = app('protector');
 
-        Config::set('protector.dump.baseDirectory', static::$baseDirectory);
+        Config::set('protector.dump.disks.storage.baseDirectory', static::$baseDirectory);
 
         $this->disk = $this->getFakeDumpDisk();
 
@@ -128,7 +130,7 @@ class ImportDumpTest extends TestCase
         $this->app->detectEnvironment(fn() => 'production');
 
         $this->expectException(InvalidEnvironmentException::class);
-        $this->protector->importDump($this->filePath);
+        $this->protector->import($this->filePath);
     }
 
     #[Test]
@@ -145,7 +147,7 @@ class ImportDumpTest extends TestCase
         $path = 'thisFileDoesNotExist';
 
         $this->expectException(FileNotFoundException::class);
-        $this->protector->importDump($path);
+        $this->protector->import($path);
     }
 
     #[Test]
@@ -157,10 +159,10 @@ class ImportDumpTest extends TestCase
         Config::set(sprintf('database.connections.%s.host', $connection), 'protector.invalid');
 
         $this->expectException(FailedWipeException::class);
-        $this->protector->importDump($this->filePath);
+        $this->protector->import($this->filePath);
 
         $this->expectException(FailedImportException::class);
-        $this->protector->importDump($this->filePath, ['no-wipe' => true]);
+        $this->protector->import($this->filePath, noWipe: true);
     }
 
     #[Test]
@@ -207,5 +209,55 @@ class ImportDumpTest extends TestCase
         $dumpsAfterFlushing = $this->protector->getDumpFiles()->toArray();
 
         $this->assertEquals($expected, $dumpsAfterFlushing);
+    }
+
+    #[Test]
+    public function importFromExplicitCustomDiskUsesGivenRelativePathWithoutStorageBaseNormalization(): void
+    {
+        $customDiskName = 'custom_import_disk';
+        $customRelativePath = 'incoming/team-a/dump.sql';
+
+        Config::set(sprintf('filesystems.disks.%s', $customDiskName), [
+            'driver' => 'local',
+            'root' => storage_path('framework/testing/disks/' . $customDiskName),
+            'throw' => true,
+        ]);
+
+        $customDisk = Storage::disk($customDiskName);
+        $customDisk->makeDirectory('incoming/team-a');
+        $customDisk->put($customRelativePath, file_get_contents(__DIR__ . '/../dumps/dump.sql'));
+
+        $this->protector->import($customRelativePath, $customDisk, noWipe: true);
+
+        $this->assertTrue($customDisk->exists($customRelativePath));
+    }
+
+    #[Test]
+    public function dumpFilesWithMetadataUseUnknownConnectionWhenSidecarIsMissing(): void
+    {
+        $dumpFile = static::$baseDirectory . '/dump.sql';
+
+        $this->disk->delete($dumpFile . '.meta');
+
+        $dumpFilesWithMetadata = $this->protector->getDumpFilesWithMetadata();
+
+        $this->assertEquals('unknown_connection', Arr::get($dumpFilesWithMetadata->get($dumpFile), 'meta.connection'));
+    }
+
+    #[Test]
+    public function dumpFilesWithMetadataPreferMetadataSidecarPayload(): void
+    {
+        $dumpFile = static::$baseDirectory . '/dump.sql';
+        $sidecarPayload = [
+            'database' => [
+                'connection' => 'pgsql',
+            ],
+        ];
+
+        $this->disk->put($dumpFile . '.meta', json_encode($sidecarPayload, JSON_UNESCAPED_UNICODE));
+
+        $dumpFilesWithMetadata = $this->protector->getDumpFilesWithMetadata();
+
+        $this->assertEquals('pgsql', Arr::get($dumpFilesWithMetadata->get($dumpFile), 'meta.database.connection'));
     }
 }
