@@ -7,7 +7,6 @@ use Cybex\Protector\Contracts\CrypterContract;
 use Cybex\Protector\Contracts\DumpFileManagerContract;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Contracts\SchemaStateProxyContract;
-use Cybex\Protector\Exceptions\DumpFileOperationException;
 use Cybex\Protector\Exceptions\FailedDumpGenerationException;
 use Cybex\Protector\Exceptions\FailedImportException;
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
@@ -66,12 +65,19 @@ class Protector
      * Imports a specific SQL dump.
      * The source file path can either be a local absolute path, or a relative path on the passed disk (defaults to the storage disk).
      *
-     * @throws InvalidEnvironmentException
-     * @throws InvalidConnectionException
-     * @throws FileNotFoundException
-     * @throws InvalidConfigurationException
+     * @param string $filePath Either a local absolute path or a relative path on the specified disk.
+     * @param Filesystem|null $disk Defaults to the Protector storage disk.
+     * @param bool|null $noWipe Whether the database should not be wiped before import.
+     * @param bool|null $migrate Whether to run migrations after import.
+     * @param bool|null $allowProduction Allow importing in the production enviroment.
+     *
+     * @return void
+     *
      * @throws FailedImportException
      * @throws FailedWipeException
+     * @throws FileNotFoundException
+     * @throws InvalidConnectionException
+     * @throws InvalidEnvironmentException
      */
     public function import(
         string $filePath,
@@ -137,9 +143,15 @@ class Protector
     }
 
     /**
+     * Generates a dump from the current app database and saves it to the specified disk (defaults to the storage disk).
+     *
+     * @param string|null $filePath Optional file path on the disk to which the dump is written.
+     * @param Filesystem|null $disk Defaults to the Protector storage disk.
+     *
+     * @return string The dump file path on the disk.
+     *
      * @throws FailedDumpGenerationException
      * @throws InvalidConnectionException
-     * @throws DumpFileOperationException
      */
     public function export(?string $filePath = null, ?Filesystem $disk = null): string
     {
@@ -150,7 +162,7 @@ class Protector
         }
 
         $destinationFilePath = $this->dumpFileManager->storagePath($filePath ?? $this->createFilename());
-        $metadata = $this->getMetadata();
+        $metadata = $this->metadata();
 
         $localDumpFile = $this->generateDump($metadata) ?: throw new FailedDumpGenerationException('Dump could not be created.');
 
@@ -170,23 +182,16 @@ class Protector
     }
 
     /**
-     * Returns the appended metadata from a file.
-     */
-    public function getDumpMetadata(string $dumpFile): bool|array
-    {
-        return app()->makeWith(MetadataHandler::class, ['protectorConfig' => $this->config])->getDumpMetadata($dumpFile);
-    }
-
-    /**
-     * Reads the remote dump file and stores it on the specified disk or the storage disk.
+     * Downloads a dump file from a remote system and stores it on the specified disk (defaults to the storage disk).
+     *
+     * @param string|null $filePath Optional file path on the disk to which the dump is written.
+     * @param Filesystem|null $disk Defaults to the storage disk.
+     *
+     * @return string The dump file path on the disk.
      *
      * @throws FailedRemoteDatabaseFetchingException
-     * @throws MissingPrivateKeyException
-     * @throws MissingDumpEndpointUrlException
-     * @throws InvalidEnvironmentException
-     * @throws DumpFileOperationException
      */
-    public function download(?Filesystem $disk = null, ?string $filePath = null): string
+    public function download(?string $filePath = null, ?Filesystem $disk = null): string
     {
         $this->guardDownload();
 
@@ -246,89 +251,6 @@ class Protector
         return $destinationFilePath;
     }
 
-    /**
-     * Generates an SQL dump from the current app database on the local disk and returns the relative path to the file.
-     */
-    protected function generateDump(?array $metadata = null): false|string
-    {
-        $localDisk = $this->dumpFileManager->getLocalDisk();
-        $localFilePath = $this->dumpFileManager->localPath();
-
-        $this->getSchemaStateProxy()->dump(
-            connection: DB::connection($this->config->getConnectionName()),
-            path: $localDisk->path($localFilePath)
-        );
-
-        if (!$localDisk->exists($localFilePath) || !$localDisk->size($localFilePath)) {
-            $this->dumpFileManager->deleteLocalFiles($localFilePath);
-
-            return false;
-        }
-
-        try {
-            // Append some import/export-metadata to the end.
-            $metadataToAppend = sprintf(
-                "\n-- meta:%s",
-                json_encode($metadata ?? $this->getMetadata(), flags: JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)
-            );
-
-            $localDisk->append($localFilePath, $metadataToAppend);
-        } catch (Exception $exception) {
-            Log::error($exception);
-            $this->dumpFileManager->deleteLocalFiles($localFilePath);
-
-            return false;
-        }
-
-        return $localFilePath;
-    }
-
-    /**
-     * Creates a filename for the dump file.
-     */
-    public function createFilename(): string
-    {
-        [$appUrl, $database, $connection, $date] = [
-            parse_url(config('app.url'), PHP_URL_HOST),
-            $this->config->getDatabaseName(),
-            $this->config->getConnectionName(),
-            now(),
-        ];
-
-        return sprintf(
-            config('protector.dump.fileName'),
-            $appUrl,
-            $database,
-            $connection,
-            $date->year,
-            $date->month,
-            $date->day,
-            $date->hour,
-            $date->minute,
-            $date->second
-        );
-    }
-
-    /**
-     * Returns the metadata for a new dump.
-     */
-    public function getMetadata(): array
-    {
-        return app()->makeWith(MetadataHandler::class, ['protectorConfig' => $this->config])->getMetadata();
-    }
-
-    /**
-     * Prepares the file download response.
-     * Prevents the exposure of the connectionName parameter to routing.
-     */
-    public function prepareFileDownloadResponse(Request $request): Response|StreamedResponse
-    {
-        return $this->generateFileDownloadResponse($request);
-    }
-
-    /**
-     * Generates a response which allows downloading the dump file.
-     */
     public function generateFileDownloadResponse(
         Request $request,
     ): Response|StreamedResponse
@@ -408,11 +330,112 @@ class Protector
         throw new UnauthorizedHttpException('', 'Unauthorized');
     }
 
+    public function metadata(): array
+    {
+        return app()->makeWith(MetadataHandler::class, ['protectorConfig' => $this->config])->getMetadata();
+    }
+
+    public function latestDumpName(): string
+    {
+        return $this->dumpFileManager->latestDumpName();
+    }
+
+    public function dumpFiles(?string $excludeFile = null): Collection
+    {
+        return $this->dumpFileManager->dumpFiles($excludeFile);
+    }
+
+    public function dumpFile(string $fileName): string
+    {
+        return $this->dumpFileManager->dumpFile($fileName);
+    }
+
+    public function dumpFilesWithMetadata(): Collection
+    {
+        return $this->dumpFileManager->dumpFilesWithMetadata();
+    }
+
     /**
-     * Configure Http request with either the Sanctum token or basic auth credentials.
-     *
-     * @throws SanctumBasicAuthConflictException
+     * @throws InvalidConfigurationException
+     */
+    public function decryptString(string $encryptedString): string
+    {
+        $decryptedString = app(CrypterContract::class)->decrypt($encryptedString, $this->config->getPrivateKey());
+
+        if ($decryptedString === false) {
+            throw new InvalidConfigurationException(
+                'There was an error decrypting the provided string. This might be due to mismatching crypto keys.'
+            );
+        }
+
+        return $decryptedString;
+    }
+
+    /**
+     * @throws ShellAccessDeniedException
+     */
+    public function guardRequiredFunctionsEnabled(): void
+    {
+        $this->requiredFunctionsCache ??= [
+            'proc_open' => $this->checkFunctionExists('proc_open'),
+            'proc_close' => $this->checkFunctionExists('proc_close'),
+        ];
+
+        if (in_array(false, $this->requiredFunctionsCache, strict: true)) {
+            throw new ShellAccessDeniedException($this->requiredFunctionsCache);
+        }
+    }
+
+    /**
+     * Wraps function_exists to allow mocking in tests.
+     */
+    protected function checkFunctionExists(string $functionName): bool
+    {
+        return function_exists($functionName);
+    }
+
+    public function getDatabaseName(): string
+    {
+        return $this->config->getDatabaseName();
+    }
+
+    protected function generateDump(?array $metadata = null): false|string
+    {
+        $localDisk = $this->dumpFileManager->getLocalDisk();
+        $localFilePath = $this->dumpFileManager->localPath();
+
+        $this->getSchemaStateProxy()->dump(
+            connection: DB::connection($this->config->getConnectionName()),
+            path: $localDisk->path($localFilePath)
+        );
+
+        if (!$localDisk->exists($localFilePath) || !$localDisk->size($localFilePath)) {
+            $this->dumpFileManager->deleteLocalFiles($localFilePath);
+
+            return false;
+        }
+
+        try {
+            // Append some import/export-metadata to the end.
+            $metadataToAppend = sprintf(
+                "\n-- meta:%s",
+                json_encode($metadata ?? $this->metadata(), flags: JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)
+            );
+
+            $localDisk->append($localFilePath, $metadataToAppend);
+        } catch (Exception $exception) {
+            Log::error($exception);
+            $this->dumpFileManager->deleteLocalFiles($localFilePath);
+
+            return false;
+        }
+
+        return $localFilePath;
+    }
+
+    /**
      * @throws NoAuthConfiguredException
+     * @throws SanctumBasicAuthConflictException
      */
     protected function getConfiguredHttpRequest(): PendingRequest
     {
@@ -438,76 +461,27 @@ class Protector
         return $request->withOptions(['stream' => true])->withHeaders(['Accept' => 'application/json'])->timeout($this->config->getHttpTimeout());
     }
 
-    /**
-     * Returns the name of the most recent dump.
-     */
-    public function getLatestDumpName(): string
+    protected function createFilename(): string
     {
-        return $this->dumpFileManager->latestDumpName();
-    }
-
-    /**
-     * @throws InvalidConfigurationException
-     */
-    public function decryptString(string $encryptedString): string
-    {
-        $decryptedString = app(CrypterContract::class)->decrypt($encryptedString, $this->config->getPrivateKey());
-
-        if ($decryptedString === false) {
-            throw new InvalidConfigurationException(
-                'There was an error decrypting the provided string. This might be due to mismatching crypto keys.'
-            );
-        }
-
-        return $decryptedString;
-    }
-
-    public function dumpFiles(?string $excludeFile = null): Collection
-    {
-        return $this->dumpFileManager->dumpFiles($excludeFile);
-    }
-
-    /**
-     * @throws FileNotFoundException
-     */
-    public function dumpFile(string $fileName): string
-    {
-        return $this->dumpFileManager->dumpFile($fileName);
-    }
-
-    public function dumpFilesWithMetadata(): Collection
-    {
-        return $this->dumpFileManager->dumpFilesWithMetadata();
-    }
-
-    /**
-     * Throws an exception if required shell functions are deactivated.
-     *
-     * @throws ShellAccessDeniedException
-     */
-    public function guardRequiredFunctionsEnabled(): void
-    {
-        $this->requiredFunctionsCache ??= [
-            'proc_open' => $this->checkFunctionExists('proc_open'),
-            'proc_close' => $this->checkFunctionExists('proc_close'),
+        [$appUrl, $database, $connection, $date] = [
+            parse_url(config('app.url'), PHP_URL_HOST),
+            $this->config->getDatabaseName(),
+            $this->config->getConnectionName(),
+            now(),
         ];
 
-        if (in_array(false, $this->requiredFunctionsCache, strict: true)) {
-            throw new ShellAccessDeniedException($this->requiredFunctionsCache);
-        }
-    }
-
-    public function getDatabaseName(): string
-    {
-        return $this->config->getDatabaseName();
-    }
-
-    /**
-     * Wraps function_exists to allow mocking in tests.
-     */
-    protected function checkFunctionExists(string $functionName): bool
-    {
-        return function_exists($functionName);
+        return sprintf(
+            config('protector.dump.fileName'),
+            $appUrl,
+            $database,
+            $connection,
+            $date->year,
+            $date->month,
+            $date->day,
+            $date->hour,
+            $date->minute,
+            $date->second
+        );
     }
 
     protected function wipeDatabase(Connection $connection): void
@@ -546,6 +520,21 @@ class Protector
         };
     }
 
+    /**
+     * Returns the appended metadata from a local file.
+     */
+    protected function getDumpMetadata(string $dumpFile): bool|array
+    {
+        return app()->makeWith(MetadataHandler::class, ['protectorConfig' => $this->config])->getDumpMetadata($dumpFile);
+    }
+
+    protected function startTelescopeRecording(bool $wasRecording): void
+    {
+        if ($wasRecording) {
+            \Laravel\Telescope\Telescope::startRecording();
+        }
+    }
+
     protected function stopTelescopeRecording(): bool
     {
         if ($isTelescopeRecording = class_exists(
@@ -555,13 +544,6 @@ class Protector
         }
 
         return $isTelescopeRecording;
-    }
-
-    protected function startTelescopeRecording(bool $wasRecording): void
-    {
-        if ($wasRecording) {
-            \Laravel\Telescope\Telescope::startRecording();
-        }
     }
 
     /**

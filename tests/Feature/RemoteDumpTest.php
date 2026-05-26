@@ -206,7 +206,7 @@ class RemoteDumpTest extends TestCase
         $destinationFilepath = $this->protector->download();
         $metadataFilePath = $destinationFilepath . '.meta';
         $decodedMetadataFile = json_decode($this->disk->get($metadataFilePath), true);
-        $parsedDumpMetadata = $this->protector->getDumpMetadata($destinationFilepath);
+        $parsedDumpMetadata = $this->runProtectedMethod('getDumpMetadata', [$destinationFilepath]);
 
         $this->assertFileExists($this->disk->path($destinationFilepath));
         $this->assertFileExists($this->disk->path($metadataFilePath));
@@ -262,7 +262,7 @@ class RemoteDumpTest extends TestCase
         $downloadedFilePath = $this->protector->download();
         $metadataFilePath = $downloadedFilePath . '.meta';
         $decodedMetadataFile = json_decode($this->disk->get($metadataFilePath), true);
-        $parsedDumpMetadata = $this->protector->getDumpMetadata($downloadedFilePath);
+        $parsedDumpMetadata = $this->runProtectedMethod('getDumpMetadata', [$downloadedFilePath]);
 
         $this->assertEquals($filesBeforeDownload, $localDisk->allFiles($localBaseDirectory));
         $this->assertIsArray($parsedDumpMetadata);
@@ -367,7 +367,7 @@ class RemoteDumpTest extends TestCase
         $structure = '%s %d-%d-%d %d-%d %x.sql';
         config()->set('protector.dump.fileName', $structure);
 
-        $fileName = $this->protector->createFilename();
+        $fileName = $this->runProtectedMethod('createFilename');
 
         $this->assertIsString($fileName);
         $this->assertStringMatchesFormat($structure, $fileName);

@@ -2,10 +2,10 @@
 
 namespace Cybex\Protector;
 
+use Cybex\Protector\Classes\DumpFileManager;
 use Cybex\Protector\Classes\SchemaState\MariaDb\MariaDbSchemaStateProxy;
 use Cybex\Protector\Classes\SchemaState\MySql\MySqlSchemaStateProxy;
 use Cybex\Protector\Classes\SchemaState\Postgres\PostgresSchemaStateProxy;
-use Cybex\Protector\Classes\DumpFileManager;
 use Cybex\Protector\Classes\SodiumCrypter;
 use Cybex\Protector\Commands\CreateKeys;
 use Cybex\Protector\Commands\CreateToken;
@@ -94,7 +94,7 @@ class ProtectorServiceProvider extends ServiceProvider
         Route::post(config('protector.server.dumpEndpointRoute'))
             ->middleware(config('protector.server.routeMiddleware'))
             ->name('protector.server.dump')
-            ->uses([Protector::class, 'prepareFileDownloadResponse']);
+            ->uses([Protector::class, 'generateFileDownloadResponse']);
     }
 
     /**

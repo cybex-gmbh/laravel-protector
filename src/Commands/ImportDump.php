@@ -143,7 +143,7 @@ class ImportDump extends Command
 
     protected function getLatestDump(): string
     {
-        $dumpPath = $this->protector->getLatestDumpName();
+        $dumpPath = $this->protector->latestDumpName();
 
         info(sprintf('Importing %s', $dumpPath));
 

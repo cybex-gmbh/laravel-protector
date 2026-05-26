@@ -174,7 +174,7 @@ class ImportDumpTest extends TestCase
             touch($this->disk->path($expectedFileName), time() + 60);
         }
 
-        $fileName = $this->protector->getLatestDumpName();
+        $fileName = $this->protector->latestDumpName();
 
         $this->assertEquals($expectedFileName, $fileName);
         $this->assertIsString($fileName);
@@ -185,20 +185,20 @@ class ImportDumpTest extends TestCase
     {
         $this->clearDumpDirectory();
         $this->expectException(EmptyBaseDirectoryException::class);
-        $this->protector->getLatestDumpName();
+        $this->protector->latestDumpName();
     }
 
     #[Test]
     #[DataProvider('provideDumpMetadata')]
     public function verifyDumpDateMetadata(string $filePath, array|bool $expectedMetadata): void
     {
-        $this->assertEquals($expectedMetadata, $this->protector->getDumpMetadata($filePath));
+        $this->assertEquals($expectedMetadata, $this->runProtectedMethod('getDumpMetadata', [$filePath]));
     }
 
     #[Test]
     public function failGetDumpMetadataOnResponseHasNotEnoughLines(): void
     {
-        $this->assertFalse($this->protector->getDumpMetadata(static::$baseDirectory . '/emptyDump.sql'));
+        $this->assertFalse($this->runProtectedMethod('getDumpMetadata', [static::$baseDirectory . '/emptyDump.sql']));
     }
 
     #[Test]
