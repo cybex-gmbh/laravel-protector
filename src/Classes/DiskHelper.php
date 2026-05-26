@@ -3,7 +3,7 @@
 namespace Cybex\Protector\Classes;
 
 use Cybex\Protector\Contracts\CrypterContract;
-use Cybex\Protector\Contracts\DumpFileManagerContract;
+use Cybex\Protector\Contracts\DiskHelperContract;
 use Cybex\Protector\Exceptions\DumpFileOperationException;
 use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
 use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Psr\Http\Message\StreamInterface;
 
-class DumpFileManager implements DumpFileManagerContract
+class DiskHelper implements DiskHelperContract
 {
     protected const string METADATA_FILE_SUFFIX = '.meta';
 

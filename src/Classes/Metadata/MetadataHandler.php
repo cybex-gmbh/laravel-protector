@@ -2,7 +2,7 @@
 
 namespace Cybex\Protector\Classes\Metadata;
 
-use Cybex\Protector\Contracts\DumpFileManagerContract;
+use Cybex\Protector\Contracts\DiskHelperContract;
 use Cybex\Protector\Contracts\MetadataProviderContract;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Exceptions\FileNotFoundException;
@@ -12,7 +12,7 @@ class MetadataHandler
 {
     public function __construct(
         protected ProtectorConfigContract $protectorConfig,
-        protected DumpFileManagerContract $dumpFileManager,
+        protected DiskHelperContract $diskHelper,
     )
     {
     }
@@ -100,10 +100,10 @@ class MetadataHandler
     protected function tail(string $file, int $lines, int $buffer = 1024): array
     {
         // Open file-handle.
-        if ($this->dumpFileManager->isAbsolutePath($file)) {
+        if ($this->diskHelper->isAbsolutePath($file)) {
             $fileHandle = fopen($file, 'rb');
         } else {
-            $fileHandle = $this->dumpFileManager->getLocalDisk()->readStream($file);
+            $fileHandle = $this->diskHelper->getLocalDisk()->readStream($file);
         }
 
         if (!is_resource($fileHandle)) {

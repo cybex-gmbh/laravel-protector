@@ -4,7 +4,7 @@ namespace Cybex\Protector;
 
 use Cybex\Protector\Classes\Metadata\MetadataHandler;
 use Cybex\Protector\Contracts\CrypterContract;
-use Cybex\Protector\Contracts\DumpFileManagerContract;
+use Cybex\Protector\Contracts\DiskHelperContract;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Contracts\SchemaStateProxyContract;
 use Cybex\Protector\Exceptions\FailedDumpGenerationException;
@@ -48,7 +48,7 @@ class Protector
 
     public function __construct(
         protected ProtectorConfigContract $config,
-        protected DumpFileManagerContract $dumpFileManager,
+        protected DiskHelperContract $diskHelper,
     )
     {
     }
@@ -100,13 +100,13 @@ class Protector
 
         $absoluteImportFilePath = $filePath;
 
-        if (!$this->dumpFileManager->isAbsolutePath($filePath)) {
-            $localFilePath = $this->dumpFileManager->copyStorageToLocal(
+        if (!$this->diskHelper->isAbsolutePath($filePath)) {
+            $localFilePath = $this->diskHelper->copyStorageToLocal(
                 $filePath,
                 $disk,
             );
 
-            $absoluteImportFilePath = $this->dumpFileManager->getLocalDisk()->path($localFilePath);
+            $absoluteImportFilePath = $this->diskHelper->getLocalDisk()->path($localFilePath);
         }
 
         if (!file_exists($absoluteImportFilePath)) {
@@ -126,8 +126,8 @@ class Protector
         } catch (Throwable $exception) {
             throw new FailedImportException($exception->getMessage());
         } finally {
-            if (!$this->dumpFileManager->isAbsolutePath($filePath)) {
-                $this->dumpFileManager->deleteLocalFiles($localFilePath);
+            if (!$this->diskHelper->isAbsolutePath($filePath)) {
+                $this->diskHelper->deleteLocalFiles($localFilePath);
             }
         }
 
@@ -161,23 +161,23 @@ class Protector
             throw new InvalidConnectionException('Connection is not configured properly.');
         }
 
-        $destinationFilePath = $this->dumpFileManager->storagePath($filePath ?? $this->createFilename());
+        $destinationFilePath = $this->diskHelper->storagePath($filePath ?? $this->createFilename());
         $metadata = $this->metadata();
 
         $localDumpFile = $this->generateDump($metadata) ?: throw new FailedDumpGenerationException('Dump could not be created.');
 
         try {
-            $this->dumpFileManager->copyLocalFileToDisk(
+            $this->diskHelper->copyLocalFileToDisk(
                 localFilePath: $localDumpFile,
                 destinationFilePath: $destinationFilePath,
                 disk: $disk,
             );
 
-            $this->dumpFileManager->writeMetadataFile($disk, $destinationFilePath, $metadata);
+            $this->diskHelper->writeMetadataFile($disk, $destinationFilePath, $metadata);
 
             return $destinationFilePath;
         } finally {
-            $this->dumpFileManager->deleteLocalFiles($localDumpFile);
+            $this->diskHelper->deleteLocalFiles($localDumpFile);
         }
     }
 
@@ -213,13 +213,13 @@ class Protector
         }
 
         $destinationFilePath = $filePath
-            ?? $this->dumpFileManager->getDownloadDestinationFilePath($response->header('Content-Disposition'));
+            ?? $this->diskHelper->getDownloadDestinationFilePath($response->header('Content-Disposition'));
 
         $stream = $response->toPsrResponse()->getBody();
-        $localFilePath = $this->dumpFileManager->localPath();
+        $localFilePath = $this->diskHelper->localPath();
 
         try {
-            $this->dumpFileManager->writeStreamToLocalFile(
+            $this->diskHelper->writeStreamToLocalFile(
                 stream: $stream,
                 destinationFilePath: $localFilePath,
                 chunkSize: $response->header('Chunk-Size'),
@@ -228,7 +228,7 @@ class Protector
             );
 
             $metadataPayload = Arr::get(
-                $this->getDumpMetadata($this->dumpFileManager->getLocalDisk()->path($localFilePath)),
+                $this->getDumpMetadata($this->diskHelper->getLocalDisk()->path($localFilePath)),
                 'meta'
             );
 
@@ -236,15 +236,15 @@ class Protector
                 throw new FailedRemoteDatabaseFetchingException('Retrieved incomplete decrypted dump metadata.');
             }
 
-            $this->dumpFileManager->copyLocalFileToDisk(
+            $this->diskHelper->copyLocalFileToDisk(
                 localFilePath: $localFilePath,
                 destinationFilePath: $destinationFilePath,
                 disk: $disk,
             );
 
-            $this->dumpFileManager->writeMetadataFile($disk, $destinationFilePath, $metadataPayload);
+            $this->diskHelper->writeMetadataFile($disk, $destinationFilePath, $metadataPayload);
         } finally {
-            $this->dumpFileManager->deleteLocalFiles($localFilePath);
+            $this->diskHelper->deleteLocalFiles($localFilePath);
             $stream->close();
         }
 
@@ -292,7 +292,7 @@ class Protector
 
             return response()->streamDownload(
                 function () use ($publicKey, $serverFile, $chunkSize, $shouldEncrypt) {
-                    $inputHandle = $this->dumpFileManager->getLocalDisk()->readStream($serverFile);
+                    $inputHandle = $this->diskHelper->getLocalDisk()->readStream($serverFile);
 
                     if (!is_resource($inputHandle)) {
                         throw new FailedDumpGenerationException('Could not read generated dump file from local disk.');
@@ -310,7 +310,7 @@ class Protector
                     }
 
                     fclose($inputHandle);
-                    $this->dumpFileManager->deleteLocalFiles($serverFile);
+                    $this->diskHelper->deleteLocalFiles($serverFile);
                 },
                 $this->createFilename(),
                 [
@@ -337,22 +337,22 @@ class Protector
 
     public function latestDumpName(): string
     {
-        return $this->dumpFileManager->latestDumpName();
+        return $this->diskHelper->latestDumpName();
     }
 
     public function dumpFiles(?string $excludeFile = null): Collection
     {
-        return $this->dumpFileManager->dumpFiles($excludeFile);
+        return $this->diskHelper->dumpFiles($excludeFile);
     }
 
     public function dumpFile(string $fileName): string
     {
-        return $this->dumpFileManager->dumpFile($fileName);
+        return $this->diskHelper->dumpFile($fileName);
     }
 
     public function dumpFilesWithMetadata(): Collection
     {
-        return $this->dumpFileManager->dumpFilesWithMetadata();
+        return $this->diskHelper->dumpFilesWithMetadata();
     }
 
     /**
@@ -401,8 +401,8 @@ class Protector
 
     protected function generateDump(?array $metadata = null): false|string
     {
-        $localDisk = $this->dumpFileManager->getLocalDisk();
-        $localFilePath = $this->dumpFileManager->localPath();
+        $localDisk = $this->diskHelper->getLocalDisk();
+        $localFilePath = $this->diskHelper->localPath();
 
         $this->getSchemaStateProxy()->dump(
             connection: DB::connection($this->config->getConnectionName()),
@@ -410,7 +410,7 @@ class Protector
         );
 
         if (!$localDisk->exists($localFilePath) || !$localDisk->size($localFilePath)) {
-            $this->dumpFileManager->deleteLocalFiles($localFilePath);
+            $this->diskHelper->deleteLocalFiles($localFilePath);
 
             return false;
         }
@@ -425,7 +425,7 @@ class Protector
             $localDisk->append($localFilePath, $metadataToAppend);
         } catch (Exception $exception) {
             Log::error($exception);
-            $this->dumpFileManager->deleteLocalFiles($localFilePath);
+            $this->diskHelper->deleteLocalFiles($localFilePath);
 
             return false;
         }

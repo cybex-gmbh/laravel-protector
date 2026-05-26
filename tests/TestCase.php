@@ -2,7 +2,7 @@
 
 namespace Cybex\Protector\Tests;
 
-use Cybex\Protector\Contracts\DumpFileManagerContract;
+use Cybex\Protector\Contracts\DiskHelperContract;
 use Cybex\Protector\Protector;
 use Cybex\Protector\ProtectorServiceProvider;
 use Illuminate\Contracts\Filesystem\Filesystem;
@@ -20,14 +20,14 @@ class TestCase extends OrchestraTestCase
      *  Protector instance.
      */
     protected Protector $protector;
-    protected DumpFileManagerContract $dumpFileManager;
+    protected DiskHelperContract $diskHelper;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->protector = app('protector');
-        $this->dumpFileManager = app(DumpFileManagerContract::class);
+        $this->diskHelper = app(DiskHelperContract::class);
     }
 
     /**
@@ -84,7 +84,7 @@ class TestCase extends OrchestraTestCase
     protected function getFakeDumpDisk(): Filesystem
     {
         $disk = $this->getDumpDisk();
-        $baseDirectory = $this->dumpFileManager->getStorageBaseDirectory();
+        $baseDirectory = $this->diskHelper->getStorageBaseDirectory();
 
         foreach (glob(__DIR__ . '/dumps/*.sql') as $filename) {
             $disk->putFileAs($baseDirectory, $filename, basename($filename));
@@ -95,11 +95,11 @@ class TestCase extends OrchestraTestCase
 
     protected function getDumpDisk(): Filesystem
     {
-        return Storage::fake($this->dumpFileManager->getStorageDiskName());
+        return Storage::fake($this->diskHelper->getStorageDiskName());
     }
 
     protected function clearDumpDirectory(): void
     {
-        $this->getDumpDisk()->deleteDirectory($this->dumpFileManager->getStorageBaseDirectory());
+        $this->getDumpDisk()->deleteDirectory($this->diskHelper->getStorageBaseDirectory());
     }
 }

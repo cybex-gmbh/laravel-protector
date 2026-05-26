@@ -7,7 +7,7 @@ use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
-use Cybex\Protector\Facades\DumpFileManagerFacade as DumpFileManager;
+use Cybex\Protector\Facades\DiskHelperFacade as DiskHelper;
 use Cybex\Protector\Protector;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Filesystem\Filesystem;
@@ -81,7 +81,7 @@ class ImportDump extends Command
 
         $this->protector = $protectorConfigurator->makeProtector();
         $this->protector->guardRequiredFunctionsEnabled();
-        $this->sourceDisk = DumpFileManager::getStorageDisk();
+        $this->sourceDisk = DiskHelper::getStorageDisk();
 
         $hasFile = !empty(trim($this->option('file')));
 
@@ -105,8 +105,8 @@ class ImportDump extends Command
 
     protected function getDumpFromRemote(): string
     {
-        $dumpPath = DumpFileManager::localPath();
-        $this->sourceDisk = DumpFileManager::getLocalDisk();
+        $dumpPath = DiskHelper::localPath();
+        $this->sourceDisk = DiskHelper::getLocalDisk();
         $this->needsCleanup = true;
 
         spin(
@@ -127,7 +127,7 @@ class ImportDump extends Command
      */
     protected function getDumpFromFile(): string
     {
-        if (DumpFileManager::isAbsolutePath($this->option('file'))) {
+        if (DiskHelper::isAbsolutePath($this->option('file'))) {
             $absoluteDumpPath = $this->option('file');
 
             if (!file_exists($absoluteDumpPath)) {
@@ -214,9 +214,9 @@ class ImportDump extends Command
         } finally {
             // Clean-up local in case there was a dump downloaded from remote.
             if ($this->needsCleanup) {
-                DumpFileManager::deleteLocalFiles([
+                DiskHelper::deleteLocalFiles([
                     $dumpPath,
-                    DumpFileManager::metadataFilePath($dumpPath),
+                    DiskHelper::metadataFilePath($dumpPath),
                 ]);
             }
         }

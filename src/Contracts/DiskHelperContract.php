@@ -9,7 +9,7 @@ use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Collection;
 use Psr\Http\Message\StreamInterface;
 
-interface DumpFileManagerContract
+interface DiskHelperContract
 {
     public function getLocalDisk(): Filesystem;
 

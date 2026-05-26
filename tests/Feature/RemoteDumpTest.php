@@ -251,8 +251,8 @@ class RemoteDumpTest extends TestCase
     {
         Config::set('protector.server.routeMiddleware', []);
 
-        $localDisk = Storage::disk($this->dumpFileManager->getLocalDiskName());
-        $localBaseDirectory = $this->dumpFileManager->getLocalBaseDirectory();
+        $localDisk = Storage::disk($this->diskHelper->getLocalDiskName());
+        $localBaseDirectory = $this->diskHelper->getLocalBaseDirectory();
         $filesBeforeDownload = $localDisk->allFiles($localBaseDirectory);
 
         Http::fake([
@@ -337,7 +337,7 @@ class RemoteDumpTest extends TestCase
     {
         Config::set('protector.dump.disks.storage.baseDirectory', __FUNCTION__);
 
-        $result = $this->dumpFileManager->getStorageBaseDirectory();
+        $result = $this->diskHelper->getStorageBaseDirectory();
 
         $this->assertEquals(__FUNCTION__, $result);
     }
@@ -349,7 +349,7 @@ class RemoteDumpTest extends TestCase
 
         Config::set('protector.dump.disks.storage.baseDirectory', fn() => $functionName);
 
-        $result = $this->dumpFileManager->getStorageBaseDirectory();
+        $result = $this->diskHelper->getStorageBaseDirectory();
 
         $this->assertEquals($functionName, $result);
     }

@@ -2,7 +2,7 @@
 
 namespace Cybex\Protector;
 
-use Cybex\Protector\Classes\DumpFileManager;
+use Cybex\Protector\Classes\DiskHelper;
 use Cybex\Protector\Classes\SchemaState\MariaDb\MariaDbSchemaStateProxy;
 use Cybex\Protector\Classes\SchemaState\MySql\MySqlSchemaStateProxy;
 use Cybex\Protector\Classes\SchemaState\Postgres\PostgresSchemaStateProxy;
@@ -13,7 +13,7 @@ use Cybex\Protector\Commands\DownloadDump;
 use Cybex\Protector\Commands\ExportDump;
 use Cybex\Protector\Commands\ImportDump;
 use Cybex\Protector\Contracts\CrypterContract;
-use Cybex\Protector\Contracts\DumpFileManagerContract;
+use Cybex\Protector\Contracts\DiskHelperContract;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
 use Cybex\Protector\Contracts\SchemaStateProxyContract;
@@ -67,7 +67,7 @@ class ProtectorServiceProvider extends ServiceProvider
         $this->app->bind('protector', Protector::class);
 
         $this->app->singleton(CrypterContract::class, SodiumCrypter::class);
-        $this->app->singleton(DumpFileManagerContract::class, DumpFileManager::class);
+        $this->app->singleton(DiskHelperContract::class, DiskHelper::class);
         $this->app->bind(ProtectorConfigContract::class, ProtectorConfig::class);
         $this->app->bind(ProtectorConfiguratorContract::class, ProtectorConfigurator::class);
 

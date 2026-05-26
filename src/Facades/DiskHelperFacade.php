@@ -2,18 +2,18 @@
 
 namespace Cybex\Protector\Facades;
 
-use Cybex\Protector\Contracts\DumpFileManagerContract;
+use Cybex\Protector\Contracts\DiskHelperContract;
 use Illuminate\Support\Facades\Facade;
 
 /**
  * @internal
- * @mixin DumpFileManagerContract
+ * @mixin DiskHelperContract
  */
-class DumpFileManagerFacade extends Facade
+class DiskHelperFacade extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return DumpFileManagerContract::class;
+        return DiskHelperContract::class;
     }
 }
 
