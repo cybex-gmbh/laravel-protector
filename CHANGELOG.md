@@ -22,6 +22,8 @@ All notable changes to `protector` will be documented in this file.
 - Restructured the `protector.php` configuration file for better organization and clarity
 - The `protector:import` command no longer supports the `--dump` option. The `--file` option now accepts both a relative and an absolute path
 - Reformatted the output of the `protector:keys` and `protector:token` commands to easier spot relevant information
+- A new `protector:download` command was added.
+- Metadata files (`.meta`) are written alongside dumps and used by interactive import, to avoid downloading database dump files just for metadata.
 
 ### Features
 
@@ -31,6 +33,7 @@ All notable changes to `protector` will be documented in this file.
   see the [Dump Metadata README section](README.md#dump-metadata) for more information
 - More options can now be configured on a `Protector` instance,
   see the [ProtectorConfiguratorContract](src/Contracts/ProtectorConfiguratorContract.php) for all configuration options
+- A new `protector:download` command was added, which allows downloading dumps to a configured storage disk
 
 ### Fixes
 

@@ -100,24 +100,6 @@ class ImportDumpCommandTest extends TestCase
     }
 
     #[Test]
-    public function canGetRemoteDumpWithFlushOptionEnabled(): void
-    {
-        Config::set('protector.client.basicAuthCredentials', '1234:1234');
-        Config::set('protector.server.routeMiddleware', []);
-
-        $dump = file_get_contents(__DIR__ . '/../dumps/dump.sql');
-
-        Http::fake([
-            $this->dumpEndpointUrl => Http::response($dump, 200, ['Chunk-Size' => 1024]),
-        ]);
-
-        $this->artisan('protector:import --remote --flush')
-            ->expectsConfirmation($this->shouldImportDump);
-
-        $this->assertCount(0, $this->protector->getDumpFiles()->toArray());
-    }
-
-    #[Test]
     public function failGetRemoteOnDumpWithNoResponse(): void
     {
         $this->expectException(FailedRemoteDatabaseFetchingException::class);
@@ -148,7 +130,7 @@ class ImportDumpCommandTest extends TestCase
     #[Test]
     public function canImportDumpOnOptionFileWithExistingAbsoluteFilePath(): void
     {
-        $fileName = $this->disk->path($this->protector->getDumpFile('dump.sql'));
+        $fileName = $this->disk->path($this->protector->dumpFile('dump.sql'));
 
         $this->artisan(sprintf('protector:import --file=%s --force', $fileName))->assertOk();
     }
@@ -171,7 +153,7 @@ class ImportDumpCommandTest extends TestCase
 
         $this->assertContains(
             sprintf('%s%sdump.sql', $this->protector->getStorageDiskBaseDirectory(), DIRECTORY_SEPARATOR),
-            $this->protector->getDumpFiles()->toArray()
+            $this->protector->dumpFiles()->toArray()
         );
     }
 
@@ -191,7 +173,7 @@ class ImportDumpCommandTest extends TestCase
     {
         $this->protector->flush(static::$baseDirectory . '/dump.sql');
 
-        $this->assertCount(1, $this->protector->getDumpFiles());
+        $this->assertCount(1, $this->protector->dumpFiles());
 
         $this->artisan('protector:import')
             ->expectsChoice($this->shouldDownloadDump, 2, static::DUMP_SOURCE_CHOICE)

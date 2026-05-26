@@ -140,10 +140,7 @@ class Protector
         }
     }
 
-
     /**
-     * Public function to create a dump for the given configuration.
-     *
      * @throws FailedDumpGenerationException
      * @throws InvalidConnectionException
      */
@@ -159,7 +156,7 @@ class Protector
         $localDumpFile = $this->generateDump($metadata) ?: throw new FailedDumpGenerationException('Dump could not be created.');
 
         $disk ??= $this->config->getStorageDisk();
-        $filePath ??= implode(DIRECTORY_SEPARATOR, [$this->config->getStorageBaseDirectory(), $this->createFilename()]);
+        $dumpPath = implode(DIRECTORY_SEPARATOR, [$this->config->getStorageBaseDirectory(), $filePath ?? $this->createFilename()]);
 
         $localDisk = $this->config->getLocalDisk();
         $stream = $localDisk->readStream($localDumpFile);
@@ -169,15 +166,15 @@ class Protector
                 throw new FailedDumpGenerationException('Could not read generated dump file from local disk.');
             }
 
-            if (!$disk->writeStream($filePath, $stream)) {
-                $disk->delete($filePath);
+            if (!$disk->writeStream($dumpPath, $stream)) {
+                $disk->delete($dumpPath);
 
                 throw new FailedDumpGenerationException('Could not write generated dump file to the storage disk.');
             }
 
             $this->writeMetadataFile(
                 $disk,
-                $filePath,
+                $dumpPath,
                 $metadata,
             );
         } finally {
@@ -185,7 +182,7 @@ class Protector
             $localDisk->delete($localDumpFile);
         }
 
-        return $filePath;
+        return $dumpPath;
     }
 
     /**
@@ -201,7 +198,7 @@ class Protector
      */
     public function flush(?string $excludeFile = null): void
     {
-        $files = $this->getDumpFiles($excludeFile)
+        $files = $this->dumpFiles($excludeFile)
             ->flatMap(fn(string $dumpFilePath) => [$dumpFilePath, $this->createMetadataFilePath($dumpFilePath)]);
 
         $this->config->getStorageDisk()->delete($files->toArray());
@@ -454,7 +451,7 @@ class Protector
      */
     public function getLatestDumpName(): string
     {
-        $files = $this->getDumpFiles();
+        $files = $this->dumpFiles();
 
         if ($files->isEmpty()) {
             throw new EmptyBaseDirectoryException();
@@ -508,7 +505,7 @@ class Protector
         return $localFilePath;
     }
 
-    public function getDumpFiles(?string $excludeFile = null): Collection
+    public function dumpFiles(?string $excludeFile = null): Collection
     {
         $files = array_values(array_filter(
             $this->config->getStorageDisk()->allFiles($this->config->getStorageBaseDirectory()),
@@ -525,11 +522,11 @@ class Protector
     /**
      * @throws FileNotFoundException
      */
-    public function getDumpFile(string $fileName): string
+    public function dumpFile(string $fileName): string
     {
         $filePathOnDisk = implode(DIRECTORY_SEPARATOR, [$this->config->getStorageBaseDirectory(), $fileName]);
 
-        $file = $this->getDumpFiles()->firstWhere(
+        $file = $this->dumpFiles()->firstWhere(
             fn($file) => $filePathOnDisk === $file
         );
 
@@ -540,9 +537,9 @@ class Protector
         return $file;
     }
 
-    public function getDumpFilesWithMetadata(): Collection
+    public function dumpFilesWithMetadata(): Collection
     {
-        return $this->getDumpFiles()->mapWithKeys(
+        return $this->dumpFiles()->mapWithKeys(
             fn(string $dumpFilePath) => [$dumpFilePath => $this->getMetadataFromMetaFile($dumpFilePath) ?? []]
         );
     }

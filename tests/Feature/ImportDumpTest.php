@@ -206,7 +206,7 @@ class ImportDumpTest extends TestCase
     {
         $this->protector->flush($excludeFromFlush);
 
-        $dumpsAfterFlushing = $this->protector->getDumpFiles()->toArray();
+        $dumpsAfterFlushing = $this->protector->dumpFiles()->toArray();
 
         $this->assertEquals($expected, $dumpsAfterFlushing);
     }
@@ -239,7 +239,7 @@ class ImportDumpTest extends TestCase
 
         $this->disk->delete($dumpFile . '.meta');
 
-        $dumpFilesWithMetadata = $this->protector->getDumpFilesWithMetadata();
+        $dumpFilesWithMetadata = $this->protector->dumpFilesWithMetadata();
 
         $this->assertSame([], $dumpFilesWithMetadata->get($dumpFile));
     }
@@ -258,7 +258,7 @@ class ImportDumpTest extends TestCase
 
         $this->disk->put($dumpFile . '.meta', json_encode($metadataFilePayload, JSON_UNESCAPED_UNICODE));
 
-        $dumpFilesWithMetadata = $this->protector->getDumpFilesWithMetadata();
+        $dumpFilesWithMetadata = $this->protector->dumpFilesWithMetadata();
 
         $this->assertEquals('pgsql', Arr::get($dumpFilesWithMetadata->get($dumpFile), 'meta.database.connection'));
     }

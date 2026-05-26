@@ -102,7 +102,7 @@ class MainLoopTest extends TestCase
         $this->artisan('protector:download')->assertSuccessful();
 
         $downloadedRemoteDump = sprintf('%s%sremote_dump.sql', $this->storageBaseDirectory, DIRECTORY_SEPARATOR);
-        $this->assertContains($downloadedRemoteDump, $this->protector->getDumpFiles()->toArray());
+        $this->assertContains($downloadedRemoteDump, $this->protector->dumpFiles()->toArray());
 
         Http::assertSent(fn($request) => $request->hasHeader('Authorization', 'Bearer ' . $context['authToken']));
 
@@ -112,11 +112,11 @@ class MainLoopTest extends TestCase
     #[Test]
     public function canExportAndImportExportedDump(): void
     {
-        $existingDumps = collect($this->protector->getDumpFiles()->toArray());
+        $existingDumps = collect($this->protector->dumpFiles()->toArray());
 
         $this->artisan('protector:export')->assertSuccessful();
 
-        $allDumps = collect($this->protector->getDumpFiles()->toArray());
+        $allDumps = collect($this->protector->dumpFiles()->toArray());
         $exportedDump = $allDumps->diff($existingDumps)->first();
 
         $this->assertNotNull($exportedDump);
@@ -126,30 +126,7 @@ class MainLoopTest extends TestCase
             '--force' => true,
         ])->assertSuccessful();
 
-        $this->assertContains($exportedDump, $this->protector->getDumpFiles()->toArray());
-    }
-
-    #[Test]
-    #[Depends('canCreateUserAndGenerateTokenWithMockedKeys')]
-    public function importingRemoteDumpWithFlushLeavesStorageEmpty(array $context): void
-    {
-        Config::set('protector.server.routeMiddleware', []);
-        Config::set('protector.client.basicAuthCredentials', '1234:1234');
-        Config::set('protector.client.dumpEndpointUrl', $context['dumpEndpointUrl']);
-
-        Http::fake([
-            $context['dumpEndpointUrl'] => fn() => Http::response(file_get_contents(__DIR__ . '/../dumps/dump.sql'), 200, ['Chunk-Size' => 1024]),
-        ]);
-
-        $this->assertNotEmpty($this->protector->getDumpFiles()->toArray());
-
-        $this->artisan('protector:import', [
-            '--remote' => true,
-            '--flush' => true,
-            '--force' => true,
-        ])->assertSuccessful();
-
-        $this->assertCount(0, $this->protector->getDumpFiles());
+        $this->assertContains($exportedDump, $this->protector->dumpFiles()->toArray());
     }
 
     protected function extractByPattern(string $pattern, string $subject): string

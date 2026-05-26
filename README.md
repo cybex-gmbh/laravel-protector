@@ -90,7 +90,7 @@ Each stored dump also has a matching metadata file with the `.meta` suffix (for 
 The metadata file stores the same metadata object that is embedded in the SQL dump footer under `meta`.
 
 Interactive import reads metadata from these metadata files. If a metadata file is missing, the dump can still be selected,
-and it is grouped as an unknown connection.
+and the import command will group it as an unknown connection.
 
 ### Import
 

@@ -24,7 +24,6 @@
 - Some functions throw different or more detailed exceptions.
 - The `protector:import` command no longer supports the `--dump` option.
 - The dump file handling APIs and disk config structure changed.
-- A new `protector:download` command was added.
 
 > [!IMPORTANT]
 > The `protector.php` config structure and keys have changed.
@@ -163,6 +162,20 @@ Or download and import in one step:
 ```bash
 php artisan protector:download --import
 ```
+
+### Protector::import() options
+
+> [!NOTE]
+> Likelihood of impact: medium
+>
+> Impact: Calls using array-based options must be updated.
+
+`Protector::import()` no longer accepts an untyped options array.
+Use explicit boolean parameters instead:
+
+- `allowProduction`
+- `noWipe`
+- `migrate`
 
 ### Protector configuration refactoring
 
