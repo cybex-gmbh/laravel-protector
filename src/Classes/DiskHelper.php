@@ -122,16 +122,12 @@ class DiskHelper implements DiskHelperContract
 
     public function dumpFiles(?string $excludeFile = null): Collection
     {
-        $files = array_values(array_filter(
-            $this->getStorageDisk()->allFiles($this->getStorageBaseDirectory()),
-            fn(string $filePath) => !$this->isMetadataFile($filePath)
-        ));
+        $allFiles = $this->getStorageDisk()
+            ->allFiles($this->getStorageBaseDirectory());
 
-        if ($excludeFile) {
-            $files = array_diff($files, [$excludeFile]);
-        }
-
-        return collect($files);
+        return collect($allFiles)
+            ->reject(fn(string $filePath) => $this->isMetadataFile($filePath))
+            ->when($excludeFile, fn($collection) => $collection->diff([$excludeFile]));
     }
 
     public function dumpFile(string $fileName): string
