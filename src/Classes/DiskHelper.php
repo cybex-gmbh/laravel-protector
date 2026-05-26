@@ -4,10 +4,13 @@ namespace Cybex\Protector\Classes;
 
 use Cybex\Protector\Contracts\CrypterContract;
 use Cybex\Protector\Contracts\DiskHelperContract;
-use Cybex\Protector\Exceptions\DumpFileOperationException;
 use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
+use Cybex\Protector\Exceptions\EmptyFileWrittenException;
 use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
+use Cybex\Protector\Exceptions\FailedReadingFromDiskException;
+use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\FailedWritingMetadataFileException;
+use Cybex\Protector\Exceptions\FailedWritingToDiskException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Collection;
@@ -56,10 +59,9 @@ class DiskHelper implements DiskHelperContract
 
     public function localPath(?string $fileName = null): string
     {
-        $localDisk = $this->getLocalDisk();
         $baseDirectory = $this->getLocalBaseDirectory();
 
-        $this->createDirectory($baseDirectory, $localDisk);
+        $this->createDirectory($baseDirectory, $this->getLocalDisk());
 
         return implode(DIRECTORY_SEPARATOR, [$baseDirectory, $fileName ?? uniqid('protector_', true) . '.sql']);
     }
@@ -85,8 +87,7 @@ class DiskHelper implements DiskHelperContract
 
     public function isAbsolutePath(string $filePath): bool
     {
-        return Str::startsWith($filePath, DIRECTORY_SEPARATOR)
-            || preg_match('/^[A-Za-z]:[\\\\\/]/', $filePath) === 1;
+        return Str::startsWith($filePath, DIRECTORY_SEPARATOR);
     }
 
     public function deleteLocalFiles(string|array $paths): void
@@ -99,6 +100,10 @@ class DiskHelper implements DiskHelperContract
         $this->getStorageDisk()->delete($paths);
     }
 
+    /**
+     * @throws FailedReadingFromDiskException
+     * @throws FailedWritingToDiskException
+     */
     public function copyStorageToLocal(string $storageFilePath, ?Filesystem $storageDisk = null): string
     {
         $storageDisk ??= $this->getStorageDisk();
@@ -108,14 +113,18 @@ class DiskHelper implements DiskHelperContract
         $stream = $storageDisk->readStream($storageFilePath);
 
         if (!is_resource($stream)) {
-            throw new FileNotFoundException($storageFilePath);
+            throw new FailedReadingFromDiskException($storageFilePath, 'storage');
         }
 
-        if (!$localDisk->writeStream($localFilePath, $stream)) {
-            $localDisk->delete($localFilePath);
-        }
+        try {
+            if (!$localDisk->writeStream($localFilePath, $stream)) {
+                $localDisk->delete($localFilePath);
 
-        fclose($stream);
+                throw new FailedWritingToDiskException($localFilePath, 'local');
+            }
+        } finally {
+            fclose($stream);
+        }
 
         return $localFilePath;
     }
@@ -130,6 +139,9 @@ class DiskHelper implements DiskHelperContract
             ->when($excludeFile, fn($collection) => $collection->diff([$excludeFile]));
     }
 
+    /**
+     * @throws FileNotFoundException
+     */
     public function dumpFile(string $fileName): string
     {
         $filePathOnDisk = implode(DIRECTORY_SEPARATOR, [$this->getStorageBaseDirectory(), $fileName]);
@@ -152,7 +164,10 @@ class DiskHelper implements DiskHelperContract
         );
     }
 
-    public function writeMetadataFile(?Filesystem $disk, string $dumpFilePath, array $metadataPayload): void
+    /**
+     * @throws FailedWritingMetadataFileException
+     */
+    public function writeMetadataFile(string $dumpFilePath, array $metadataPayload, ?Filesystem $disk = null): void
     {
         $disk ??= $this->getStorageDisk();
         $metadataFilePath = $this->metadataFilePath($dumpFilePath);
@@ -165,6 +180,9 @@ class DiskHelper implements DiskHelperContract
         }
     }
 
+    /**
+     * @throws EmptyBaseDirectoryException
+     */
     public function latestDumpName(): string
     {
         $files = $this->dumpFiles();
@@ -180,12 +198,15 @@ class DiskHelper implements DiskHelperContract
 
     public function flushDumps(?string $excludeFile = null): void
     {
-        $files = $this->dumpFiles($excludeFile)
+        $files = $this->dumpFiles(excludeFile: $excludeFile)
             ->flatMap(fn(string $dumpFilePath) => [$dumpFilePath, $this->metadataFilePath($dumpFilePath)]);
 
         $this->deleteStorageFiles($files->toArray());
     }
 
+    /**
+     * @throws FailedRemoteDatabaseFetchingException
+     */
     public function writeStreamToLocalFile(
         StreamInterface $stream,
         string $destinationFilePath,
@@ -210,38 +231,43 @@ class DiskHelper implements DiskHelperContract
         if ($this->getLocalDisk()->size($destinationFilePath) === 0) {
             $this->deleteLocalFiles($destinationFilePath);
 
-            throw DumpFileOperationException::emptyStreamResponse();
+            throw new FailedRemoteDatabaseFetchingException('Retrieved empty response from remote dump endpoint.');
         }
     }
 
-    public function copyLocalFileToDisk(
-        string $localFilePath,
-        string $destinationFilePath,
-        ?Filesystem $disk = null,
-    ): void
+    /**
+     * @throws FailedReadingFromDiskException
+     * @throws FailedWritingToDiskException
+     * @throws EmptyFileWrittenException
+     */
+    public function copyLocalFileToDisk(string $localFilePath, string $destinationFilePath, ?Filesystem $disk = null): void
     {
         $disk ??= $this->getStorageDisk();
         $localDisk = $this->getLocalDisk();
         $localFileStream = $localDisk->readStream($localFilePath);
 
-        if (!is_resource($localFileStream)) {
-            throw DumpFileOperationException::couldNotReadLocalFile();
-        }
-
         try {
-            if (!$disk->writeStream($destinationFilePath, $localFileStream)) {
+            if (!is_resource($localFileStream)) {
+                throw new FailedReadingFromDiskException($localFilePath, 'local');
+            }
+
+            try {
+                if (!$disk->writeStream($destinationFilePath, $localFileStream)) {
+                    $disk->delete($destinationFilePath);
+
+                    throw new FailedWritingToDiskException($destinationFilePath, 'storage');
+                }
+            } finally {
+                fclose($localFileStream);
+            }
+
+            if ($disk->size($destinationFilePath) === 0) {
                 $disk->delete($destinationFilePath);
 
-                throw DumpFileOperationException::couldNotWriteFileToDisk();
+                throw new EmptyFileWrittenException($destinationFilePath, 'storage');
             }
         } finally {
-            fclose($localFileStream);
-        }
-
-        if ($disk->size($destinationFilePath) === 0) {
-            $disk->delete($destinationFilePath);
-
-            throw DumpFileOperationException::destinationFileIsEmptyAfterWrite();
+            $this->deleteLocalFiles($localFilePath);
         }
     }
 
@@ -250,6 +276,9 @@ class DiskHelper implements DiskHelperContract
         return Str::endsWith($filePath, static::METADATA_FILE_SUFFIX);
     }
 
+    /**
+     * @throws FailedCreatingDestinationPathException
+     */
     protected function createDirectory(string $destinationPath, Filesystem $disk): void
     {
         if ($disk->missing($destinationPath)) {

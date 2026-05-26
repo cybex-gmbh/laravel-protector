@@ -6,8 +6,8 @@ use Carbon\Carbon;
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
 use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
 use Cybex\Protector\Exceptions\FailedImportException;
+use Cybex\Protector\Exceptions\FailedReadingFromDiskException;
 use Cybex\Protector\Exceptions\FailedWipeException;
-use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Cybex\Protector\Facades\DiskHelperFacade as DiskHelper;
@@ -147,7 +147,7 @@ class ImportDumpTest extends TestCase
     {
         $path = 'thisFileDoesNotExist';
 
-        $this->expectException(FileNotFoundException::class);
+        $this->expectException(FailedReadingFromDiskException::class);
         $this->protector->import($path);
     }
 

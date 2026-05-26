@@ -4,7 +4,6 @@ namespace Cybex\Protector\Tests\Feature;
 
 use Cybex\Protector\Contracts\CrypterContract;
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
-use Cybex\Protector\Exceptions\DumpFileOperationException;
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\InvalidConfiguration\MissingDumpEndpointUrlException;
 use Cybex\Protector\Exceptions\InvalidConfiguration\MissingPrivateKeyException;
@@ -140,7 +139,7 @@ class RemoteDumpTest extends TestCase
             $this->dumpEndpointUrl => Http::response('', 200, ['Chunk-Size' => 100]),
         ]);
 
-        $this->expectException(DumpFileOperationException::class);
+        $this->expectException(FailedRemoteDatabaseFetchingException::class);
 
         $this->protector->download();
     }

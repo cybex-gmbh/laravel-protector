@@ -2,8 +2,12 @@
 
 namespace Cybex\Protector\Contracts;
 
-use Cybex\Protector\Exceptions\DumpFileOperationException;
+use Cybex\Protector\Exceptions\EmptyFileWrittenException;
 use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
+use Cybex\Protector\Exceptions\FailedReadingFromDiskException;
+use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
+use Cybex\Protector\Exceptions\FailedWritingMetadataFileException;
+use Cybex\Protector\Exceptions\FailedWritingToDiskException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Collection;
@@ -37,6 +41,10 @@ interface DiskHelperContract
 
     public function deleteStorageFiles(string|array $paths): void;
 
+    /**
+     * @throws FailedReadingFromDiskException
+     * @throws FailedWritingToDiskException
+     */
     public function copyStorageToLocal(string $storageFilePath, ?Filesystem $storageDisk = null): string;
 
     public function dumpFiles(?string $excludeFile = null): Collection;
@@ -48,10 +56,13 @@ interface DiskHelperContract
 
     public function dumpFilesWithMetadata(): Collection;
 
-    public function writeMetadataFile(?Filesystem $disk, string $dumpFilePath, array $metadataPayload): void;
+    /**
+     * @throws FailedWritingMetadataFileException
+     */
+    public function writeMetadataFile(string $dumpFilePath, array $metadataPayload, ?Filesystem $disk = null): void;
 
     /**
-     * @throws DumpFileOperationException
+     * @throws FailedRemoteDatabaseFetchingException
      */
     public function writeStreamToLocalFile(
         StreamInterface $stream,
@@ -63,7 +74,9 @@ interface DiskHelperContract
     ): void;
 
     /**
-     * @throws DumpFileOperationException
+     * @throws FailedReadingFromDiskException
+     * @throws FailedWritingToDiskException
+     * @throws EmptyFileWrittenException
      */
     public function copyLocalFileToDisk(
         string $localFilePath,

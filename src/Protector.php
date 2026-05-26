@@ -166,19 +166,15 @@ class Protector
 
         $localDumpFile = $this->generateDump($metadata) ?: throw new FailedDumpGenerationException('Dump could not be created.');
 
-        try {
-            $this->diskHelper->copyLocalFileToDisk(
-                localFilePath: $localDumpFile,
-                destinationFilePath: $destinationFilePath,
-                disk: $disk,
-            );
+        $this->diskHelper->copyLocalFileToDisk(
+            localFilePath: $localDumpFile,
+            destinationFilePath: $destinationFilePath,
+            disk: $disk,
+        );
 
-            $this->diskHelper->writeMetadataFile($disk, $destinationFilePath, $metadata);
+        $this->diskHelper->writeMetadataFile($destinationFilePath, $metadata, $disk);
 
-            return $destinationFilePath;
-        } finally {
-            $this->diskHelper->deleteLocalFiles($localDumpFile);
-        }
+        return $destinationFilePath;
     }
 
     /**
@@ -217,14 +213,15 @@ class Protector
 
         $stream = $response->toPsrResponse()->getBody();
         $localFilePath = $this->diskHelper->localPath();
+        $shouldEncrypt = filter_var($response->header('Sanctum-Enabled'), FILTER_VALIDATE_BOOLEAN);
 
         try {
             $this->diskHelper->writeStreamToLocalFile(
                 stream: $stream,
                 destinationFilePath: $localFilePath,
                 chunkSize: $response->header('Chunk-Size'),
-                shouldEncrypt: $response->header('Sanctum-Enabled'),
-                privateKey: $this->config->getPrivateKey(),
+                shouldEncrypt: $shouldEncrypt,
+                privateKey: $shouldEncrypt ? $this->config->getPrivateKey() : null,
             );
 
             $metadataPayload = Arr::get(
@@ -242,9 +239,8 @@ class Protector
                 disk: $disk,
             );
 
-            $this->diskHelper->writeMetadataFile($disk, $destinationFilePath, $metadataPayload);
+            $this->diskHelper->writeMetadataFile($destinationFilePath, $metadataPayload, $disk);
         } finally {
-            $this->diskHelper->deleteLocalFiles($localFilePath);
             $stream->close();
         }
 
