@@ -2,6 +2,7 @@
 
 namespace Cybex\Protector\Classes\Metadata;
 
+use Cybex\Protector\Contracts\DumpFileManagerContract;
 use Cybex\Protector\Contracts\MetadataProviderContract;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Exceptions\FileNotFoundException;
@@ -9,7 +10,10 @@ use Illuminate\Support\Collection;
 
 class MetadataHandler
 {
-    public function __construct(protected ProtectorConfigContract $protectorConfig)
+    public function __construct(
+        protected ProtectorConfigContract $protectorConfig,
+        protected DumpFileManagerContract $dumpFileManager,
+    )
     {
     }
 
@@ -96,10 +100,10 @@ class MetadataHandler
     protected function tail(string $file, int $lines, int $buffer = 1024): array
     {
         // Open file-handle.
-        if ($this->isAbsolutePath($file)) {
+        if ($this->dumpFileManager->isAbsolutePath($file)) {
             $fileHandle = fopen($file, 'rb');
         } else {
-            $fileHandle = $this->protectorConfig->getStorageDisk()->readStream($file);
+            $fileHandle = $this->dumpFileManager->getLocalDisk()->readStream($file);
         }
 
         if (!is_resource($fileHandle)) {
@@ -134,11 +138,5 @@ class MetadataHandler
 
         // Get the last x lines from file.
         return array_slice(explode("\n", $contents), -$lines);
-    }
-
-    protected function isAbsolutePath(string $filePath): bool
-    {
-        return str_starts_with($filePath, DIRECTORY_SEPARATOR)
-            || preg_match('/^[A-Za-z]:[\\\\\/]/', $filePath) === 1;
     }
 }

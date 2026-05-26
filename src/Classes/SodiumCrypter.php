@@ -30,4 +30,12 @@ class SodiumCrypter implements CrypterContract
     {
         return sodium_crypto_box_seal_open($data, sodium_hex2bin($privateKey));
     }
+
+    public function determineEncryptionOverhead(int $chunkSize, string $publicKey): int
+    {
+        $chunk = str_repeat('0', $chunkSize);
+        $encryptedChunk = $this->encrypt($chunk, $publicKey);
+
+        return strlen($encryptedChunk) - $chunkSize;
+    }
 }

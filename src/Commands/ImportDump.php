@@ -7,13 +7,13 @@ use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
+use Cybex\Protector\Facades\DumpFileManagerFacade as DumpFileManager;
 use Cybex\Protector\Protector;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
-use Illuminate\Support\Str;
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\error;
 use function Laravel\Prompts\info;
@@ -81,7 +81,7 @@ class ImportDump extends Command
 
         $this->protector = $protectorConfigurator->makeProtector();
         $this->protector->guardRequiredFunctionsEnabled();
-        $this->sourceDisk = $this->protector->getStorageDisk();
+        $this->sourceDisk = DumpFileManager::getStorageDisk();
 
         $hasFile = !empty(trim($this->option('file')));
 
@@ -105,8 +105,8 @@ class ImportDump extends Command
 
     protected function getDumpFromRemote(): string
     {
-        $dumpPath = $this->protector->createLocalFilePath();
-        $this->sourceDisk = $this->protector->getLocalDisk();
+        $dumpPath = DumpFileManager::localPath();
+        $this->sourceDisk = DumpFileManager::getLocalDisk();
         $this->needsCleanup = true;
 
         spin(
@@ -127,9 +127,7 @@ class ImportDump extends Command
      */
     protected function getDumpFromFile(): string
     {
-        $isAbsoluteFilePath = $this->isAbsolutePath($this->option('file'));
-
-        if ($isAbsoluteFilePath) {
+        if (DumpFileManager::isAbsolutePath($this->option('file'))) {
             $absoluteDumpPath = $this->option('file');
 
             if (!file_exists($absoluteDumpPath)) {
@@ -215,10 +213,10 @@ class ImportDump extends Command
             info('Import aborted');
         } finally {
             // Clean-up local in case there was a dump downloaded from remote.
-            if ($this->needsCleanup && !$this->isAbsolutePath($dumpPath)) {
-                $this->protector->getLocalDisk()->delete([
+            if ($this->needsCleanup) {
+                DumpFileManager::deleteLocalFiles([
                     $dumpPath,
-                    $dumpPath . '.meta',
+                    DumpFileManager::metadataFilePath($dumpPath),
                 ]);
             }
         }
@@ -312,10 +310,5 @@ class ImportDump extends Command
             label: 'Import dump for which connection?',
             options: $connectionNames,
         );
-    }
-
-    protected function isAbsolutePath(string $filePath): bool
-    {
-        return Str::startsWith($filePath, DIRECTORY_SEPARATOR);
     }
 }

@@ -2,7 +2,6 @@
 
 namespace Cybex\Protector\Contracts;
 
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Collection;
 
 interface ProtectorConfigContract
@@ -26,17 +25,6 @@ interface ProtectorConfigContract
         ?array $metadataProviders = null
     );
 
-    public function getLocalBaseDirectory(): string;
-
-    public function getLocalDisk(): Filesystem;
-
-    public function getLocalDiskName(): string;
-
-    public function getStorageBaseDirectory(): string;
-
-    public function getStorageDisk(): Filesystem;
-
-    public function getStorageDiskName(): string;
 
     /**
      * Returns the current connection configuration.

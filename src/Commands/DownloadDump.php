@@ -3,6 +3,7 @@
 namespace Cybex\Protector\Commands;
 
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
+use Cybex\Protector\Facades\DumpFileManagerFacade as DumpFileManager;
 use Cybex\Protector\Protector;
 use Illuminate\Console\Command;
 use function Laravel\Prompts\confirm;
@@ -38,7 +39,7 @@ class DownloadDump extends Command
         info('Successfully downloaded dump to disk.');
 
         if ($this->option('flush')) {
-            $this->protector->flush(excludeFile: $filePath);
+            DumpFileManager::flushDumps(excludeFile: $filePath);
 
             warning('Storage directory has been flushed. Downloaded dump was retained.');
         }

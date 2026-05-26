@@ -7,6 +7,7 @@ use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
+use Cybex\Protector\Facades\DumpFileManagerFacade as DumpFileManager;
 use Cybex\Protector\Tests\TestCase;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Config;
@@ -95,7 +96,7 @@ class ImportDumpCommandTest extends TestCase
 
         $this->assertFileDoesNotExist($this->disk->path(static::$baseDirectory . '/remote_dump.sql'));
 
-        $localFiles = Storage::disk($this->protector->getLocalDiskName())->files($this->protector->getLocalDiskBaseDirectory());
+        $localFiles = Storage::disk($this->dumpFileManager->getLocalDiskName())->files($this->dumpFileManager->getLocalBaseDirectory());
         $this->assertCount(0, $localFiles);
     }
 
@@ -152,7 +153,7 @@ class ImportDumpCommandTest extends TestCase
         $this->artisan('protector:import --latest')->expectsConfirmation($this->shouldImportDump);
 
         $this->assertContains(
-            sprintf('%s%sdump.sql', $this->protector->getStorageDiskBaseDirectory(), DIRECTORY_SEPARATOR),
+            sprintf('%s%sdump.sql', $this->dumpFileManager->getStorageBaseDirectory(), DIRECTORY_SEPARATOR),
             $this->protector->dumpFiles()->toArray()
         );
     }
@@ -171,7 +172,7 @@ class ImportDumpCommandTest extends TestCase
     #[Test]
     public function chooseImportDumpWithOnlyOneFileInBaseDirectory(): void
     {
-        $this->protector->flush(static::$baseDirectory . '/dump.sql');
+        DumpFileManager::flushDumps(static::$baseDirectory . '/dump.sql');
 
         $this->assertCount(1, $this->protector->dumpFiles());
 

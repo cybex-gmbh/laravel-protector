@@ -10,6 +10,7 @@ use Cybex\Protector\Exceptions\FailedWipeException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
+use Cybex\Protector\Facades\DumpFileManagerFacade as DumpFileManager;
 use Cybex\Protector\Protector;
 use Cybex\Protector\Tests\TestCase;
 use Illuminate\Contracts\Filesystem\Filesystem;
@@ -204,7 +205,7 @@ class ImportDumpTest extends TestCase
     #[DataProvider('provideEmptyDumpsForFlushingDumps')]
     public function flushDumps(array $expected, ?string $excludeFromFlush): void
     {
-        $this->protector->flush($excludeFromFlush);
+        DumpFileManager::flushDumps($excludeFromFlush);
 
         $dumpsAfterFlushing = $this->protector->dumpFiles()->toArray();
 

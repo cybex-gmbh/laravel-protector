@@ -4,6 +4,7 @@ namespace Cybex\Protector\Tests\Feature;
 
 use Cybex\Protector\Contracts\CrypterContract;
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
+use Cybex\Protector\Exceptions\DumpFileOperationException;
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\InvalidConfiguration\MissingDumpEndpointUrlException;
 use Cybex\Protector\Exceptions\InvalidConfiguration\MissingPrivateKeyException;
@@ -139,7 +140,7 @@ class RemoteDumpTest extends TestCase
             $this->dumpEndpointUrl => Http::response('', 200, ['Chunk-Size' => 100]),
         ]);
 
-        $this->expectException(FailedRemoteDatabaseFetchingException::class);
+        $this->expectException(DumpFileOperationException::class);
 
         $this->protector->download();
     }
@@ -192,7 +193,7 @@ class RemoteDumpTest extends TestCase
         $encryptedMessage = app(CrypterContract::class)->encrypt($message, $publicKey);
 
         $chunkSize = strlen($message);
-        $encryptionOverhead = $this->runProtectedMethod('determineEncryptionOverhead', [$chunkSize, $publicKey]);
+        $encryptionOverhead = app(CrypterContract::class)->determineEncryptionOverhead($chunkSize, $publicKey);
 
         Http::fake([
             $this->dumpEndpointUrl => Http::response($encryptedMessage, 200, [
@@ -223,7 +224,7 @@ class RemoteDumpTest extends TestCase
         $encryptedPayload = app(CrypterContract::class)->encrypt($payloadWithoutMetadata, $publicKey);
 
         $chunkSize = strlen($payloadWithoutMetadata);
-        $encryptionOverhead = $this->runProtectedMethod('determineEncryptionOverhead', [$chunkSize, $publicKey]);
+        $encryptionOverhead = app(CrypterContract::class)->determineEncryptionOverhead($chunkSize, $publicKey);
 
         Http::fake([
             $this->dumpEndpointUrl => Http::response($encryptedPayload, 200, [
@@ -250,8 +251,8 @@ class RemoteDumpTest extends TestCase
     {
         Config::set('protector.server.routeMiddleware', []);
 
-        $localDisk = Storage::disk($this->protector->getLocalDiskName());
-        $localBaseDirectory = $this->protector->getLocalDiskBaseDirectory();
+        $localDisk = Storage::disk($this->dumpFileManager->getLocalDiskName());
+        $localBaseDirectory = $this->dumpFileManager->getLocalBaseDirectory();
         $filesBeforeDownload = $localDisk->allFiles($localBaseDirectory);
 
         Http::fake([
@@ -336,7 +337,7 @@ class RemoteDumpTest extends TestCase
     {
         Config::set('protector.dump.disks.storage.baseDirectory', __FUNCTION__);
 
-        $result = $this->protector->getStorageDiskBaseDirectory();
+        $result = $this->dumpFileManager->getStorageBaseDirectory();
 
         $this->assertEquals(__FUNCTION__, $result);
     }
@@ -348,7 +349,7 @@ class RemoteDumpTest extends TestCase
 
         Config::set('protector.dump.disks.storage.baseDirectory', fn() => $functionName);
 
-        $result = $this->protector->getStorageDiskBaseDirectory();
+        $result = $this->dumpFileManager->getStorageBaseDirectory();
 
         $this->assertEquals($functionName, $result);
     }
