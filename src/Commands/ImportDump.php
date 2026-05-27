@@ -29,7 +29,6 @@ use function Laravel\Prompts\warning;
 class ImportDump extends Command
 {
     protected const string UNKNOWN_CONNECTION_NAME = 'unknown_connection';
-    protected const string UNKNOWN_CONNECTION_LABEL = 'Unknown Connection';
 
     /**
      * The name and signature of the console command.
@@ -214,10 +213,7 @@ class ImportDump extends Command
         } finally {
             // Clean-up local in case there was a dump downloaded from remote.
             if ($this->needsCleanup) {
-                DiskHelper::deleteLocalFiles([
-                    $dumpPath,
-                    DiskHelper::metadataFilePath($dumpPath),
-                ]);
+                DiskHelper::deleteLocalFiles($dumpPath);
             }
         }
     }

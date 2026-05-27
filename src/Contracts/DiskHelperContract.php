@@ -2,8 +2,8 @@
 
 namespace Cybex\Protector\Contracts;
 
-use Cybex\Protector\Exceptions\EmptyFileWrittenException;
 use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
+use Cybex\Protector\Exceptions\EmptyFileWrittenException;
 use Cybex\Protector\Exceptions\FailedReadingFromDiskException;
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\FailedWritingMetadataFileException;
@@ -37,9 +37,9 @@ interface DiskHelperContract
 
     public function isAbsolutePath(string $filePath): bool;
 
-    public function deleteLocalFiles(string|array $paths): void;
+    public function deleteLocalFiles(string|array|Collection $paths): void;
 
-    public function deleteStorageFiles(string|array $paths): void;
+    public function deleteStorageFiles(string|array|Collection $paths, ?Filesystem $disk = null): void;
 
     /**
      * @throws FailedReadingFromDiskException
