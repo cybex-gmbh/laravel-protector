@@ -42,8 +42,8 @@ return [
         | Disk Configuration
         |--------------------------------------------------------------------------
         |
-        | Local disk is used for staging and temporary file handling.
-        | Storage disk is used for persisted dump files.
+        | Local disk is used for temporary file handling.
+        | Storage disk is used for persisting dump files.
         |
         */
         'disks' => [

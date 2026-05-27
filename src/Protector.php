@@ -407,22 +407,6 @@ class Protector
     }
 
     /**
-     * @throws InvalidConfigurationException
-     */
-    public function decryptString(string $encryptedString): string
-    {
-        $decryptedString = app(CrypterContract::class)->decrypt($encryptedString, $this->config->getPrivateKey());
-
-        if ($decryptedString === false) {
-            throw new InvalidConfigurationException(
-                'There was an error decrypting the provided string. This might be due to mismatching crypto keys.'
-            );
-        }
-
-        return $decryptedString;
-    }
-
-    /**
      * @throws ShellAccessDeniedException
      */
     public function guardRequiredFunctionsEnabled(): void
@@ -437,17 +421,33 @@ class Protector
         }
     }
 
+    public function getDatabaseName(): string
+    {
+        return $this->config->getDatabaseName();
+    }
+
+    /**
+     * @throws InvalidConfigurationException
+     */
+    protected function decryptString(string $encryptedString): string
+    {
+        $decryptedString = app(CrypterContract::class)->decrypt($encryptedString, $this->config->getPrivateKey());
+
+        if ($decryptedString === false) {
+            throw new InvalidConfigurationException(
+                'There was an error decrypting the provided string. This might be due to mismatching crypto keys.'
+            );
+        }
+
+        return $decryptedString;
+    }
+
     /**
      * Wraps function_exists to allow mocking in tests.
      */
     protected function checkFunctionExists(string $functionName): bool
     {
         return function_exists($functionName);
-    }
-
-    public function getDatabaseName(): string
-    {
-        return $this->config->getDatabaseName();
     }
 
     protected function generateDump(?array $metadata = null): false|string

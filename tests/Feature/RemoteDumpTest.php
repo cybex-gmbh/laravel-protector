@@ -357,7 +357,7 @@ class RemoteDumpTest extends TestCase
     public function failDecryptingOnInvalidString(): void
     {
         $this->expectException(InvalidConfigurationException::class);
-        $this->protector->decryptString(base64_encode(__FUNCTION__));
+        $this->runProtectedMethod('decryptString', [base64_encode(__FUNCTION__)]);
     }
 
     #[Test]
