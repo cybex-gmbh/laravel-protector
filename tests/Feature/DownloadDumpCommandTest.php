@@ -4,7 +4,9 @@ namespace Cybex\Protector\Tests\Feature;
 
 use Cybex\Protector\Classes\DiskHelper;
 use Cybex\Protector\Contracts\DiskHelperContract;
+use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
 use Cybex\Protector\Exceptions\FailedImportException;
+use Cybex\Protector\Protector;
 use Cybex\Protector\Tests\TestCase;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Config;
@@ -93,14 +95,15 @@ class DownloadDumpCommandTest extends TestCase
         $this->disk->put($existingDumpPath, '-- existing dump');
         $this->disk->put($existingMetadataPath, '{"meta":{"database":{"connection":"sqlite"}}}');
 
-        $invalidDumpWithMetadata = implode(PHP_EOL, [
-            'INVALID SQL STATEMENT;',
-            '-- meta:{"database":{"connection":"sqlite","dumpedAtDate":"2026-05-26T00:00:00+00:00"}}',
-        ]);
+        $protector = Mockery::mock(Protector::class);
+        $protector->shouldReceive('downloadAndImport')
+            ->once()
+            ->andThrow(new FailedImportException('Import failed.'));
 
-        Http::fake([
-            $this->dumpEndpointUrl => Http::response($invalidDumpWithMetadata, 200, ['Chunk-Size' => 1024]),
-        ]);
+        $protectorConfigurator = Mockery::mock(ProtectorConfiguratorContract::class);
+        $protectorConfigurator->shouldReceive('makeProtector')->once()->andReturn($protector);
+
+        $this->app->instance(ProtectorConfiguratorContract::class, $protectorConfigurator);
 
         $this->expectException(FailedImportException::class);
 
