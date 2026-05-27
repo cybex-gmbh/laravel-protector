@@ -110,7 +110,7 @@ class ImportDump extends Command
         $this->needsCleanup = true;
 
         spin(
-            callback: fn() => $this->protector->download(disk: $this->sourceDisk, filePath: $dumpPath),
+            callback: fn() => $this->protector->download(filePath: $dumpPath, disk: $this->sourceDisk),
             message: 'Downloading dump...'
         );
 

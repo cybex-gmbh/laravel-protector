@@ -17,6 +17,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Psr\Http\Message\StreamInterface;
+use Throwable;
 
 class DiskHelper implements DiskHelperContract
 {
@@ -239,8 +240,14 @@ class DiskHelper implements DiskHelperContract
      * @throws FailedReadingFromDiskException
      * @throws FailedWritingToDiskException
      * @throws EmptyFileWrittenException
+     * @throws Throwable
      */
-    public function copyLocalFileToDisk(string $localFilePath, string $destinationFilePath, ?Filesystem $disk = null): void
+    public function copyLocalFileToDisk(
+        string $localFilePath,
+        string $destinationFilePath,
+        ?Filesystem $disk = null,
+        bool $keepLocalFile = false,
+    ): void
     {
         $disk ??= $this->getStorageDisk();
         $localDisk = $this->getLocalDisk();
@@ -251,23 +258,24 @@ class DiskHelper implements DiskHelperContract
                 throw new FailedReadingFromDiskException($localFilePath, 'local');
             }
 
-            try {
-                if (!$disk->writeStream($destinationFilePath, $localFileStream)) {
-                    $disk->delete($destinationFilePath);
-
-                    throw new FailedWritingToDiskException($destinationFilePath, 'storage');
-                }
-            } finally {
-                fclose($localFileStream);
+            if (!$disk->writeStream($destinationFilePath, $localFileStream)) {
+                throw new FailedWritingToDiskException($destinationFilePath, 'storage');
             }
 
             if ($disk->size($destinationFilePath) === 0) {
-                $disk->delete($destinationFilePath);
-
                 throw new EmptyFileWrittenException($destinationFilePath, 'storage');
             }
-        } finally {
+        } catch (Throwable $throwable) {
             $this->deleteLocalFiles($localFilePath);
+            $disk->delete($destinationFilePath);
+
+            throw $throwable;
+        } finally {
+            fclose($localFileStream);
+
+            if (!$keepLocalFile) {
+                $this->deleteLocalFiles($localFilePath);
+            }
         }
     }
 

@@ -161,7 +161,7 @@ class Protector
             throw new InvalidConnectionException('Connection is not configured properly.');
         }
 
-        $destinationFilePath = $this->diskHelper->storagePath($filePath ?? $this->createFilename());
+        $destinationFilePath = $filePath ?? $this->diskHelper->storagePath($this->createFilename());
         $metadata = $this->metadata();
 
         $localDumpFile = $this->generateDump($metadata) ?: throw new FailedDumpGenerationException('Dump could not be created.');
@@ -184,10 +184,64 @@ class Protector
      * @param Filesystem|null $disk Defaults to the storage disk.
      *
      * @return string The dump file path on the disk.
-     *
-     * @throws FailedRemoteDatabaseFetchingException
      */
     public function download(?string $filePath = null, ?Filesystem $disk = null): string
+    {
+        [$destinationFilePath] = $this->downloadToDisk(
+            filePath: $filePath,
+            disk: $disk,
+        );
+
+        return $destinationFilePath;
+    }
+
+    /**
+     * Downloads a dump file from a remote system and stores it on the specified disk (defaults to the storage disk).
+     * Afterwards the dump will be imported, without re-downloading it from storage.
+     *
+     * @param string|null $filePath Optional file path on the disk to which the dump is written.
+     * @param Filesystem|null $disk Defaults to the storage disk.
+     * @param bool|null $noWipe Whether the database should not be wiped before import.
+     * @param bool|null $migrate Whether to run migrations after import.
+     * @param bool|null $allowProduction Allow importing in the production enviroment.
+     */
+    public function downloadAndImport(
+        ?string $filePath = null,
+        ?Filesystem $disk = null,
+        ?bool $noWipe = false,
+        ?bool $migrate = false,
+        ?bool $allowProduction = false,
+    ): string
+    {
+        [$destinationFilePath, $localFilePath] = $this->downloadToDisk(
+            filePath: $filePath,
+            disk: $disk,
+            keepLocalFile: true,
+        );
+
+        try {
+            $this->import(
+                filePath: $this->diskHelper->getLocalDisk()->path($localFilePath),
+                noWipe: $noWipe,
+                migrate: $migrate,
+                allowProduction: $allowProduction,
+            );
+        } finally {
+            $this->diskHelper->deleteLocalFiles($localFilePath);
+        }
+
+        return $destinationFilePath;
+    }
+
+    /**
+     * @throws FailedRemoteDatabaseFetchingException
+     * @throws Throwable
+     */
+    protected function downloadToDisk(
+        ?string $filePath = null,
+        ?Filesystem $disk = null,
+        bool $keepLocalFile = false,
+    ): array
     {
         $this->guardDownload();
 
@@ -237,6 +291,7 @@ class Protector
                 localFilePath: $localFilePath,
                 destinationFilePath: $destinationFilePath,
                 disk: $disk,
+                keepLocalFile: $keepLocalFile,
             );
 
             $this->diskHelper->writeMetadataFile($destinationFilePath, $metadataPayload, $disk);
@@ -244,7 +299,7 @@ class Protector
             $stream->close();
         }
 
-        return $destinationFilePath;
+        return [$destinationFilePath, $localFilePath];
     }
 
     public function generateFileDownloadResponse(

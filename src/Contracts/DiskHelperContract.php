@@ -82,6 +82,7 @@ interface DiskHelperContract
         string $localFilePath,
         string $destinationFilePath,
         ?Filesystem $disk = null,
+        bool $keepLocalFile = false,
     ): void;
 
     /**

@@ -31,21 +31,25 @@ class DownloadDump extends Command
     {
         $this->configureProtector();
 
+        $shouldImport = $this->option('import') && $this->confirmImport();
+
         $filePath = spin(
-            callback: fn() => $this->protector->download(filePath: $this->option('file')),
-            message: 'Downloading dump...'
+            callback: fn() => $shouldImport
+                ? $this->protector->downloadAndImport(
+                    filePath: $this->option('file'),
+                    noWipe: $this->option('no-wipe'),
+                    migrate: $this->option('migrate'),
+                    allowProduction: $this->option('allow-production'),
+                )
+                : $this->protector->download(filePath: $this->option('file')),
+            message: $shouldImport ? 'Downloading and importing...' : 'Downloading dump...'
         );
 
         info('Successfully downloaded dump to disk.');
+        $shouldImport && info('Import done!');
 
         if ($this->option('flush')) {
-            DiskHelper::flushDumps(excludeFile: $filePath);
-
-            warning('Storage directory has been flushed. Downloaded dump was retained.');
-        }
-
-        if ($this->option('import')) {
-            return $this->import($filePath);
+            $this->flush($filePath);
         }
 
         return self::SUCCESS;
@@ -62,32 +66,26 @@ class DownloadDump extends Command
         $this->protector = $protectorConfigurator->makeProtector();
     }
 
-    /**
-     * @param string $filePath
-     * @return int
-     */
-    protected function import(string $filePath): int
+    protected function confirmImport(): bool
     {
-        if ($this->option('force') || confirm(sprintf('Import downloaded dump into the database: %s?', $this->protector->getDatabaseName()))) {
-            spin(
-                callback: fn() => $this->protector->import(
-                    $filePath,
-                    noWipe: $this->option('no-wipe'),
-                    migrate: $this->option('migrate'),
-                    allowProduction: $this->option('allow-production'),
-                ),
-                message: 'Importing...'
+        $shouldImport = $this->option('force') || confirm(
+                sprintf('Import downloaded dump into the database: %s?', $this->protector->getDatabaseName())
             );
 
-            info('Import done!');
-
-            return self::SUCCESS;
+        if (!$shouldImport) {
+            info('Import aborted');
         }
 
-        info('Import aborted');
-
-        return self::SUCCESS;
+        return $shouldImport;
     }
+
+    protected function flush(string $filePath): void
+    {
+        DiskHelper::flushDumps(excludeFile: $filePath);
+
+        warning('Storage directory has been flushed. Downloaded dump was retained.');
+    }
+
 }
 
 
