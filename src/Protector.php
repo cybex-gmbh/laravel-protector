@@ -460,7 +460,7 @@ class Protector
             path: $localDisk->path($localFilePath)
         );
 
-        if (!$localDisk->exists($localFilePath) || !$localDisk->size($localFilePath)) {
+        if ($localDisk->exists($localFilePath) && !$localDisk->size($localFilePath)) {
             $this->diskHelper->deleteLocalFiles($localFilePath);
 
             return false;

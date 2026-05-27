@@ -91,14 +91,14 @@ class DiskHelper implements DiskHelperContract
         return Str::startsWith($filePath, DIRECTORY_SEPARATOR);
     }
 
-    public function deleteLocalFiles(string|array $paths): void
+    public function deleteLocalFiles(string|array|Collection $paths): void
     {
-        $this->getLocalDisk()->delete($paths);
+        $this->deleteFilesWithMetadata($paths, $this->getLocalDisk());
     }
 
-    public function deleteStorageFiles(string|array $paths): void
+    public function deleteStorageFiles(string|array|Collection $paths, ?Filesystem $disk = null): void
     {
-        $this->getStorageDisk()->delete($paths);
+        $this->deleteFilesWithMetadata($paths, $disk ?? $this->getStorageDisk());
     }
 
     /**
@@ -175,7 +175,7 @@ class DiskHelper implements DiskHelperContract
         $encodedMetadata = json_encode(['meta' => $metadataPayload], JSON_UNESCAPED_UNICODE);
 
         if ($disk->put($metadataFilePath, $encodedMetadata) === false) {
-            $disk->delete([$dumpFilePath, $metadataFilePath]);
+            $this->deleteStorageFiles($dumpFilePath, $disk);
 
             throw new FailedWritingMetadataFileException($dumpFilePath);
         }
@@ -199,10 +199,7 @@ class DiskHelper implements DiskHelperContract
 
     public function flushDumps(?string $excludeFile = null): void
     {
-        $files = $this->dumpFiles(excludeFile: $excludeFile)
-            ->flatMap(fn(string $dumpFilePath) => [$dumpFilePath, $this->metadataFilePath($dumpFilePath)]);
-
-        $this->deleteStorageFiles($files->toArray());
+        $this->deleteStorageFiles($this->dumpFiles(excludeFile: $excludeFile));
     }
 
     /**
@@ -267,7 +264,7 @@ class DiskHelper implements DiskHelperContract
             }
         } catch (Throwable $throwable) {
             $this->deleteLocalFiles($localFilePath);
-            $disk->delete($destinationFilePath);
+            $this->deleteStorageFiles($destinationFilePath, $disk);
 
             throw $throwable;
         } finally {
@@ -314,6 +311,15 @@ class DiskHelper implements DiskHelperContract
         $decodedMetadata = json_decode($metadata, associative: true);
 
         return is_array($decodedMetadata) ? $decodedMetadata : null;
+    }
+
+    protected function deleteFilesWithMetadata(string|array|Collection $paths, Filesystem $disk): void
+    {
+        $pathsToDelete = collect($paths)
+            ->flatMap(fn(string $filePath) => [$filePath, $this->metadataFilePath($filePath)])
+            ->toArray();
+
+        $disk->delete($pathsToDelete);
     }
 
     protected function getConfigValueForKey(string $key, mixed $default = null): mixed
