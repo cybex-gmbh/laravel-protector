@@ -9,45 +9,34 @@ use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Schema;
+use Orchestra\Testbench\Attributes\WithMigration;
 use PHPUnit\Framework\Attributes\Depends;
 use PHPUnit\Framework\Attributes\Test;
+use function Orchestra\Testbench\artisan;
+use function Orchestra\Testbench\package_path;
 
+#[WithMigration]
 class MainLoopTest extends TestCase
 {
-    protected static bool $migrationsLoaded = false;
     protected string $storageBaseDirectory = 'dumps';
     protected Filesystem $disk;
-    protected const string MOCK_PRIVATE_KEY = 'MOCKED_PRIVATE_KEY';
-    protected const string MOCK_PUBLIC_KEY = 'MOCKED_PUBLIC_KEY';
+    protected static bool $migrated = false;
+
+    protected function defineDatabaseMigrations(): void
+    {
+        if (static::$migrated) return;
+
+        artisan($this, 'migrate:fresh', ['--database' => env('DB_CONNECTION')]);
+
+        $this->loadMigrationsFrom(package_path() . '/Migrations');
+        $this->loadMigrationsFrom(package_path() . '/vendor/laravel/sanctum/database/migrations');
+
+        static::$migrated = true;
+    }
 
     protected function setUp(): void
     {
         parent::setUp();
-
-        if (!static::$migrationsLoaded) {
-            if (!Schema::hasTable('users')) {
-                $this->loadLaravelMigrations();
-            }
-
-            if (!Schema::hasTable('personal_access_tokens')) {
-                $this->loadMigrationsFrom(__DIR__ . '/../../vendor/laravel/sanctum/database/migrations');
-            }
-
-            if (!Schema::hasColumn('users', 'protector_public_key')) {
-                $this->loadMigrationsFrom(__DIR__ . '/../../Migrations');
-            }
-
-            static::$migrationsLoaded = true;
-        }
-
-        if (Schema::hasTable('users') && !Schema::hasColumn('users', 'protector_public_key')) {
-            Schema::table('users', fn($table) => $table->longText('protector_public_key')->nullable());
-        }
-
-        if (Schema::hasTable('personal_access_tokens') && !Schema::hasColumn('personal_access_tokens', 'expires_at')) {
-            Schema::table('personal_access_tokens', fn($table) => $table->timestamp('expires_at')->nullable());
-        }
 
         Config::set('protector.dump.disks.storage.baseDirectory', $this->storageBaseDirectory);
         Config::set('auth.providers.users.model', TestUser::class);
@@ -56,26 +45,29 @@ class MainLoopTest extends TestCase
     }
 
     #[Test]
-    public function canCreateUserAndGenerateTokenWithMockedKeys(): array
+    public function canCreateUserAndGenerateTokenAndKeys(): array
     {
-        $user = TestUser::query()->create([
+        $user = TestUser::create([
             'name' => 'Protector Tester',
             'email' => 'protector+' . uniqid() . '@example.test',
             'password' => 'secret',
             'protector_public_key' => null,
         ]);
 
-        CrypterFacade::shouldReceive('createPrivateKey')->once()->andReturn(static::MOCK_PRIVATE_KEY);
-        CrypterFacade::shouldReceive('getPublicKeyFromPrivateKey')->once()->andReturn(static::MOCK_PUBLIC_KEY);
+        $privateKey = CrypterFacade::createPrivateKey();
+        $publicKey = CrypterFacade::getPublicKeyFromPrivateKey($privateKey);
+        CrypterFacade::shouldReceive('createPrivateKey')->once()->andReturn($privateKey);
+        CrypterFacade::shouldReceive('getPublicKeyFromPrivateKey')->once()->andReturn($publicKey);
 
         $this->artisan('protector:keys')
-            ->expectsOutputToContain(static::MOCK_PRIVATE_KEY)
-            ->expectsOutputToContain(static::MOCK_PUBLIC_KEY)
+            ->expectsOutputToContain($privateKey)
+            ->expectsOutputToContain($publicKey)
             ->assertSuccessful();
 
+        // Need to use the Artisan facade, to be able to fetch the command output.
         $this->assertSame(0, Artisan::call('protector:token', [
             'userId' => $user->id,
-            '--publicKey' => static::MOCK_PUBLIC_KEY,
+            '--publicKey' => $publicKey,
         ]));
 
         $tokenOutput = Artisan::output();
@@ -83,25 +75,46 @@ class MainLoopTest extends TestCase
         return [
             'authToken' => $this->extractByPattern('/PROTECTOR_CLIENT_AUTH_TOKEN="(.+)"$/m', $tokenOutput),
             'dumpEndpointUrl' => $this->extractByPattern('/PROTECTOR_CLIENT_DUMP_ENDPOINT_URL=(.+)$/m', $tokenOutput),
-            'privateKey' => static::MOCK_PRIVATE_KEY,
+            'privateKey' => $privateKey,
+            'publicKey' => $publicKey,
         ];
     }
 
     #[Test]
-    #[Depends('canCreateUserAndGenerateTokenWithMockedKeys')]
+    #[Depends('canCreateUserAndGenerateTokenAndKeys')]
     public function canDownloadRemoteDumpWithUserAuthentication(array $context): array
     {
         Config::set('protector.client.privateKey', $context['privateKey']);
         Config::set('protector.client.authToken', $context['authToken']);
         Config::set('protector.client.dumpEndpointUrl', $context['dumpEndpointUrl']);
+        Config::set('protector.server.routeMiddleware', ['auth:sanctum']);
+
+        $chunkSize = 1024;
+        $encryptedPayload = '';
+
+        $dumpHandle = fopen(__DIR__ . '/../dumps/dump.sql', 'rb');
+
+        while (!feof($dumpHandle)) {
+            $chunk = fread($dumpHandle, $chunkSize);
+
+            $encryptedPayload .= CrypterFacade::encrypt($chunk, $context['publicKey']);
+        }
+
+        fclose($dumpHandle);
+
+        $encryptionOverhead = CrypterFacade::determineEncryptionOverhead($chunkSize, $context['publicKey']);
 
         Http::fake([
-            $context['dumpEndpointUrl'] => fn() => Http::response(file_get_contents(__DIR__ . '/../dumps/dump.sql'), 200, ['Chunk-Size' => 1024]),
+            $context['dumpEndpointUrl'] => fn() => Http::response($encryptedPayload, 200, [
+                'Sanctum-Enabled' => true,
+                'Chunk-Size' => $chunkSize + $encryptionOverhead,
+                'Content-Disposition' => 'attachment; filename="fake_dump.sql"',
+            ]),
         ]);
 
         $this->artisan('protector:download')->assertSuccessful();
 
-        $downloadedRemoteDump = sprintf('%s%sremote_dump.sql', $this->storageBaseDirectory, DIRECTORY_SEPARATOR);
+        $downloadedRemoteDump = sprintf('%s%sfake_dump.sql', $this->storageBaseDirectory, DIRECTORY_SEPARATOR);
         $this->assertContains($downloadedRemoteDump, $this->protector->dumpFiles()->toArray());
 
         Http::assertSent(fn($request) => $request->hasHeader('Authorization', 'Bearer ' . $context['authToken']));
@@ -137,21 +150,4 @@ class MainLoopTest extends TestCase
 
         return trim($matches[1] ?? '');
     }
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
