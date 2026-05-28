@@ -52,7 +52,7 @@ return [
                 'baseDirectory' => ProtectorEnv::LOCAL_BASE_DIRECTORY->get(default: 'protector/local'),
             ],
             'storage' => [
-                'disk' => ProtectorEnv::STORAGE_DISK->get(default: 'local'),
+                'disk' => ProtectorEnv::STORAGE_DISK->get(),
                 'baseDirectory' => ProtectorEnv::STORAGE_BASE_DIRECTORY->get(default: 'protector'),
             ],
         ],
@@ -204,7 +204,7 @@ return [
         | Here you may customize the route for the dump endpoint.
         |
         */
-        'dumpEndpointRoute' => ProtectorEnv::DUMP_ENDPOINT_ROUTE->get('/protector/exportDump'),
+        'dumpEndpointRoute' => ProtectorEnv::DUMP_ENDPOINT_ROUTE->get(default: '/protector/exportDump'),
 
         /*
         |--------------------------------------------------------------------------

@@ -35,12 +35,12 @@ class DiskHelper implements DiskHelperContract
 
     public function getLocalDiskName(): string
     {
-        return $this->getConfigValueForKey('dump.disks.local.disk', 'local');
+        return $this->getConfigValueForKey('dump.disks.local.disk');
     }
 
     public function getStorageDiskName(): string
     {
-        return $this->getConfigValueForKey('dump.disks.storage.disk', config('filesystems.default'));
+        return $this->getConfigValueForKey('dump.disks.storage.disk') ?? config('filesystems.default');
     }
 
     public function getLocalBaseDirectory(): string
