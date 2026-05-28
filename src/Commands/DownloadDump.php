@@ -85,7 +85,4 @@ class DownloadDump extends Command
 
         warning('Storage directory has been flushed. Downloaded dump was retained.');
     }
-
 }
-
-

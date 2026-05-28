@@ -6,7 +6,9 @@ use Exception;
 use Throwable;
 
 /**
- * Thrown if writing the metadata file fails.
+ * Class FailedWritingMetadataFileException
+ *
+ * @package Cybex\Protector\Exceptions
  */
 class FailedWritingMetadataFileException extends Exception
 {

@@ -6,7 +6,7 @@ use Exception;
 use Throwable;
 
 /**
- * Class FailedReadingLocalFileException
+ * Class EmptyFileWrittenException
  *
  * @package Cybex\Protector\Exceptions
  */
