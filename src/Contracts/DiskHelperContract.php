@@ -27,39 +27,23 @@ interface DiskHelperContract
 
     public function getStorageBaseDirectory(): string;
 
-    public function storagePath(string $filePath): string;
-
-    public function getDownloadDestinationFilePath(string $contentDispositionHeader): string;
-
-    public function localPath(?string $fileName = null): string;
-
-    public function metadataFilePath(string $dumpFilePath): string;
-
-    public function isAbsolutePath(string $filePath): bool;
-
-    public function deleteLocalFiles(string|array|Collection $paths): void;
-
-    public function deleteStorageFiles(string|array|Collection $paths, ?Filesystem $disk = null): void;
+    /**
+     * @throws FailedReadingFromDiskException
+     * @throws FailedWritingToDiskException
+     * @throws EmptyFileWrittenException
+     */
+    public function copyLocalToStorage(
+        string $localFilePath,
+        string $destinationFilePath,
+        ?Filesystem $disk = null,
+        bool $keepLocalFile = false,
+    ): void;
 
     /**
      * @throws FailedReadingFromDiskException
      * @throws FailedWritingToDiskException
      */
     public function copyStorageToLocal(string $storageFilePath, ?Filesystem $storageDisk = null): string;
-
-    public function dumpFiles(?string $excludeFile = null): Collection;
-
-    /**
-     * @throws FileNotFoundException
-     */
-    public function dumpFile(string $fileName): string;
-
-    public function dumpFilesWithMetadata(): Collection;
-
-    /**
-     * @throws FailedWritingMetadataFileException
-     */
-    public function writeMetadataFile(string $dumpFilePath, array $metadataPayload, ?Filesystem $disk = null): void;
 
     /**
      * @throws FailedRemoteDatabaseFetchingException
@@ -74,21 +58,37 @@ interface DiskHelperContract
     ): void;
 
     /**
-     * @throws FailedReadingFromDiskException
-     * @throws FailedWritingToDiskException
-     * @throws EmptyFileWrittenException
+     * @throws FailedWritingMetadataFileException
      */
-    public function copyLocalFileToDisk(
-        string $localFilePath,
-        string $destinationFilePath,
-        ?Filesystem $disk = null,
-        bool $keepLocalFile = false,
-    ): void;
+    public function writeMetadataFile(string $dumpFilePath, array $metadataPayload, ?Filesystem $disk = null): void;
+
+    public function deleteLocalFiles(string|array|Collection $paths): void;
+
+    public function deleteStorageFiles(string|array|Collection $paths, ?Filesystem $disk = null): void;
+
+    public function flushDumps(?string $excludeFile = null): void;
+
+    public function storagePath(string $filePath): string;
+
+    public function localPath(?string $fileName = null): string;
+
+    public function getDownloadDestinationFilePath(string $contentDispositionHeader): string;
+
+    public function metadataFilePath(string $dumpFilePath): string;
+
+    /**
+     * @throws FileNotFoundException
+     */
+    public function dumpFile(string $fileName): string;
+
+    public function dumpFiles(?string $excludeFile = null): Collection;
+
+    public function dumpFilesWithMetadata(): Collection;
 
     /**
      * @throws EmptyBaseDirectoryException
      */
     public function latestDumpName(): string;
 
-    public function flushDumps(?string $excludeFile = null): void;
+    public function isAbsolutePath(string $filePath): bool;
 }

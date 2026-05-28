@@ -168,7 +168,7 @@ class Protector
 
         $localDumpFile = $this->generateDump($metadata) ?: throw new FailedDumpGenerationException('Dump could not be created.');
 
-        $this->diskHelper->copyLocalFileToDisk(
+        $this->diskHelper->copyLocalToStorage(
             localFilePath: $localDumpFile,
             destinationFilePath: $destinationFilePath,
             disk: $disk,
@@ -289,7 +289,7 @@ class Protector
                 throw new FailedRemoteDatabaseFetchingException('Retrieved incomplete decrypted dump metadata.');
             }
 
-            $this->diskHelper->copyLocalFileToDisk(
+            $this->diskHelper->copyLocalToStorage(
                 localFilePath: $localFilePath,
                 destinationFilePath: $destinationFilePath,
                 disk: $disk,
