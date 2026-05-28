@@ -20,6 +20,7 @@ This package allows you to download, export and import your application's databa
 - Export the local database to a file
 - User authentication through Laravel Sanctum tokens
 - Transport encryption using Sodium
+- Laravel disk support
 
 ## Supported databases
 
@@ -65,22 +66,23 @@ To save a copy of your local database, run
 php artisan protector:export
 ```
 
-By default, dumps are stored in `storage/app/protector` on your default project disk.
-You can configure the target disk, filename, etc. by publishing the protector config file to your project
+By default, dumps are stored in `storage/app/private/protector` on Laravel's `local` disk.
+To configure the storage location and other settings, you can either publish the config file,
+or set the according environment variables found in the [ProtectorEnv](src/Enums/ProtectorEnv.php) class.
 
 ```bash
-artisan vendor:publish --tag=protector.config
+php artisan vendor:publish --tag=protector.config
 ```
 
 ### Download from remote
 
-To download the newest remote dump without importing it, run
+To store the newest remote dump without importing it, run
 
 ```bash
 php artisan protector:download
 ```
 
-To download and import in one step, run
+To store and import in one step
 
 ```bash
 php artisan protector:download --import
@@ -102,13 +104,13 @@ php artisan protector:import
 
 #### Importing a specific source
 
-To download and import the server database in one go, run
+To download and import the server database in one go without storing the dump, run
 
 ```bash
 php artisan protector:import --remote
 ```
 
-`protector:import` does not keep downloaded dump files on storage or local staging disks.
+`protector:import` cleans up the used disks after importing.
 
 When used with other options, remote will serve as fallback behavior.
 
@@ -138,11 +140,10 @@ If you want to run migrations after the import of the database file, run
 php artisan protector:import --migrate
 ```
 
-For automation, also consider the flush option to clean up older database files, and the force option to bypass user
-interaction.
+For automation, consider the force option to bypass user interaction.
 
 ```bash
-php artisan protector:import --remote --migrate --flush --force
+php artisan protector:import --remote --migrate --force
 ```
 
 To learn more about import options, run
@@ -167,23 +168,12 @@ Install the package via composer.
 composer require cybex/laravel-protector
 ```
 
-You can optionally publish the protector config to set the following options
+Almost all config options can be set via environment variables. Take a look at the [ProtectorEnv](src/Enums/ProtectorEnv.php) class for all available options.
 
-- `fileName`: the file name of the database dump
-- `disks.local.baseDirectory`: local staging directory for temp and processing files
-- `disks.local.disk`: local staging disk (defaults to Laravel's `local` disk)
-- `disks.storage.baseDirectory`: where persistent dump files are stored
-- `disks.storage.disk`: storage disk for persistent dumps (local or cloud, e.g. S3)
-
-Related `.env` keys:
-
-- `PROTECTOR_DUMP_DISKS_LOCAL_DISK`
-- `PROTECTOR_DUMP_DISKS_LOCAL_BASE_DIRECTORY`
-- `PROTECTOR_DUMP_DISKS_STORAGE_DISK`
-- `PROTECTOR_DUMP_DISKS_STORAGE_BASE_DIRECTORY`
+You can optionally publish the protector config to have more fine-grained control over config settings:
 
 ```bash
-artisan vendor:publish --tag=protector.config
+php artisan vendor:publish --tag=protector.config
 ```
 
 #### Local usage
@@ -194,8 +184,8 @@ You can now use the artisan command to write a backup to the protector storage f
 php artisan protector:export
 ```
 
-By default, the file will be stored in storage/protector and have a timestamp in the name. You can also specify the
-filename.
+By default, the file will be stored in `storage/private/protector` and have a timestamp in the name. You can also specify the
+filepath.
 
 You could also automate this by
 
@@ -204,7 +194,7 @@ You could also automate this by
 - creating a Laravel Job and queueing it
 
 ```bash
-php artisan protector:export --file=storage/database.sql
+php artisan protector:export --file="protector/database.sql"
 ```
 
 ### Setup for importing the database of a remote server
@@ -251,7 +241,7 @@ Run the migrations on the client and server repository.
 php artisan migrate
 ```
 
-You can optionally publish the protector config to set options regarding the storage, access and transmission of the
+You can use environment variables or optionally publish the protector config to set options regarding the storage, access and transmission of the
 files.
 
 ```bash

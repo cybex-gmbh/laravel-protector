@@ -13,17 +13,20 @@ All notable changes to `protector` will be documented in this file.
 
 - The minimum required PHP version is now 8.4
 - The minimum required Laravel version is now 12.1.1
-- Dropped support for Laravel 9, 10, and 11
 - Added MariaDB driver support
 - Dropped official MySQL support
+- Importing dumps will now clean up downloaded files
 - Restructured the `Protector` class by splitting it into `Protector` and `ProtectorConfig`.
-  Configuration can no longer be accessed after the `Protector` instance has been created.
+  Configuration can no longer be accessed after the `Protector` instance has been created
 - Custom protector instances are now created through the new `ProtectorConfigurator` class
 - Restructured the `protector.php` configuration file for better organization and clarity
-- The `protector:import` command no longer supports the `--dump` option. The `--file` option now accepts both a relative and an absolute path
+- The `protector:import` command no longer supports the `--dump`, `--ignore-connection-filter` and `--flush` options.
+  The `--file` option now accepts both a relative and an absolute path
 - Reformatted the output of the `protector:keys` and `protector:token` commands to easier spot relevant information
-- A new `protector:download` command was added.
-- Metadata files (`.meta`) are written alongside dumps and used by interactive import, to avoid downloading database dump files just for metadata.
+- A new `protector:download` command was added. This command allows storing downloaded dumps
+- Metadata files (`.meta`) are written alongside dumps and used by interactive import, to avoid downloading database dump files just for metadata
+- Dump metadata structure has changed from a flat array to a hierarchical structure grouped by provider
+- A lot of methods have been renamed, have changed signatures or throw different exceptions
 
 ### Features
 
@@ -31,9 +34,12 @@ All notable changes to `protector` will be documented in this file.
 - Added MariaDB support via Laravel's `mariadb` driver and dedicated `MariaDbSchemaStateProxy`
 - The metadata which is appended at the end of a dump file can now be customized,
   see the [Dump Metadata README section](README.md#dump-metadata) for more information
-- More options can now be configured on a `Protector` instance,
+- More options can now be configured per Protector instance via `ProtectorConfigurator`,
   see the [ProtectorConfiguratorContract](src/Contracts/ProtectorConfiguratorContract.php) for all configuration options
-- A new `protector:download` command was added, which allows downloading dumps to a configured storage disk
+- The `Protector` now fully operates Laravel disks, which can be configured separately.
+  The `local` disk is used for temporary files, while the `storage` disk is used for storing dumps and metadata files.
+- The `protector:import` command will now clean up downloaded files after importing
+- A new `protector:download` command was added, which allows downloading dumps to a configured storage disk with optional import
 
 ### Fixes
 
