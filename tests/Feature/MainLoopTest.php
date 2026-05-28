@@ -51,7 +51,6 @@ class MainLoopTest extends TestCase
             'name' => 'Protector Tester',
             'email' => 'protector+' . uniqid() . '@example.test',
             'password' => 'secret',
-            'protector_public_key' => null,
         ]);
 
         $privateKey = CrypterFacade::createPrivateKey();
