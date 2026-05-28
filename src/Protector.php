@@ -113,18 +113,20 @@ class Protector
             throw new FileNotFoundException($absoluteImportFilePath);
         }
 
-        if (!$noWipe) {
-            try {
-                $this->wipeDatabase(DB::connection($this->config->getConnectionName()));
-            } catch (Throwable $exception) {
-                throw new FailedWipeException($exception->getMessage());
-            }
-        }
-
         try {
-            $this->getSchemaStateProxy()->load($absoluteImportFilePath);
-        } catch (Throwable $exception) {
-            throw new FailedImportException($exception->getMessage());
+            if (!$noWipe) {
+                try {
+                    $this->wipeDatabase(DB::connection($this->config->getConnectionName()));
+                } catch (Throwable $exception) {
+                    throw new FailedWipeException($exception->getMessage());
+                }
+            }
+
+            try {
+                $this->getSchemaStateProxy()->load($absoluteImportFilePath);
+            } catch (Throwable $exception) {
+                throw new FailedImportException($exception->getMessage());
+            }
         } finally {
             if (!$this->diskHelper->isAbsolutePath($filePath)) {
                 $this->diskHelper->deleteLocalFiles($localFilePath);
