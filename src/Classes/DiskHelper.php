@@ -221,20 +221,17 @@ class DiskHelper implements DiskHelperContract
         ?string $emptyResponseContext = null,
     ): void
     {
-        $outputHandle = fopen($this->getLocalDisk()->path($destinationFilePath), 'wb');
-
         try {
             while (!$stream->eof() && ($chunk = $stream->read($chunkSize)) !== '') {
                 if ($shouldEncrypt) {
                     $chunk = app(CrypterContract::class)->decrypt($chunk, $privateKey);
                 }
 
-                fwrite($outputHandle, $chunk);
+                // Separator needs to be null, else each chunk will start on a new line.
+                $this->getLocalDisk()->append($destinationFilePath, $chunk, separator: null);
             }
 
-            fclose($outputHandle);
-
-            if ($this->getLocalDisk()->size($destinationFilePath) === 0) {
+            if (!$this->getLocalDisk()->exists($destinationFilePath) || $this->getLocalDisk()->size($destinationFilePath) === 0) {
                 throw new FailedRemoteDatabaseFetchingException('Retrieved empty response from remote dump endpoint.');
             }
         } catch (Throwable $throwable) {
