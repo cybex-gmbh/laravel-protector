@@ -167,17 +167,23 @@ class DiskHelper implements DiskHelperContract
 
     /**
      * @throws FailedWritingMetadataFileException
+     * @throws Throwable
      */
     public function writeMetadataFile(string $dumpFilePath, array $metadataPayload, ?Filesystem $disk = null): void
     {
         $disk ??= $this->getStorageDisk();
         $metadataFilePath = $this->metadataFilePath($dumpFilePath);
-        $encodedMetadata = json_encode(['meta' => $metadataPayload], JSON_UNESCAPED_UNICODE);
 
-        if ($disk->put($metadataFilePath, $encodedMetadata) === false) {
+        try {
+            $encodedMetadata = json_encode(['meta' => $metadataPayload], flags: JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+
+            if ($disk->put($metadataFilePath, $encodedMetadata) === false) {
+                throw new FailedWritingMetadataFileException($dumpFilePath);
+            }
+        } catch (Throwable $throwable) {
             $this->deleteStorageFiles($dumpFilePath, $disk);
 
-            throw new FailedWritingMetadataFileException($dumpFilePath);
+            throw $throwable;
         }
     }
 
@@ -204,6 +210,7 @@ class DiskHelper implements DiskHelperContract
 
     /**
      * @throws FailedRemoteDatabaseFetchingException
+     * @throws Throwable
      */
     public function writeStreamToLocalFile(
         StreamInterface $stream,
@@ -216,20 +223,24 @@ class DiskHelper implements DiskHelperContract
     {
         $outputHandle = fopen($this->getLocalDisk()->path($destinationFilePath), 'wb');
 
-        while (!$stream->eof() && ($chunk = $stream->read($chunkSize)) !== '') {
-            if ($shouldEncrypt) {
-                $chunk = app(CrypterContract::class)->decrypt($chunk, $privateKey);
+        try {
+            while (!$stream->eof() && ($chunk = $stream->read($chunkSize)) !== '') {
+                if ($shouldEncrypt) {
+                    $chunk = app(CrypterContract::class)->decrypt($chunk, $privateKey);
+                }
+
+                fwrite($outputHandle, $chunk);
             }
 
-            fwrite($outputHandle, $chunk);
-        }
+            fclose($outputHandle);
 
-        fclose($outputHandle);
-
-        if ($this->getLocalDisk()->size($destinationFilePath) === 0) {
+            if ($this->getLocalDisk()->size($destinationFilePath) === 0) {
+                throw new FailedRemoteDatabaseFetchingException('Retrieved empty response from remote dump endpoint.');
+            }
+        } catch (Throwable $throwable) {
             $this->deleteLocalFiles($destinationFilePath);
 
-            throw new FailedRemoteDatabaseFetchingException('Retrieved empty response from remote dump endpoint.');
+            throw $throwable;
         }
     }
 

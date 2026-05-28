@@ -297,6 +297,10 @@ class Protector
             );
 
             $this->diskHelper->writeMetadataFile($destinationFilePath, $metadataPayload, $disk);
+        } catch (Throwable $throwable) {
+            $this->diskHelper->deleteLocalFiles($localFilePath);
+
+            throw $throwable;
         } finally {
             $stream->close();
         }
@@ -329,14 +333,17 @@ class Protector
                 }
             } catch (InvalidConnectionException|FailedDumpGenerationException|InvalidConfigurationException $exception) {
                 Log::error($exception);
+                $this->diskHelper->deleteLocalFiles($serverFile);
 
                 return response($exception->getMessage(), 500, ['message' => $exception->getMessage()]);
             } catch (ShellAccessDeniedException $exception) {
                 Log::error($exception);
+                $this->diskHelper->deleteLocalFiles($serverFile);
 
                 return response($exception->httpResponse, 500, ['message' => $exception->httpResponse]);
             } catch (Throwable $throwable) {
                 Log::error($throwable);
+                $this->diskHelper->deleteLocalFiles($serverFile);
 
                 return response($throwable->getMessage(), 500, ['message' => 'Unknown error, please check server logs for details.']);
             }
@@ -345,25 +352,27 @@ class Protector
 
             return response()->streamDownload(
                 function () use ($publicKey, $serverFile, $chunkSize, $shouldEncrypt) {
-                    $inputHandle = $this->diskHelper->getLocalDisk()->readStream($serverFile);
+                    try {
+                        $inputHandle = $this->diskHelper->getLocalDisk()->readStream($serverFile);
 
-                    if (!is_resource($inputHandle)) {
-                        throw new FailedDumpGenerationException('Could not read generated dump file from local disk.');
-                    }
-
-                    while (!feof($inputHandle)) {
-                        $chunk = fread($inputHandle, $chunkSize);
-
-                        // Encrypt the data when Laravel Sanctum is active.
-                        if ($shouldEncrypt) {
-                            $chunk = app(CrypterContract::class)->encrypt($chunk, $publicKey);
+                        if (!is_resource($inputHandle)) {
+                            throw new FailedDumpGenerationException('Could not read generated dump file from local disk.');
                         }
 
-                        echo $chunk;
-                    }
+                        while (!feof($inputHandle)) {
+                            $chunk = fread($inputHandle, $chunkSize);
 
-                    fclose($inputHandle);
-                    $this->diskHelper->deleteLocalFiles($serverFile);
+                            // Encrypt the data when Laravel Sanctum is active.
+                            if ($shouldEncrypt) {
+                                $chunk = app(CrypterContract::class)->encrypt($chunk, $publicKey);
+                            }
+
+                            echo $chunk;
+                        }
+                    } finally {
+                        is_resource($inputHandle) && fclose($inputHandle);
+                        $this->diskHelper->deleteLocalFiles($serverFile);
+                    }
                 },
                 $this->createFilename(),
                 [
