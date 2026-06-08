@@ -16,7 +16,7 @@ use function Orchestra\Testbench\artisan;
 use function Orchestra\Testbench\package_path;
 
 #[WithMigration]
-class MainLoopTest extends TestCase
+class CommandsTest extends TestCase
 {
     protected string $storageBaseDirectory = 'dumps';
     protected Filesystem $disk;
