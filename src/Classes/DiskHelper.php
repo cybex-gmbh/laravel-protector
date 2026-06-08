@@ -142,6 +142,12 @@ class DiskHelper implements DiskHelperContract
                     $chunk = app(CrypterContract::class)->decrypt($chunk, $privateKey);
                 }
 
+                if ($chunk === false) {
+                    throw new InvalidConfigurationException(
+                        'There was an error decrypting the provided string. This might be due to mismatching crypto keys.'
+                    );
+                }
+
                 // Separator needs to be null, else each chunk will start on a new line.
                 $this->getLocalDisk()->append($destinationFilePath, $chunk, separator: null);
             }

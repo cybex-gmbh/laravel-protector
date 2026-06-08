@@ -439,22 +439,6 @@ class Protector
     }
 
     /**
-     * @throws InvalidConfigurationException
-     */
-    protected function decryptString(string $encryptedString): string
-    {
-        $decryptedString = app(CrypterContract::class)->decrypt($encryptedString, $this->config->getPrivateKey());
-
-        if ($decryptedString === false) {
-            throw new InvalidConfigurationException(
-                'There was an error decrypting the provided string. This might be due to mismatching crypto keys.'
-            );
-        }
-
-        return $decryptedString;
-    }
-
-    /**
      * Wraps function_exists to allow mocking in tests.
      */
     protected function checkFunctionExists(string $functionName): bool

@@ -9,7 +9,6 @@ use Cybex\Protector\Exceptions\InvalidConfiguration\MissingDumpEndpointUrlExcept
 use Cybex\Protector\Exceptions\InvalidConfiguration\MissingPrivateKeyException;
 use Cybex\Protector\Exceptions\InvalidConfiguration\NoAuthConfiguredException;
 use Cybex\Protector\Exceptions\InvalidConfiguration\SanctumBasicAuthConflictException;
-use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Tests\TestCase;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\Client\PendingRequest;
@@ -351,13 +350,6 @@ class RemoteDumpTest extends TestCase
         $result = $this->diskHelper->getStorageBaseDirectory();
 
         $this->assertEquals($functionName, $result);
-    }
-
-    #[Test]
-    public function failDecryptingOnInvalidString(): void
-    {
-        $this->expectException(InvalidConfigurationException::class);
-        $this->runProtectedMethod('decryptString', [base64_encode(__FUNCTION__)]);
     }
 
     #[Test]
