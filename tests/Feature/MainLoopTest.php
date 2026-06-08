@@ -114,7 +114,7 @@ class MainLoopTest extends TestCase
         $this->artisan('protector:download')->assertSuccessful();
 
         $downloadedRemoteDump = sprintf('%s%sfake_dump.sql', $this->storageBaseDirectory, DIRECTORY_SEPARATOR);
-        $this->assertContains($downloadedRemoteDump, $this->protector->dumpFiles()->toArray());
+        $this->assertContains($downloadedRemoteDump, $this->protector->dumpFiles());
 
         Http::assertSent(fn($request) => $request->hasHeader('Authorization', 'Bearer ' . $context['authToken']));
 
@@ -124,11 +124,11 @@ class MainLoopTest extends TestCase
     #[Test]
     public function canExportAndImportExportedDump(): void
     {
-        $existingDumps = collect($this->protector->dumpFiles()->toArray());
+        $existingDumps = $this->protector->dumpFiles();
 
         $this->artisan('protector:export')->assertSuccessful();
 
-        $allDumps = collect($this->protector->dumpFiles()->toArray());
+        $allDumps = $this->protector->dumpFiles();
         $exportedDump = $allDumps->diff($existingDumps)->first();
 
         $this->assertNotNull($exportedDump);
@@ -138,7 +138,7 @@ class MainLoopTest extends TestCase
             '--force' => true,
         ])->assertSuccessful();
 
-        $this->assertContains($exportedDump, $this->protector->dumpFiles()->toArray());
+        $this->assertContains($exportedDump, $this->protector->dumpFiles());
     }
 
     protected function extractByPattern(string $pattern, string $subject): string
