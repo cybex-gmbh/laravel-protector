@@ -376,9 +376,10 @@ class Protector
                 },
                 $this->createFilename(),
                 [
-                    'Content-Type' => 'text/plain',
+                    'Content-Type' => $shouldEncrypt ? 'application/octet-stream' : 'text/plain',
                     'Pragma' => 'no-cache',
-                    'Expires' => gmdate(DATE_RFC7231, time() - 3600),
+                    'Cache-Control' => 'no-cache',
+                    'Expires' => 0,
                     // Encryption adds some overhead to the chunk, which has to be considered when decrypting it.
                     'Chunk-Size' => $shouldEncrypt ? $chunkSize + app(CrypterContract::class)->determineEncryptionOverhead(
                             $chunkSize,
