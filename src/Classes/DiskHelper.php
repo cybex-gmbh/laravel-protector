@@ -12,6 +12,7 @@ use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\FailedWritingMetadataFileException;
 use Cybex\Protector\Exceptions\FailedWritingToDiskException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
+use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
@@ -54,12 +55,9 @@ class DiskHelper implements DiskHelperContract
     }
 
     /**
-     * @throws FailedReadingFromDiskException
-     * @throws FailedWritingToDiskException
-     * @throws EmptyFileWrittenException
-     * @throws Throwable
+     * @inheritDoc
      */
-    public function copyLocalToStorage(
+    public function moveLocalToStorage(
         string $localFilePath,
         string $destinationFilePath,
         ?Filesystem $disk = null,

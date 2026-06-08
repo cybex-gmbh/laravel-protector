@@ -12,6 +12,7 @@ use Cybex\Protector\Exceptions\FileNotFoundException;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Collection;
 use Psr\Http\Message\StreamInterface;
+use Throwable;
 
 interface DiskHelperContract
 {
@@ -28,11 +29,15 @@ interface DiskHelperContract
     public function getStorageBaseDirectory(): string;
 
     /**
+     * This will by default delete local files after completing or on error.
+     * If $keepLocalFile is set to true, it will keep the local file on success.
+     *
      * @throws FailedReadingFromDiskException
      * @throws FailedWritingToDiskException
      * @throws EmptyFileWrittenException
+     * @throws Throwable
      */
-    public function copyLocalToStorage(
+    public function moveLocalToStorage(
         string $localFilePath,
         string $destinationFilePath,
         ?Filesystem $disk = null,
