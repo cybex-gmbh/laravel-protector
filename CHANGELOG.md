@@ -15,12 +15,12 @@ All notable changes to `protector` will be documented in this file.
 - The minimum required Laravel version is now 12.1.1
 - Added MariaDB driver support
 - Dropped official MySQL support
-- Importing dumps will now clean up downloaded files
 - Restructured the `Protector` class by splitting it into `Protector` and `ProtectorConfig`.
   Configuration can no longer be accessed after the `Protector` instance has been created
 - Custom protector instances are now created through the new `ProtectorConfigurator` class
 - Restructured the `protector.php` configuration file for better organization and clarity
-- The `protector:import` command no longer supports the `--dump`, `--ignore-connection-filter` and `--flush` options.
+- Importing remote dumps using `protector:import` will now clean up downloaded files after importing
+- The `protector:import` command no longer supports the `--dump`, `--ignore-connection-filter` and `--flush` options
   The `--file` option now accepts both a relative and an absolute path
 - Reformatted the output of the `protector:keys` and `protector:token` commands to easier spot relevant information
 - A new `protector:download` command was added. This command allows storing downloaded dumps

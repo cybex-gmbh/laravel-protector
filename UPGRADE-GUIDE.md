@@ -99,7 +99,7 @@ The .env keys have changed to be consistent with the config keys:
 | Old                             | New                                           |
 |---------------------------------|-----------------------------------------------|
 | `PROTECTOR_BASE_DIRECTORY`      | `PROTECTOR_DUMP_DISKS_STORAGE_BASE_DIRECTORY` |
-| `PROTECTOR_DISK_NAME`           | `PROTECTOR_DUMP_DISKS_STORAGE_DISK            |
+| `PROTECTOR_DISK_NAME`           | `PROTECTOR_DUMP_DISKS_STORAGE_DISK`           |
 | `PROTECTOR_MAX_PACKET_LENGTH`   | `PROTECTOR_DUMP_MAX_PACKET_LENGTH`            |
 | `PROTECTOR_AUTH_TOKEN`          | `PROTECTOR_CLIENT_AUTH_TOKEN`                 |
 | `PROTECTOR_PRIVATE_KEY`         | `PROTECTOR_CLIENT_PRIVATE_KEY`                |
