@@ -129,7 +129,7 @@ class Protector
             }
         } finally {
             if (!$this->diskHelper->isAbsolutePath($filePath)) {
-                $this->diskHelper->deleteLocalFiles($localFilePath);
+                $this->diskHelper->deleteLocalFile($localFilePath);
             }
         }
 
@@ -171,7 +171,7 @@ class Protector
         $this->diskHelper->moveLocalToStorage(
             localFilePath: $localDumpFile,
             destinationFilePath: $destinationFilePath,
-            disk: $disk,
+            storageDisk: $disk,
         );
 
         $this->diskHelper->writeMetadataFile($destinationFilePath, $metadata, $disk);
@@ -229,7 +229,7 @@ class Protector
                 allowProduction: $allowProduction,
             );
         } finally {
-            $this->diskHelper->deleteLocalFiles($localFilePath);
+            $this->diskHelper->deleteLocalFile($localFilePath);
         }
 
         return $destinationFilePath;
@@ -292,13 +292,13 @@ class Protector
             $this->diskHelper->moveLocalToStorage(
                 localFilePath: $localFilePath,
                 destinationFilePath: $destinationFilePath,
-                disk: $disk,
+                storageDisk: $disk,
                 keepLocalFile: $keepLocalFile,
             );
 
             $this->diskHelper->writeMetadataFile($destinationFilePath, $metadataPayload, $disk);
         } catch (Throwable $throwable) {
-            $this->diskHelper->deleteLocalFiles($localFilePath);
+            $this->diskHelper->deleteLocalFile($localFilePath);
 
             throw $throwable;
         } finally {
@@ -333,17 +333,17 @@ class Protector
                 }
             } catch (InvalidConnectionException|FailedDumpGenerationException|InvalidConfigurationException $exception) {
                 Log::error($exception);
-                $this->diskHelper->deleteLocalFiles($serverFile);
+                $this->diskHelper->deleteLocalFile($serverFile);
 
                 return response($exception->getMessage(), 500, ['message' => $exception->getMessage()]);
             } catch (ShellAccessDeniedException $exception) {
                 Log::error($exception);
-                $this->diskHelper->deleteLocalFiles($serverFile);
+                $this->diskHelper->deleteLocalFile($serverFile);
 
                 return response($exception->httpResponse, 500, ['message' => $exception->httpResponse]);
             } catch (Throwable $throwable) {
                 Log::error($throwable);
-                $this->diskHelper->deleteLocalFiles($serverFile);
+                $this->diskHelper->deleteLocalFile($serverFile);
 
                 return response($throwable->getMessage(), 500, ['message' => 'Unknown error, please check server logs for details.']);
             }
@@ -371,7 +371,7 @@ class Protector
                         }
                     } finally {
                         is_resource($inputHandle) && fclose($inputHandle);
-                        $this->diskHelper->deleteLocalFiles($serverFile);
+                        $this->diskHelper->deleteLocalFile($serverFile);
                     }
                 },
                 $this->createFilename(),
@@ -472,7 +472,7 @@ class Protector
             $localDisk->append($localFilePath, $metadataToAppend);
         } catch (Exception $exception) {
             Log::error($exception);
-            $this->diskHelper->deleteLocalFiles($localFilePath);
+            $this->diskHelper->deleteLocalFile($localFilePath);
 
             return false;
         }

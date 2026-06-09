@@ -40,7 +40,7 @@ interface DiskHelperContract
     public function moveLocalToStorage(
         string $localFilePath,
         string $destinationFilePath,
-        ?Filesystem $disk = null,
+        ?Filesystem $storageDisk = null,
         bool $keepLocalFile = false,
     ): void;
 
@@ -52,6 +52,7 @@ interface DiskHelperContract
 
     /**
      * @throws FailedRemoteDatabaseFetchingException
+     * @throws Throwable
      */
     public function writeStreamToLocalFile(
         StreamInterface $stream,
@@ -64,13 +65,26 @@ interface DiskHelperContract
 
     /**
      * @throws FailedWritingMetadataFileException
+     * @throws Throwable
      */
-    public function writeMetadataFile(string $dumpFilePath, array $metadataPayload, ?Filesystem $disk = null): void;
+    public function writeMetadataFile(string $dumpFilePath, array $metadataPayload, ?Filesystem $storageDisk = null): void;
 
-    public function deleteLocalFiles(string|array|Collection $paths): void;
+    /**
+     * This will delete a dump file including its .meta file on the local disk.
+     */
+    public function deleteLocalFile(string $path): void;
 
-    public function deleteStorageFiles(string|array|Collection $paths, ?Filesystem $disk = null): void;
+    /**
+     * This will delete a dump file including its .meta file on the passed disk (defaults to the storage disk).
+     */
+    public function deleteStorageFile(string $path, ?Filesystem $storageDisk = null): void;
 
+    /**
+     * Deletes all files in the configured dump directory on the storage disk.
+     * Can optionally exclude a file from deletion (including its .meta file).
+     *
+     * @param string|null $excludeFile The relative file path on the storage disk to exclude from deletion.
+     */
     public function flushDumps(?string $excludeFile = null): void;
 
     public function storagePath(string $filePath): string;

@@ -56,40 +56,44 @@ class DiskHelper implements DiskHelperContract
 
     /**
      * @inheritDoc
+     *
+     * @throws FailedReadingFromDiskException
+     * @throws FailedWritingToDiskException
+     * @throws EmptyFileWrittenException
+     * @throws Throwable
      */
     public function moveLocalToStorage(
         string $localFilePath,
         string $destinationFilePath,
-        ?Filesystem $disk = null,
+        ?Filesystem $storageDisk = null,
         bool $keepLocalFile = false,
     ): void
     {
-        $disk ??= $this->getStorageDisk();
-        $localDisk = $this->getLocalDisk();
-        $localFileStream = $localDisk->readStream($localFilePath);
+        $storageDisk ??= $this->getStorageDisk();
+        $localFileStream = $this->getLocalDisk()->readStream($localFilePath);
 
         try {
             if (!is_resource($localFileStream)) {
                 throw new FailedReadingFromDiskException($localFilePath, 'local');
             }
 
-            if (!$disk->writeStream($destinationFilePath, $localFileStream)) {
+            if (!$storageDisk->writeStream($destinationFilePath, $localFileStream)) {
                 throw new FailedWritingToDiskException($destinationFilePath, 'storage');
             }
 
-            if ($disk->size($destinationFilePath) === 0) {
+            if ($storageDisk->size($destinationFilePath) === 0) {
                 throw new EmptyFileWrittenException($destinationFilePath, 'storage');
             }
         } catch (Throwable $throwable) {
-            $this->deleteLocalFiles($localFilePath);
-            $this->deleteStorageFiles($destinationFilePath, $disk);
+            $this->deleteLocalFile($localFilePath);
+            $this->deleteStorageFile($destinationFilePath, $storageDisk);
 
             throw $throwable;
         } finally {
             fclose($localFileStream);
 
             if (!$keepLocalFile) {
-                $this->deleteLocalFiles($localFilePath);
+                $this->deleteLocalFile($localFilePath);
             }
         }
     }
@@ -112,7 +116,7 @@ class DiskHelper implements DiskHelperContract
 
         try {
             if (!$localDisk->writeStream($localFilePath, $stream)) {
-                $localDisk->delete($localFilePath);
+                $this->deleteLocalFile($localFilePath);
 
                 throw new FailedWritingToDiskException($localFilePath, 'local');
             }
@@ -140,12 +144,12 @@ class DiskHelper implements DiskHelperContract
             while (!$stream->eof() && ($chunk = $stream->read($chunkSize)) !== '') {
                 if ($shouldEncrypt) {
                     $chunk = app(CrypterContract::class)->decrypt($chunk, $privateKey);
-                }
 
-                if ($chunk === false) {
-                    throw new InvalidConfigurationException(
-                        'There was an error decrypting the provided string. This might be due to mismatching crypto keys.'
-                    );
+                    if ($chunk === false) {
+                        throw new InvalidConfigurationException(
+                            'There was an error decrypting the provided string. This might be due to mismatching crypto keys.'
+                        );
+                    }
                 }
 
                 // Separator needs to be null, else each chunk will start on a new line.
@@ -156,47 +160,55 @@ class DiskHelper implements DiskHelperContract
                 throw new FailedRemoteDatabaseFetchingException('Retrieved empty response from remote dump endpoint.');
             }
         } catch (Throwable $throwable) {
-            $this->deleteLocalFiles($destinationFilePath);
+            $this->deleteLocalFile($destinationFilePath);
 
             throw $throwable;
         }
     }
 
     /**
-     * @throws FailedWritingMetadataFileException
-     * @throws Throwable
+     * @inheritDoc
      */
-    public function writeMetadataFile(string $dumpFilePath, array $metadataPayload, ?Filesystem $disk = null): void
+    public function writeMetadataFile(string $dumpFilePath, array $metadataPayload, ?Filesystem $storageDisk = null): void
     {
-        $disk ??= $this->getStorageDisk();
+        $storageDisk ??= $this->getStorageDisk();
         $metadataFilePath = $this->metadataFilePath($dumpFilePath);
 
         try {
             $encodedMetadata = json_encode(['meta' => $metadataPayload], flags: JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
 
-            if ($disk->put($metadataFilePath, $encodedMetadata) === false) {
+            if ($storageDisk->put($metadataFilePath, $encodedMetadata) === false) {
                 throw new FailedWritingMetadataFileException($dumpFilePath);
             }
         } catch (Throwable $throwable) {
-            $this->deleteStorageFiles($dumpFilePath, $disk);
+            $this->deleteStorageFile($dumpFilePath, $storageDisk);
 
             throw $throwable;
         }
     }
 
-    public function deleteLocalFiles(string|array|Collection $paths): void
+    /**
+     * @inheritDoc
+     */
+    public function deleteLocalFile(string $path): void
     {
-        $this->deleteFilesWithMetadata($paths, $this->getLocalDisk());
+        $this->deleteDumpAndMetaFiles($path, $this->getLocalDisk());
     }
 
-    public function deleteStorageFiles(string|array|Collection $paths, ?Filesystem $disk = null): void
+    /**
+     * @inheritDoc
+     */
+    public function deleteStorageFile(string $path, ?Filesystem $storageDisk = null): void
     {
-        $this->deleteFilesWithMetadata($paths, $disk ?? $this->getStorageDisk());
+        $this->deleteDumpAndMetaFiles($path, $storageDisk ?? $this->getStorageDisk());
     }
 
+    /**
+     * @inheritDoc
+     */
     public function flushDumps(?string $excludeFile = null): void
     {
-        $this->deleteStorageFiles($this->dumpFiles(excludeFile: $excludeFile));
+        $this->deleteDumpAndMetaFiles($this->dumpFiles(excludeFile: $excludeFile), $this->getStorageDisk());
     }
 
     public function storagePath(string $filePath): string
@@ -312,7 +324,7 @@ class DiskHelper implements DiskHelperContract
         return is_array($decodedMetadata) ? $decodedMetadata : null;
     }
 
-    protected function deleteFilesWithMetadata(string|array|Collection $paths, Filesystem $disk): void
+    protected function deleteDumpAndMetaFiles(string|array|Collection $paths, Filesystem $disk): void
     {
         $pathsToDelete = collect($paths)
             ->flatMap(fn(string $filePath) => [$filePath, $this->metadataFilePath($filePath)])

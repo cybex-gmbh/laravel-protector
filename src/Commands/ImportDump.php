@@ -213,7 +213,7 @@ class ImportDump extends Command
         } finally {
             // Clean-up local in case there was a dump downloaded from remote.
             if ($this->needsCleanup) {
-                DiskHelper::deleteLocalFiles($dumpPath);
+                DiskHelper::deleteLocalFile($dumpPath);
             }
         }
     }
