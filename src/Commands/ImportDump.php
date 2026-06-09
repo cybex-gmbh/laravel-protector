@@ -7,6 +7,7 @@ use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
+use Cybex\Protector\Exceptions\ShellAccessDeniedException;
 use Cybex\Protector\Facades\DiskHelperFacade as DiskHelper;
 use Cybex\Protector\Protector;
 use Illuminate\Console\Command;
@@ -62,7 +63,12 @@ class ImportDump extends Command
      * Execute the console command.
      *
      * @return int
+     *
+     * @throws EmptyBaseDirectoryException
+     * @throws FileNotFoundException
+     * @throws InvalidConnectionException
      * @throws InvalidEnvironmentException
+     * @throws ShellAccessDeniedException
      */
     public function handle(): int
     {
@@ -140,6 +146,9 @@ class ImportDump extends Command
         return $this->protector->dumpFile($this->option('file'));
     }
 
+    /**
+     * @throws EmptyBaseDirectoryException
+     */
     protected function getLatestDump(): string
     {
         $dumpPath = $this->protector->latestDumpName();
@@ -149,6 +158,10 @@ class ImportDump extends Command
         return $dumpPath;
     }
 
+    /**
+     * @throws EmptyBaseDirectoryException
+     * @throws InvalidConnectionException
+     */
     protected function getDumpInteractive(): string
     {
         if ($this->userWantsRemoteDump()) {
@@ -160,7 +173,11 @@ class ImportDump extends Command
 
     /**
      * Returns the file path to a selected dump.
+     *
+     * @throws EmptyBaseDirectoryException
+     * @throws InvalidConnectionException
      */
+
     protected function chooseImportDump(?string $connectionName): string
     {
         $connectionFiles = $this->getConnectionFiles($connectionName)->keys();

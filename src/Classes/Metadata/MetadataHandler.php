@@ -6,6 +6,7 @@ use Cybex\Protector\Contracts\DiskHelperContract;
 use Cybex\Protector\Contracts\MetadataProviderContract;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Exceptions\FileNotFoundException;
+use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\Collection;
 
 class MetadataHandler
@@ -35,6 +36,8 @@ class MetadataHandler
 
     /**
      * Returns the appended metadata from a file.
+     *
+     * @throws FileNotFoundException
      */
     public function getDumpMetadata(string $dumpFile): bool|array
     {
@@ -78,6 +81,7 @@ class MetadataHandler
 
     /**
      * The metadata provider classes can be configured on the protector instance, we make the actual provider classes here.
+     *
      * @return Collection<MetadataProviderContract>
      */
     protected function getProviders(): Collection
@@ -87,6 +91,9 @@ class MetadataHandler
             ->map($this->makeProvider(...));
     }
 
+    /**
+     * @throws BindingResolutionException
+     */
     protected function makeProvider($providerClass): MetadataProviderContract
     {
         return app()->makeWith($providerClass, ['protectorConfig' => $this->protectorConfig]);

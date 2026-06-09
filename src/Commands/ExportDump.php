@@ -3,6 +3,7 @@
 namespace Cybex\Protector\Commands;
 
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
+use Cybex\Protector\Exceptions\ShellAccessDeniedException;
 use Cybex\Protector\Protector;
 use Illuminate\Console\Command;
 use function Laravel\Prompts\info;
@@ -34,6 +35,8 @@ class ExportDump extends Command
 
     /**
      * Execute the console command.
+     *
+     * @throws ShellAccessDeniedException
      */
     public function handle(): int
     {

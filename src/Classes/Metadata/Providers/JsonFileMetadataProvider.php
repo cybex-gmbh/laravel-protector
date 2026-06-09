@@ -3,6 +3,7 @@
 namespace Cybex\Protector\Classes\Metadata\Providers;
 
 use Cybex\Protector\Contracts\MetadataProviderContract;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Support\Facades\File;
 use JsonException;
 
@@ -33,7 +34,9 @@ class JsonFileMetadataProvider implements MetadataProviderContract
 
     /**
      * @inheritDoc
+     *
      * @throws JsonException
+     * @throws FileNotFoundException
      */
     public function getMetadata(): array|string
     {

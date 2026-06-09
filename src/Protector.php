@@ -643,6 +643,7 @@ class Protector
      * Returns the appended metadata from a local file.
      *
      * @throws BindingResolutionException
+     * @throws FileNotFoundException
      */
     protected function getDumpMetadata(string $dumpFile): bool|array
     {
@@ -682,6 +683,9 @@ class Protector
         }
     }
 
+    /**
+     * For usage in tests.
+     */
     protected function getConfig(): ProtectorConfigContract
     {
         return $this->config;
