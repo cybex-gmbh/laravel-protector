@@ -81,6 +81,7 @@ class Protector
      * @param bool|null $allowProduction Allow importing in the production enviroment.
      *
      * @return void
+     *
      * @throws FailedCreatingDestinationPathException
      * @throws FailedImportException
      * @throws FailedReadingFromDiskException
