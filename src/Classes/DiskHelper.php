@@ -101,6 +101,7 @@ class DiskHelper implements DiskHelperContract
     /**
      * @throws FailedReadingFromDiskException
      * @throws FailedWritingToDiskException
+     * @throws FailedCreatingDestinationPathException
      */
     public function copyStorageToLocal(string $storageFilePath, ?Filesystem $storageDisk = null): string
     {
@@ -216,6 +217,9 @@ class DiskHelper implements DiskHelperContract
         return implode(DIRECTORY_SEPARATOR, [$this->getStorageBaseDirectory(), $filePath]);
     }
 
+    /**
+     * @throws FailedCreatingDestinationPathException
+     */
     public function localPath(?string $fileName = null): string
     {
         $baseDirectory = $this->getLocalBaseDirectory();

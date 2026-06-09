@@ -7,10 +7,16 @@ use Cybex\Protector\Contracts\CrypterContract;
 use Cybex\Protector\Contracts\DiskHelperContract;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Contracts\SchemaStateProxyContract;
+use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
+use Cybex\Protector\Exceptions\EmptyFileWrittenException;
+use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
 use Cybex\Protector\Exceptions\FailedDumpGenerationException;
 use Cybex\Protector\Exceptions\FailedImportException;
+use Cybex\Protector\Exceptions\FailedReadingFromDiskException;
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\FailedWipeException;
+use Cybex\Protector\Exceptions\FailedWritingMetadataFileException;
+use Cybex\Protector\Exceptions\FailedWritingToDiskException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConfiguration\MissingDumpEndpointUrlException;
 use Cybex\Protector\Exceptions\InvalidConfiguration\MissingPrivateKeyException;
@@ -21,6 +27,7 @@ use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Cybex\Protector\Exceptions\ShellAccessDeniedException;
 use Exception;
+use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Connection;
 use Illuminate\Http\Client\PendingRequest;
@@ -56,6 +63,8 @@ class Protector
 
     /**
      * Returns a new Protector instance with the given configuration.
+     *
+     * @throws BindingResolutionException
      */
     public static function withConfig(ProtectorConfigContract $config): static
     {
@@ -73,12 +82,15 @@ class Protector
      * @param bool|null $allowProduction Allow importing in the production enviroment.
      *
      * @return void
-     *
+     * @throws FailedCreatingDestinationPathException
      * @throws FailedImportException
+     * @throws FailedReadingFromDiskException
      * @throws FailedWipeException
+     * @throws FailedWritingToDiskException
      * @throws FileNotFoundException
      * @throws InvalidConnectionException
      * @throws InvalidEnvironmentException
+     * @throws ShellAccessDeniedException
      */
     public function import(
         string $filePath,
@@ -153,8 +165,16 @@ class Protector
      *
      * @return string The dump file path on the disk.
      *
+     * @throws BindingResolutionException
+     * @throws EmptyFileWrittenException
      * @throws FailedDumpGenerationException
+     * @throws FailedReadingFromDiskException
+     * @throws FailedWritingMetadataFileException
+     * @throws FailedWritingToDiskException
      * @throws InvalidConnectionException
+     * @throws JsonException
+     * @throws ShellAccessDeniedException
+     * @throws Throwable
      */
     public function export(?string $filePath = null, ?Filesystem $disk = null): string
     {
@@ -187,6 +207,18 @@ class Protector
      * @param Filesystem|null $disk Defaults to the storage disk.
      *
      * @return string The dump file path on the disk.
+     *
+     * @throws BindingResolutionException
+     * @throws EmptyFileWrittenException
+     * @throws FailedReadingFromDiskException
+     * @throws FailedRemoteDatabaseFetchingException
+     * @throws FailedWritingMetadataFileException
+     * @throws FailedWritingToDiskException
+     * @throws MissingDumpEndpointUrlException
+     * @throws MissingPrivateKeyException
+     * @throws NoAuthConfiguredException
+     * @throws SanctumBasicAuthConflictException
+     * @throws Throwable
      */
     public function download(?string $filePath = null, ?Filesystem $disk = null): string
     {
@@ -207,6 +239,26 @@ class Protector
      * @param bool|null $noWipe Whether the database should not be wiped before import.
      * @param bool|null $migrate Whether to run migrations after import.
      * @param bool|null $allowProduction Allow importing in the production enviroment.
+     *
+     * @return string The file path of the dump on the storage disk.
+     *
+     * @throws BindingResolutionException
+     * @throws EmptyFileWrittenException
+     * @throws FailedImportException
+     * @throws FailedReadingFromDiskException
+     * @throws FailedRemoteDatabaseFetchingException
+     * @throws FailedWipeException
+     * @throws FailedWritingMetadataFileException
+     * @throws FailedWritingToDiskException
+     * @throws FileNotFoundException
+     * @throws InvalidConnectionException
+     * @throws InvalidEnvironmentException
+     * @throws MissingDumpEndpointUrlException
+     * @throws MissingPrivateKeyException
+     * @throws NoAuthConfiguredException
+     * @throws SanctumBasicAuthConflictException
+     * @throws ShellAccessDeniedException
+     * @throws Throwable
      */
     public function downloadAndImport(
         ?string $filePath = null,
@@ -237,7 +289,15 @@ class Protector
     }
 
     /**
+     * @throws EmptyFileWrittenException
+     * @throws FailedReadingFromDiskException
      * @throws FailedRemoteDatabaseFetchingException
+     * @throws FailedWritingMetadataFileException
+     * @throws FailedWritingToDiskException
+     * @throws MissingDumpEndpointUrlException
+     * @throws MissingPrivateKeyException
+     * @throws NoAuthConfiguredException
+     * @throws SanctumBasicAuthConflictException
      * @throws Throwable
      */
     protected function downloadToDisk(
@@ -390,11 +450,17 @@ class Protector
         throw new UnauthorizedHttpException('', 'Unauthorized');
     }
 
+    /**
+     * @throws BindingResolutionException
+     */
     public function metadata(): array
     {
         return app()->makeWith(MetadataHandler::class, ['protectorConfig' => $this->config])->getMetadata();
     }
 
+    /**
+     * @throws EmptyBaseDirectoryException
+     */
     public function latestDumpName(): string
     {
         return $this->diskHelper->latestDumpName();
@@ -405,6 +471,9 @@ class Protector
         return $this->diskHelper->dumpFiles($excludeFile);
     }
 
+    /**
+     * @throws FileNotFoundException
+     */
     public function dumpFile(string $fileName): string
     {
         return $this->diskHelper->dumpFile($fileName);
@@ -444,6 +513,7 @@ class Protector
     }
 
     /**
+     * @throws BindingResolutionException
      * @throws FailedDumpGenerationException
      * @throws JsonException
      * @throws Throwable
@@ -553,6 +623,9 @@ class Protector
 
     /**
      * @throws FailedRemoteDatabaseFetchingException
+     * @throws HttpException
+     * @throws NotFoundHttpException
+     * @throws UnauthorizedHttpException
      */
     protected function handleDownloadResponseError(DownloadResponse $response): void
     {
@@ -568,6 +641,8 @@ class Protector
 
     /**
      * Returns the appended metadata from a local file.
+     *
+     * @throws BindingResolutionException
      */
     protected function getDumpMetadata(string $dumpFile): bool|array
     {

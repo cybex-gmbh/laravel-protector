@@ -4,6 +4,7 @@ namespace Cybex\Protector\Contracts;
 
 use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
 use Cybex\Protector\Exceptions\EmptyFileWrittenException;
+use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
 use Cybex\Protector\Exceptions\FailedReadingFromDiskException;
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\FailedWritingMetadataFileException;
@@ -47,6 +48,7 @@ interface DiskHelperContract
     /**
      * @throws FailedReadingFromDiskException
      * @throws FailedWritingToDiskException
+     * @throws FailedCreatingDestinationPathException
      */
     public function copyStorageToLocal(string $storageFilePath, ?Filesystem $storageDisk = null): string;
 
