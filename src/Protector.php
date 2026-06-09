@@ -34,6 +34,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use JsonException;
 use LogicException;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -166,7 +167,7 @@ class Protector
         $destinationFilePath = $filePath ?? $this->diskHelper->storagePath($this->createFilename());
         $metadata = $this->metadata();
 
-        $localDumpFile = $this->generateDump($metadata) ?: throw new FailedDumpGenerationException('Dump could not be created.');
+        $localDumpFile = $this->generateDump($metadata);
 
         $this->diskHelper->moveLocalToStorage(
             localFilePath: $localDumpFile,
@@ -320,10 +321,6 @@ class Protector
                 $serverFile = $this->generateDump();
                 $publicKey = '';
 
-                if (!$serverFile) {
-                    throw new FailedDumpGenerationException('Dump could not be created.');
-                }
-
                 if ($shouldEncrypt) {
                     $publicKey = app(CrypterContract::class)->getPublicKeyFromUser($request->user());
 
@@ -446,7 +443,12 @@ class Protector
         return function_exists($functionName);
     }
 
-    protected function generateDump(?array $metadata = null): false|string
+    /**
+     * @throws FailedDumpGenerationException
+     * @throws JsonException
+     * @throws Throwable
+     */
+    protected function generateDump(?array $metadata = null): string
     {
         $localDisk = $this->diskHelper->getLocalDisk();
         $localFilePath = $this->diskHelper->localPath();
@@ -457,9 +459,7 @@ class Protector
         );
 
         if ($localDisk->exists($localFilePath) && !$localDisk->size($localFilePath)) {
-            $this->diskHelper->deleteLocalFiles($localFilePath);
-
-            return false;
+            throw new FailedDumpGenerationException();
         }
 
         try {
@@ -470,11 +470,10 @@ class Protector
             );
 
             $localDisk->append($localFilePath, $metadataToAppend);
-        } catch (Exception $exception) {
-            Log::error($exception);
+        } catch (Throwable $throwable) {
             $this->diskHelper->deleteLocalFile($localFilePath);
 
-            return false;
+            throw $throwable;
         }
 
         return $localFilePath;
