@@ -64,7 +64,7 @@ class DiskHelper implements DiskHelperContract
      */
     public function moveLocalToStorage(
         string $localFilePath,
-        string $destinationFilePath,
+        string $storageFilePath,
         ?Filesystem $storageDisk = null,
         bool $keepLocalFile = false,
     ): void
@@ -77,16 +77,16 @@ class DiskHelper implements DiskHelperContract
                 throw new FailedReadingFromDiskException($localFilePath, 'local');
             }
 
-            if (!$storageDisk->writeStream($destinationFilePath, $localFileStream)) {
-                throw new FailedWritingToDiskException($destinationFilePath, 'storage');
+            if (!$storageDisk->writeStream($storageFilePath, $localFileStream)) {
+                throw new FailedWritingToDiskException($storageFilePath, 'storage');
             }
 
-            if ($storageDisk->size($destinationFilePath) === 0) {
-                throw new EmptyFileWrittenException($destinationFilePath, 'storage');
+            if ($storageDisk->size($storageFilePath) === 0) {
+                throw new EmptyFileWrittenException($storageFilePath, 'storage');
             }
         } catch (Throwable $throwable) {
             $this->deleteLocalFile($localFilePath);
-            $this->deleteStorageFile($destinationFilePath, $storageDisk);
+            $this->deleteStorageFile($storageFilePath, $storageDisk);
 
             throw $throwable;
         } finally {
@@ -134,7 +134,7 @@ class DiskHelper implements DiskHelperContract
      */
     public function writeStreamToLocalFile(
         StreamInterface $stream,
-        string $destinationFilePath,
+        string $localFilePath,
         int $chunkSize,
         bool $shouldEncrypt = false,
         ?string $privateKey = null,
@@ -154,14 +154,14 @@ class DiskHelper implements DiskHelperContract
                 }
 
                 // Separator needs to be null, else each chunk will start on a new line.
-                $this->getLocalDisk()->append($destinationFilePath, $chunk, separator: null);
+                $this->getLocalDisk()->append($localFilePath, $chunk, separator: null);
             }
 
-            if (!$this->getLocalDisk()->exists($destinationFilePath) || $this->getLocalDisk()->size($destinationFilePath) === 0) {
+            if (!$this->getLocalDisk()->exists($localFilePath) || $this->getLocalDisk()->size($localFilePath) === 0) {
                 throw new FailedRemoteDatabaseFetchingException('Retrieved empty response from remote dump endpoint.');
             }
         } catch (Throwable $throwable) {
-            $this->deleteLocalFile($destinationFilePath);
+            $this->deleteLocalFile($localFilePath);
 
             throw $throwable;
         }

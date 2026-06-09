@@ -36,12 +36,12 @@ class DownloadDump extends Command
         $filePath = spin(
             callback: fn() => $shouldImport
                 ? $this->protector->downloadAndImport(
-                    filePath: $this->option('file'),
+                    storageFilePath: $this->option('file'),
                     noWipe: $this->option('no-wipe'),
                     migrate: $this->option('migrate'),
                     allowProduction: $this->option('allow-production'),
                 )
-                : $this->protector->download(filePath: $this->option('file')),
+                : $this->protector->download(storageFilePath: $this->option('file')),
             message: $shouldImport ? 'Downloading and importing...' : 'Downloading dump...'
         );
 

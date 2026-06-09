@@ -54,7 +54,7 @@ class ExportDump extends Command
         $this->protector->guardRequiredFunctionsEnabled();
 
         spin(
-            callback: fn() => $this->protector->export(filePath: $this->option('file')),
+            callback: fn() => $this->protector->export(storageFilePath: $this->option('file')),
             message: 'Exporting dump...'
         );
 

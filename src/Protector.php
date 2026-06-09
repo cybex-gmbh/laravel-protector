@@ -75,7 +75,7 @@ class Protector
      * The source file path can either be a local absolute path, or a relative path on the passed disk (defaults to the storage disk).
      *
      * @param string $filePath Either a local absolute path or a relative path on the specified disk.
-     * @param Filesystem|null $disk Defaults to the Protector storage disk.
+     * @param Filesystem|null $storageDisk Defaults to the Protector storage disk.
      * @param bool|null $noWipe Whether the database should not be wiped before import.
      * @param bool|null $migrate Whether to run migrations after import.
      * @param bool|null $allowProduction Allow importing in the production enviroment.
@@ -94,7 +94,7 @@ class Protector
      */
     public function import(
         string $filePath,
-        ?Filesystem $disk = null,
+        ?Filesystem $storageDisk = null,
         ?bool $noWipe = false,
         ?bool $migrate = false,
         ?bool $allowProduction = false,
@@ -114,11 +114,7 @@ class Protector
         $absoluteImportFilePath = $filePath;
 
         if (!$this->diskHelper->isAbsolutePath($filePath)) {
-            $localFilePath = $this->diskHelper->copyStorageToLocal(
-                $filePath,
-                $disk,
-            );
-
+            $localFilePath = $this->diskHelper->copyStorageToLocal(storageFilePath: $filePath, storageDisk: $storageDisk);
             $absoluteImportFilePath = $this->diskHelper->getLocalDisk()->path($localFilePath);
         }
 
@@ -160,8 +156,8 @@ class Protector
     /**
      * Generates a dump from the current app database and saves it to the specified disk (defaults to the storage disk).
      *
-     * @param string|null $filePath Optional file path on the disk to which the dump is written.
-     * @param Filesystem|null $disk Defaults to the Protector storage disk.
+     * @param string|null $storageFilePath Optional file path on the disk to which the dump is written.
+     * @param Filesystem|null $storageDisk Defaults to the Protector storage disk.
      *
      * @return string The dump file path on the disk.
      *
@@ -176,7 +172,7 @@ class Protector
      * @throws ShellAccessDeniedException
      * @throws Throwable
      */
-    public function export(?string $filePath = null, ?Filesystem $disk = null): string
+    public function export(?string $storageFilePath = null, ?Filesystem $storageDisk = null): string
     {
         $this->guardRequiredFunctionsEnabled();
 
@@ -184,27 +180,27 @@ class Protector
             throw new InvalidConnectionException('Connection is not configured properly.');
         }
 
-        $destinationFilePath = $filePath ?? $this->diskHelper->storagePath($this->createFilename());
+        $storageFilePath ??= $this->diskHelper->storagePath($this->createFilename());
         $metadata = $this->metadata();
 
         $localDumpFile = $this->generateDump($metadata);
 
         $this->diskHelper->moveLocalToStorage(
             localFilePath: $localDumpFile,
-            destinationFilePath: $destinationFilePath,
-            storageDisk: $disk,
+            storageFilePath: $storageFilePath,
+            storageDisk: $storageDisk,
         );
 
-        $this->diskHelper->writeMetadataFile($destinationFilePath, $metadata, $disk);
+        $this->diskHelper->writeMetadataFile($storageFilePath, $metadata, $storageDisk);
 
-        return $destinationFilePath;
+        return $storageFilePath;
     }
 
     /**
      * Downloads a dump file from a remote system and stores it on the specified disk (defaults to the storage disk).
      *
-     * @param string|null $filePath Optional file path on the disk to which the dump is written.
-     * @param Filesystem|null $disk Defaults to the storage disk.
+     * @param string|null $storageFilePath Optional file path on the disk to which the dump is written.
+     * @param Filesystem|null $storageDisk Defaults to the storage disk.
      *
      * @return string The dump file path on the disk.
      *
@@ -220,22 +216,22 @@ class Protector
      * @throws SanctumBasicAuthConflictException
      * @throws Throwable
      */
-    public function download(?string $filePath = null, ?Filesystem $disk = null): string
+    public function download(?string $storageFilePath = null, ?Filesystem $storageDisk = null): string
     {
-        [$destinationFilePath] = $this->downloadToDisk(
-            filePath: $filePath,
-            disk: $disk,
+        [$storageFilePath] = $this->downloadToDisk(
+            storageFilePath: $storageFilePath,
+            storageDisk: $storageDisk,
         );
 
-        return $destinationFilePath;
+        return $storageFilePath;
     }
 
     /**
      * Downloads a dump file from a remote system and stores it on the specified disk (defaults to the storage disk).
      * Afterwards the dump will be imported, without re-downloading it from storage.
      *
-     * @param string|null $filePath Optional file path on the disk to which the dump is written.
-     * @param Filesystem|null $disk Defaults to the storage disk.
+     * @param string|null $storageFilePath Optional file path on the disk to which the dump is written.
+     * @param Filesystem|null $storageDisk Defaults to the storage disk.
      * @param bool|null $noWipe Whether the database should not be wiped before import.
      * @param bool|null $migrate Whether to run migrations after import.
      * @param bool|null $allowProduction Allow importing in the production enviroment.
@@ -261,16 +257,16 @@ class Protector
      * @throws Throwable
      */
     public function downloadAndImport(
-        ?string $filePath = null,
-        ?Filesystem $disk = null,
+        ?string $storageFilePath = null,
+        ?Filesystem $storageDisk = null,
         ?bool $noWipe = false,
         ?bool $migrate = false,
         ?bool $allowProduction = false,
     ): string
     {
-        [$destinationFilePath, $localFilePath] = $this->downloadToDisk(
-            filePath: $filePath,
-            disk: $disk,
+        [$storageFilePath, $localFilePath] = $this->downloadToDisk(
+            storageFilePath: $storageFilePath,
+            storageDisk: $storageDisk,
             keepLocalFile: true,
         );
 
@@ -285,7 +281,7 @@ class Protector
             $this->diskHelper->deleteLocalFile($localFilePath);
         }
 
-        return $destinationFilePath;
+        return $storageFilePath;
     }
 
     /**
@@ -300,11 +296,7 @@ class Protector
      * @throws SanctumBasicAuthConflictException
      * @throws Throwable
      */
-    protected function downloadToDisk(
-        ?string $filePath = null,
-        ?Filesystem $disk = null,
-        bool $keepLocalFile = false,
-    ): array
+    protected function downloadToDisk(?string $storageFilePath = null, ?Filesystem $storageDisk = null, bool $keepLocalFile = false): array
     {
         $this->guardDownload();
 
@@ -325,8 +317,7 @@ class Protector
             $this->handleDownloadResponseError($response);
         }
 
-        $destinationFilePath = $filePath
-            ?? $this->diskHelper->getDownloadDestinationFilePath($response->header('Content-Disposition'));
+        $storageFilePath ??= $this->diskHelper->getDownloadDestinationFilePath($response->header('Content-Disposition'));
 
         $stream = $response->toPsrResponse()->getBody();
         $localFilePath = $this->diskHelper->localPath();
@@ -335,7 +326,7 @@ class Protector
         try {
             $this->diskHelper->writeStreamToLocalFile(
                 stream: $stream,
-                destinationFilePath: $localFilePath,
+                localFilePath: $localFilePath,
                 chunkSize: $response->header('Chunk-Size'),
                 shouldEncrypt: $shouldEncrypt,
                 privateKey: $shouldEncrypt ? $this->config->getPrivateKey() : null,
@@ -352,12 +343,12 @@ class Protector
 
             $this->diskHelper->moveLocalToStorage(
                 localFilePath: $localFilePath,
-                destinationFilePath: $destinationFilePath,
-                storageDisk: $disk,
+                storageFilePath: $storageFilePath,
+                storageDisk: $storageDisk,
                 keepLocalFile: $keepLocalFile,
             );
 
-            $this->diskHelper->writeMetadataFile($destinationFilePath, $metadataPayload, $disk);
+            $this->diskHelper->writeMetadataFile($storageFilePath, $metadataPayload, $storageDisk);
         } catch (Throwable $throwable) {
             $this->diskHelper->deleteLocalFile($localFilePath);
 
@@ -366,12 +357,10 @@ class Protector
             $stream->close();
         }
 
-        return [$destinationFilePath, $localFilePath];
+        return [$storageFilePath, $localFilePath];
     }
 
-    public function generateFileDownloadResponse(
-        Request $request,
-    ): Response|StreamedResponse
+    public function generateFileDownloadResponse(Request $request): Response|StreamedResponse
     {
         $shouldEncrypt = $this->config->shouldEncrypt();
 

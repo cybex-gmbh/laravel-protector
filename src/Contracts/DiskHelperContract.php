@@ -40,7 +40,7 @@ interface DiskHelperContract
      */
     public function moveLocalToStorage(
         string $localFilePath,
-        string $destinationFilePath,
+        string $storageFilePath,
         ?Filesystem $storageDisk = null,
         bool $keepLocalFile = false,
     ): void;
@@ -58,7 +58,7 @@ interface DiskHelperContract
      */
     public function writeStreamToLocalFile(
         StreamInterface $stream,
-        string $destinationFilePath,
+        string $localFilePath,
         int $chunkSize,
         bool $shouldEncrypt = false,
         ?string $privateKey = null,
