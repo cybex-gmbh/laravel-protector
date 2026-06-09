@@ -26,7 +26,6 @@ use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Cybex\Protector\Exceptions\ShellAccessDeniedException;
-use Exception;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Connection;
@@ -130,15 +129,15 @@ class Protector
             if (!$noWipe) {
                 try {
                     $this->wipeDatabase(DB::connection($this->config->getConnectionName()));
-                } catch (Throwable $exception) {
-                    throw new FailedWipeException($exception->getMessage());
+                } catch (Throwable $throwable) {
+                    throw new FailedWipeException($throwable->getMessage(), previous: $throwable);
                 }
             }
 
             try {
                 $this->getSchemaStateProxy()->load($absoluteImportFilePath);
-            } catch (Throwable $exception) {
-                throw new FailedImportException($exception->getMessage());
+            } catch (Throwable $throwable) {
+                throw new FailedImportException($throwable->getMessage(), previous: $throwable);
             }
         } finally {
             if (!$this->diskHelper->isAbsolutePath($filePath)) {
@@ -315,8 +314,8 @@ class Protector
 
         try {
             $response = $request->withoutRedirecting()->post($this->config->getDumpEndpointUrl());
-        } catch (Exception $exception) {
-            throw new FailedRemoteDatabaseFetchingException($exception->getMessage());
+        } catch (Throwable $throwable) {
+            throw new FailedRemoteDatabaseFetchingException($throwable->getMessage(), previous: $throwable);
         } finally {
             $this->startTelescopeRecording($telescopeWasRecording);
         }
