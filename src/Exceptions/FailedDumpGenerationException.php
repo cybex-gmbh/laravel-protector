@@ -14,8 +14,8 @@ use Throwable;
  */
 class FailedDumpGenerationException extends Exception
 {
-    public function __construct($code = 0, ?Throwable $previous = null)
+    public function __construct(?string $message = null, $code = 0, ?Throwable $previous = null)
     {
-        parent::__construct('Dump could not be created.', $code, $previous);
+        parent::__construct($message ?? 'Dump could not be created.', $code, $previous);
     }
 }

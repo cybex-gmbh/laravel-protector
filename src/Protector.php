@@ -514,6 +514,7 @@ class Protector
 
     /**
      * @throws BindingResolutionException
+     * @throws EmptyFileWrittenException
      * @throws FailedDumpGenerationException
      * @throws JsonException
      * @throws Throwable
@@ -523,16 +524,9 @@ class Protector
         $localDisk = $this->diskHelper->getLocalDisk();
         $localFilePath = $this->diskHelper->localPath();
 
-        $this->getSchemaStateProxy()->dump(
-            connection: DB::connection($this->config->getConnectionName()),
-            path: $localDisk->path($localFilePath)
-        );
-
-        if ($localDisk->exists($localFilePath) && !$localDisk->size($localFilePath)) {
-            throw new FailedDumpGenerationException();
-        }
-
         try {
+            $this->dump($localFilePath, $localDisk);
+
             // Append some import/export-metadata to the end.
             $metadataToAppend = sprintf(
                 "\n-- meta:%s",
@@ -680,6 +674,26 @@ class Protector
 
         if (!$this->config->getDumpEndpointUrl()) {
             throw new MissingDumpEndpointUrlException();
+        }
+    }
+
+    /**
+     * @throws FailedDumpGenerationException
+     * @throws EmptyFileWrittenException
+     */
+    protected function dump(string $localFilePath, Filesystem $localDisk): void
+    {
+        try {
+            $this->getSchemaStateProxy()->dump(
+                connection: DB::connection($this->config->getConnectionName()),
+                path: $localDisk->path($localFilePath)
+            );
+        } catch (Throwable $throwable) {
+            throw new FailedDumpGenerationException($throwable->getMessage(), previous: $throwable);
+        }
+
+        if ($localDisk->exists($localFilePath) && !$localDisk->size($localFilePath)) {
+            throw new EmptyFileWrittenException($localFilePath, 'local');
         }
     }
 
