@@ -53,6 +53,7 @@ If this should break in the future, feel free to submit a PR.
     * [Setup for importing the database of a remote server](#setup-for-importing-the-database-of-a-remote-server)
     * [Setup for collecting backups from multiple servers](#setup-for-collecting-backups-from-multiple-servers)
 * [Configuration](#configuration)
+    * [Disks](#disks)
     * [Dump metadata](#dump-metadata)
 * [Development](#development)
 
@@ -66,13 +67,17 @@ To save a copy of your local database, run
 php artisan protector:export
 ```
 
-By default, dumps are stored in `storage/app/private/protector` on Laravel's `local` disk.
-To configure the storage location and other settings, you can either publish the config file,
+To configure settings, such as the file name, you can either publish the config file,
 or set the according environment variables found in the [ProtectorEnv](src/Enums/ProtectorEnv.php) class.
 
 ```bash
 php artisan vendor:publish --tag=protector.config
 ```
+
+For configuring
+
+- the storage location, see the [Disks](#disks) section.
+- the metadata appended to the dump file, see the [Dump metadata](#dump-metadata) section.
 
 ### Download from remote
 
@@ -120,7 +125,7 @@ To import a specific database file that you downloaded earlier, run
 php artisan protector:import --file=<absolute path to database file>
 ```
 
-Or just reference the database file name relative to the protector dump directory (default is `storage/app/private/protector`)
+Or just reference the database file name relative to the Protector dump directory
 
 ```bash
 php artisan protector:import --file=<name of database file>
@@ -160,7 +165,7 @@ Find below three common scenarios of usage. These are not mutually exclusive.
 
 If you only want to store a copy of your local database to a disk, the setup is pretty straightforward.
 
-#### Installing protector in your local Laravel project
+#### Installing Protector in your local Laravel project
 
 Install the package via composer.
 
@@ -170,7 +175,7 @@ composer require cybex/laravel-protector
 
 Almost all config options can be set via environment variables. Take a look at the [ProtectorEnv](src/Enums/ProtectorEnv.php) class for all available options.
 
-You can optionally publish the protector config to have more fine-grained control over config settings:
+You can optionally publish the Protector config to have more fine-grained control over config settings:
 
 ```bash
 php artisan vendor:publish --tag=protector.config
@@ -178,7 +183,7 @@ php artisan vendor:publish --tag=protector.config
 
 #### Local usage
 
-You can now use the artisan command to write a backup to the protector storage folder.
+You can now use the artisan command to write a backup to the Protector storage folder.
 
 ```bash
 php artisan protector:export
@@ -202,7 +207,7 @@ php artisan protector:export --file="protector/database.sql"
 This package can run on both servers and client machines of the same software repository.
 You set up authorized developers on the server and give them the key for their local machine.
 
-#### Installing protector in your Laravel project
+#### Installing Protector in your Laravel project
 
 Install the package via composer.
 
@@ -223,7 +228,7 @@ class User extends Authenticatable
 }
 ```
 
-Publish the protector database migration and optionally modify it to work with your project.
+Publish the Protector database migration and optionally modify it to work with your project.
 
 ```bash
 php artisan vendor:publish --tag=protector.migrations
@@ -241,7 +246,7 @@ Run the migrations on the client and server repository.
 php artisan migrate
 ```
 
-You can use environment variables or optionally publish the protector config to set options regarding the storage, access and transmission of the
+You can use environment variables or optionally publish the Protector config to set options regarding the storage, access and transmission of the
 files.
 
 ```bash
@@ -291,7 +296,7 @@ The developer can then download and import the server database on their own.
 ### Setup for collecting backups from multiple servers
 
 You can develop a custom client that can access and store remote server backups. The servers can be different Laravel
-projects that have the protector package installed.
+projects that have the Protector package installed.
 
 See the previous chapter on how to give your backup client access to all servers. The backup client will need an
 according user on each target server.
@@ -314,6 +319,33 @@ For example, to configure a specific auth token and dump endpoint URL:
 ```php
 $protector = ProtectorConfigurator::setAuthToken($authToken)->setDumpEndpointUrl($dumpEndpointUrl)->createProtector();
 ```
+
+### Disks
+
+There are two disks, which use the `local` driver by default:
+
+- [protector_local](config/filesystems/local.php) is used for temporary files which are deleted after use
+    - writes to `storage/app/private/protector/local` by default
+- [protector_storage](config/filesystems/storage.php) is used for storing dumps and their metadata files
+    - writes to `storage/app/private/protector` by default
+
+> [!IMPORTANT]
+>
+> The `protector_local` disk must be a local disk, as certain operations require a local filesystem, such as creating a database dump.
+
+If you want to override the disk configuration, add the following to your `config/filesystems.php` file:
+
+```php
+'protector_local' => [
+    ...
+],
+
+'protector_storage' => [
+    ...
+],
+```
+
+You could for example use S3 for the storage disk.
 
 ### Dump metadata
 

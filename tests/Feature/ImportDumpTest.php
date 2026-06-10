@@ -4,7 +4,7 @@ namespace Cybex\Protector\Tests\Feature;
 
 use Carbon\Carbon;
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
-use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
+use Cybex\Protector\Exceptions\EmptyDumpDirectoryException;
 use Cybex\Protector\Exceptions\FailedImportException;
 use Cybex\Protector\Exceptions\FailedReadingFromDiskException;
 use Cybex\Protector\Exceptions\FailedWipeException;
@@ -13,7 +13,6 @@ use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Cybex\Protector\Facades\DiskHelperFacade as DiskHelper;
 use Cybex\Protector\Protector;
 use Cybex\Protector\Tests\TestCase;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
@@ -24,8 +23,6 @@ class ImportDumpTest extends TestCase
 {
     protected const string DUMP_DATE = '2022-06-29 12:43:24';
 
-    protected Filesystem $disk;
-    protected static string $baseDirectory = 'dumps';
     protected string $filePath;
     protected Protector $protector;
 
@@ -34,11 +31,6 @@ class ImportDumpTest extends TestCase
         parent::setUp();
 
         $this->protector = app('protector');
-
-        Config::set('protector.dump.disks.storage.baseDirectory', static::$baseDirectory);
-
-        $this->disk = $this->getFakeDumpDisk();
-
         $this->filePath = __DIR__ . '/../dumps/dump.sql';
     }
 
@@ -46,7 +38,7 @@ class ImportDumpTest extends TestCase
     {
         return [
             [
-                static::$baseDirectory . '/dump.sql',
+                'dump.sql',
                 [
                     'meta' => [
                         'database' => [
@@ -64,7 +56,7 @@ class ImportDumpTest extends TestCase
                 ],
             ],
             [
-                static::$baseDirectory . '/dumpWithGit.sql',
+                'dumpWithGit.sql',
                 [
                     'meta' => [
                         'git' => [
@@ -82,15 +74,15 @@ class ImportDumpTest extends TestCase
                 ],
             ],
             [
-                static::$baseDirectory . '/dumpWithoutMetadata.sql',
+                'dumpWithoutMetadata.sql',
                 [],
             ],
             [
-                static::$baseDirectory . '/dumpWithIncorrectMetadata.sql',
+                'dumpWithIncorrectMetadata.sql',
                 false,
             ],
             [
-                static::$baseDirectory . '/legacyDump.sql',
+                'legacyDump.sql',
                 [
                     'options' => [
                         'no-data' => false,
@@ -112,8 +104,8 @@ class ImportDumpTest extends TestCase
     public static function provideEmptyDumpsWhenReceivingTheLatestDumpName(): array
     {
         return [
-            [static::$baseDirectory . '/dump.sql', false],
-            [static::$baseDirectory . '/secondDump.sql', true],
+            ['dump.sql', false],
+            ['secondDump.sql', true],
         ];
     }
 
@@ -121,7 +113,7 @@ class ImportDumpTest extends TestCase
     {
         return [
             [[], null],
-            [[static::$baseDirectory . '/emptyDump.sql'], static::$baseDirectory . '/emptyDump.sql'],
+            [['emptyDump.sql'], 'emptyDump.sql'],
         ];
     }
 
@@ -171,7 +163,7 @@ class ImportDumpTest extends TestCase
     public function canReturnLatestFileName(string $expectedFileName, bool $shouldModify): void
     {
         if ($shouldModify) {
-            touch($this->disk->path($expectedFileName), time() + 60);
+            touch($this->storageDisk->path($expectedFileName), time() + 60);
         }
 
         $fileName = $this->protector->latestDumpName();
@@ -183,8 +175,8 @@ class ImportDumpTest extends TestCase
     #[Test]
     public function throwsExceptionIfNoFileExists(): void
     {
-        $this->clearDumpDirectory();
-        $this->expectException(EmptyBaseDirectoryException::class);
+        DiskHelper::flushDumps();
+        $this->expectException(EmptyDumpDirectoryException::class);
         $this->protector->latestDumpName();
     }
 
@@ -192,13 +184,13 @@ class ImportDumpTest extends TestCase
     #[DataProvider('provideDumpMetadata')]
     public function verifyDumpDateMetadata(string $filePath, array|bool $expectedMetadata): void
     {
-        $this->assertEquals($expectedMetadata, $this->runProtectedMethod('getDumpMetadata', [$filePath]));
+        $this->assertEquals($expectedMetadata, $this->runProtectedMethod('getDumpMetadata', [$this->storageDisk->path($filePath)]));
     }
 
     #[Test]
     public function failGetDumpMetadataOnResponseHasNotEnoughLines(): void
     {
-        $this->assertFalse($this->runProtectedMethod('getDumpMetadata', [static::$baseDirectory . '/emptyDump.sql']));
+        $this->assertFalse($this->runProtectedMethod('getDumpMetadata', [$this->storageDisk->path('emptyDump.sql')]));
     }
 
     #[Test]
@@ -236,9 +228,9 @@ class ImportDumpTest extends TestCase
     #[Test]
     public function dumpFilesWithMetadataUseUnknownConnectionWhenMetadataFileIsMissing(): void
     {
-        $dumpFile = static::$baseDirectory . '/dump.sql';
+        $dumpFile = 'dump.sql';
 
-        $this->disk->delete($dumpFile . '.meta');
+        $this->storageDisk->delete($this->diskHelper->metadataFilePath($dumpFile));
 
         $dumpFilesWithMetadata = $this->protector->dumpFilesWithMetadata();
 
@@ -248,7 +240,7 @@ class ImportDumpTest extends TestCase
     #[Test]
     public function dumpFilesWithMetadataPreferMetadataFilePayload(): void
     {
-        $dumpFile = static::$baseDirectory . '/dump.sql';
+        $dumpFile = 'dump.sql';
         $metadataFilePayload = [
             'meta' => [
                 'database' => [
@@ -257,7 +249,7 @@ class ImportDumpTest extends TestCase
             ],
         ];
 
-        $this->disk->put($dumpFile . '.meta', json_encode($metadataFilePayload, JSON_UNESCAPED_UNICODE));
+        $this->storageDisk->put($this->diskHelper->metadataFilePath($dumpFile), json_encode($metadataFilePayload, JSON_UNESCAPED_UNICODE));
 
         $dumpFilesWithMetadata = $this->protector->dumpFilesWithMetadata();
 

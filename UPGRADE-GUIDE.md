@@ -54,29 +54,29 @@ We will no longer run dedicated tests for MySQL.
 The package might still work with MySQL databases, but it might break in the future.
 Migrate to MariaDB or PostgreSQL to continue receiving updates and support.
 
-### Renamed config keys
+### Renamed or removed config keys
 
 > [!NOTE]
 > Likelihood of impact: high
 >
 > Impact: App may crash, published `protector.php` config files will no longer work
 
-Config keys have been renamed.
+Config keys have been renamed or removed.
 If you have previously published the config file,
 you need to re-publish it and adjust the configuration accordingly.
 
-| Old                                      | New                                     |
-|------------------------------------------|-----------------------------------------|
-| `protector.fileName`                     | `protector.dump.fileName`               |
-| `protector.baseDirectory`                | `protector.dump.baseDirectory`          |
-| `protector.diskName`                     | `protector.dump.disks.storage.disk`     |
-| `protector.maxPacketLength`              | `protector.dump.maxPacketLength`        |
-| `protector.remoteEndpoint.serverUrl`     | `protector.client.dumpEndpointUrl`      |
-| `protector.remoteEndpoint.htaccessLogin` | `protector.client.basicAuthCredentials` |
-| `protector.httpTimeout`                  | `protector.client.httpTimeout`          |
-| `protector.dumpEndpointRoute`            | `protector.server.dumpEndpointRoute`    |
-| `protector.routeMiddleware`              | `protector.server.routeMiddleware`      |
-| `protector.chunkSize`                    | `protector.server.chunkSize`            |
+| Old                                      | New                                          |
+|------------------------------------------|----------------------------------------------|
+| `protector.fileName`                     | `protector.dump.fileName`                    |
+| `protector.baseDirectory`                | removed, see [disk handling](#disk-handling) |
+| `protector.diskName`                     | removed, see [disk handling](#disk-handling) |
+| `protector.maxPacketLength`              | `protector.dump.maxPacketLength`             |
+| `protector.remoteEndpoint.serverUrl`     | `protector.client.dumpEndpointUrl`           |
+| `protector.remoteEndpoint.htaccessLogin` | `protector.client.basicAuthCredentials`      |
+| `protector.httpTimeout`                  | `protector.client.httpTimeout`               |
+| `protector.dumpEndpointRoute`            | `protector.server.dumpEndpointRoute`         |
+| `protector.routeMiddleware`              | `protector.server.routeMiddleware`           |
+| `protector.chunkSize`                    | `protector.server.chunkSize`                 |
 
 ### Disk handling
 
@@ -85,7 +85,24 @@ you need to re-publish it and adjust the configuration accordingly.
 >
 > Impact: Published config files using old dump disk keys will fail.
 
-The dump disk configuration now uses dedicated local and storage disks under `protector.dump.disks`.
+The dump disk configuration now uses dedicated local and storage disks.
+
+By default, the disks use the `local` driver and write to
+
+- `storage/app/protector` for storing dumps
+- `storage/app/protector/local` for local file handling
+
+If you want to overwrite the default, you can add the following disks to your `config/filesystems.php`:
+
+```php
+'protector_local' => [
+    ...
+]
+
+'protector_storage' => [
+    ...
+]
+```
 
 ### Renamed .env keys
 
@@ -98,15 +115,15 @@ The .env keys have changed to be consistent with the config keys:
 
 | Old                             | New                                           |
 |---------------------------------|-----------------------------------------------|
-| `PROTECTOR_BASE_DIRECTORY`      | `PROTECTOR_DUMP_DISKS_STORAGE_BASE_DIRECTORY` |
-| `PROTECTOR_DISK_NAME`           | `PROTECTOR_DUMP_DISKS_STORAGE_DISK`           |
-| `PROTECTOR_MAX_PACKET_LENGTH`   | `PROTECTOR_DUMP_MAX_PACKET_LENGTH`            |
 | `PROTECTOR_AUTH_TOKEN`          | `PROTECTOR_CLIENT_AUTH_TOKEN`                 |
+| `PROTECTOR_BASE_DIRECTORY`      | `PROTECTOR_DUMP_DISKS_STORAGE_BASE_DIRECTORY` |
+| `PROTECTOR_CHUNK_SIZE`          | `PROTECTOR_SERVER_CHUNK_SIZE`                 |
+| `PROTECTOR_DISK_NAME`           | `PROTECTOR_DUMP_DISKS_STORAGE_DISK`           |
+| `PROTECTOR_DUMP_ENDPOINT_ROUTE` | `PROTECTOR_SERVER_DUMP_ENDPOINT_ROUTE`        |
+| `PROTECTOR_HTTP_TIMEOUT`        | `PROTECTOR_CLIENT_HTTP_TIMEOUT`               |
+| `PROTECTOR_MAX_PACKET_LENGTH`   | `PROTECTOR_DUMP_MAX_PACKET_LENGTH`            |
 | `PROTECTOR_PRIVATE_KEY`         | `PROTECTOR_CLIENT_PRIVATE_KEY`                |
 | `PROTECTOR_SERVER_URL`          | `PROTECTOR_CLIENT_DUMP_ENDPOINT_URL`          |
-| `PROTECTOR_HTTP_TIMEOUT`        | `PROTECTOR_CLIENT_HTTP_TIMEOUT`               |
-| `PROTECTOR_DUMP_ENDPOINT_ROUTE` | `PROTECTOR_SERVER_DUMP_ENDPOINT_ROUTE`        |
-| `PROTECTOR_CHUNK_SIZE`          | `PROTECTOR_SERVER_CHUNK_SIZE`                 |
 
 ### Protector dump endpoint route name
 
@@ -184,13 +201,13 @@ The following methods were renamed and might have changed signatures:
 |---------------------------------------------|--------------------------------------|
 | `Protector::construct()`                    | Changed signature                    |
 | `Protector::createDump()`                   | `Protector::export()`                |
-| `Protector::importDump()`                   | `Protector::import()`                |
-| `Protector::getRemoteDump()`                | `Protector::download()`              |
-| `Protector::getDumpMetaData`                | `Protector::dumpFilesWithMetadata()` |
-| `Protector::getMetaData()`                  | `Protector::metadata()`              |
 | `Protector::generateFileDownloadResponse()` | Changed signature                    |
-| `Protector::getLatestDumpName()`            | `Protector::latestDumpName()`        |
 | `Protector::getDumpFiles()`                 | `Protector::dumpFiles()`             |
+| `Protector::getDumpMetaData`                | `Protector::dumpFilesWithMetadata()` |
+| `Protector::getLatestDumpName()`            | `Protector::latestDumpName()`        |
+| `Protector::getMetaData()`                  | `Protector::metadata()`              |
+| `Protector::getRemoteDump()`                | `Protector::download()`              |
+| `Protector::importDump()`                   | `Protector::import()`                |           |
 
 #### Removed methods
 
@@ -202,13 +219,14 @@ The following methods were renamed and might have changed signatures:
 The following methods were removed:
 
 - `Protector::createDestinationFilePath()`
-- `Protector::isUnderGitVersionControl()`
+- `Protector::createTempFilePath()`
+- `Protector::decryptString()`
 - `Protector::flush()`
 - `Protector::getBaseDirectory()`
-- `Protector::prepareFileDownloadResponse()`
 - `Protector::getDisk()`
-- `Protector::decryptString()`
-- `Protector::createTempFilePath()`
+- `Protector::getDumpFile()`
+- `Protector::isUnderGitVersionControl()`
+- `Protector::prepareFileDownloadResponse()`
 
 #### Protector::getMetaData()
 

@@ -8,7 +8,6 @@ use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
 use Cybex\Protector\Exceptions\FailedImportException;
 use Cybex\Protector\Protector;
 use Cybex\Protector\Tests\TestCase;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Mockery;
@@ -16,11 +15,7 @@ use PHPUnit\Framework\Attributes\Test;
 
 class DownloadDumpCommandTest extends TestCase
 {
-    protected Filesystem $disk;
-
     protected string $dumpEndpointUrl;
-
-    protected static string $baseDirectory = 'dumps';
 
     protected function setUp(): void
     {
@@ -31,9 +26,6 @@ class DownloadDumpCommandTest extends TestCase
         Config::set('protector.client.dumpEndpointUrl', $this->dumpEndpointUrl);
         Config::set('protector.server.routeMiddleware', []);
         Config::set('protector.client.basicAuthCredentials', '1234:1234');
-        Config::set('protector.dump.disks.storage.baseDirectory', static::$baseDirectory);
-
-        $this->disk = $this->getDumpDisk();
     }
 
     #[Test]
@@ -47,8 +39,8 @@ class DownloadDumpCommandTest extends TestCase
 
         $this->artisan('protector:download')->assertSuccessful();
 
-        $this->assertFileExists($this->disk->path(static::$baseDirectory . '/remote_dump.sql'));
-        $this->assertFileExists($this->disk->path(static::$baseDirectory . '/remote_dump.sql.meta'));
+        $this->assertFileExists($this->storageDisk->path('remote_dump.sql'));
+        $this->assertFileExists($this->storageDisk->path('remote_dump.sql.meta'));
     }
 
     #[Test]
@@ -62,11 +54,8 @@ class DownloadDumpCommandTest extends TestCase
 
         $this->artisan('protector:download --import --force')->assertSuccessful();
 
-        $this->assertFileExists($this->disk->path(static::$baseDirectory . '/remote_dump.sql'));
-        $this->assertCount(
-            0,
-            $this->diskHelper->getLocalDisk()->allFiles($this->diskHelper->getLocalBaseDirectory())
-        );
+        $this->assertFileExists($this->storageDisk->path('remote_dump.sql'));
+        $this->assertCount(0, $this->localDisk->files());
     }
 
     #[Test]
@@ -89,11 +78,11 @@ class DownloadDumpCommandTest extends TestCase
     #[Test]
     public function flushRunsAfterImportAndIsSkippedWhenImportFails(): void
     {
-        $existingDumpPath = static::$baseDirectory . '/existing_dump.sql';
-        $existingMetadataPath = $existingDumpPath . '.meta';
+        $existingDumpPath = 'existing_dump.sql';
+        $existingMetadataPath = $this->diskHelper->metadataFilePath($existingDumpPath);
 
-        $this->disk->put($existingDumpPath, '-- existing dump');
-        $this->disk->put($existingMetadataPath, '{"meta":{"database":{"connection":"sqlite"}}}');
+        $this->storageDisk->put($existingDumpPath, '-- existing dump');
+        $this->storageDisk->put($existingMetadataPath, '{"meta":{"database":{"connection":"sqlite"}}}');
 
         $protector = Mockery::mock(Protector::class);
         $protector->shouldReceive('downloadAndImport')
@@ -110,8 +99,8 @@ class DownloadDumpCommandTest extends TestCase
         try {
             $this->artisan('protector:download --import --force --flush');
         } finally {
-            $this->assertTrue($this->disk->exists($existingDumpPath));
-            $this->assertTrue($this->disk->exists($existingMetadataPath));
+            $this->assertTrue($this->storageDisk->exists($existingDumpPath));
+            $this->assertTrue($this->storageDisk->exists($existingMetadataPath));
         }
     }
 }

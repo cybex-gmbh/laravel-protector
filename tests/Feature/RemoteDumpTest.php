@@ -10,21 +10,16 @@ use Cybex\Protector\Exceptions\InvalidConfiguration\MissingPrivateKeyException;
 use Cybex\Protector\Exceptions\InvalidConfiguration\NoAuthConfiguredException;
 use Cybex\Protector\Exceptions\InvalidConfiguration\SanctumBasicAuthConflictException;
 use Cybex\Protector\Tests\TestCase;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 class RemoteDumpTest extends TestCase
 {
-    protected Filesystem $disk;
-
     protected string $dumpEndpointUrl;
-    protected string $baseDirectory;
 
     protected function setUp(): void
     {
@@ -35,16 +30,13 @@ class RemoteDumpTest extends TestCase
         Config::set('protector.client.dumpEndpointUrl', $this->dumpEndpointUrl);
         Config::set('protector.server.routeMiddleware', []);
         Config::set('protector.client.basicAuthCredentials', '1234:1234');
-
-        $this->disk = Storage::disk('local');
-        $this->baseDirectory = Config::get('protector.dump.disks.storage.baseDirectory');
     }
 
     protected function tearDown(): void
     {
         parent::tearDown();
 
-        $format = sprintf('%s%s%s.sql', $this->baseDirectory, DIRECTORY_SEPARATOR, '%s');
+        $format = '%s.sql';
 
         $path = sprintf($format, 'dump');
         $secondPath = sprintf($format, 'dumpWithGit');
@@ -53,10 +45,10 @@ class RemoteDumpTest extends TestCase
         $fifthPath = sprintf($format, 'dumpWithDifferentConnection');
         $sixthPath = sprintf($format, 'emptyDump');
 
-        $files = $this->disk->files($this->baseDirectory);
+        $files = $this->storageDisk->files();
         $files = array_diff($files, [$path, $secondPath, $thirdPath, $fourthPath, $fifthPath, $sixthPath]);
 
-        $this->disk->delete($files);
+        $this->storageDisk->delete($files);
     }
 
     #[Test]
@@ -202,13 +194,13 @@ class RemoteDumpTest extends TestCase
         ]);
 
         $destinationFilepath = $this->protector->download();
-        $metadataFilePath = $destinationFilepath . '.meta';
-        $decodedMetadataFile = json_decode($this->disk->get($metadataFilePath), true);
-        $parsedDumpMetadata = $this->runProtectedMethod('getDumpMetadata', [$destinationFilepath]);
+        $metadataFilePath = $this->diskHelper->metadataFilePath($destinationFilepath);
+        $decodedMetadataFile = json_decode($this->storageDisk->get($metadataFilePath), true);
+        $parsedDumpMetadata = $this->runProtectedMethod('getDumpMetadata', [$this->storageDisk->path($destinationFilepath)]);
 
-        $this->assertFileExists($this->disk->path($destinationFilepath));
-        $this->assertFileExists($this->disk->path($metadataFilePath));
-        $this->assertEquals($message, $this->disk->get($destinationFilepath));
+        $this->assertFileExists($this->storageDisk->path($destinationFilepath));
+        $this->assertFileExists($this->storageDisk->path($metadataFilePath));
+        $this->assertEquals($message, $this->storageDisk->get($destinationFilepath));
         $this->assertIsArray($parsedDumpMetadata);
         $this->assertIsArray($decodedMetadataFile);
         $this->assertEquals($parsedDumpMetadata, $decodedMetadataFile);
@@ -232,15 +224,13 @@ class RemoteDumpTest extends TestCase
             ]),
         ]);
 
-        $expectedFilePath = sprintf('%s%s%s', $this->baseDirectory, DIRECTORY_SEPARATOR, 'invalid-metadata.sql');
-
         $this->expectException(FailedRemoteDatabaseFetchingException::class);
         $this->expectExceptionMessage('Could not fetch database from remote server. Retrieved incomplete decrypted dump metadata.');
 
         try {
             $this->protector->download();
         } finally {
-            $this->assertFalse($this->disk->exists($expectedFilePath));
+            $this->assertFalse($this->storageDisk->exists('invalid-metadata.sql'));
         }
     }
 
@@ -249,23 +239,21 @@ class RemoteDumpTest extends TestCase
     {
         Config::set('protector.server.routeMiddleware', []);
 
-        $localDisk = Storage::disk($this->diskHelper->getLocalDiskName());
-        $localBaseDirectory = $this->diskHelper->getLocalBaseDirectory();
-        $filesBeforeDownload = $localDisk->allFiles($localBaseDirectory);
+        $filesBeforeDownload = $this->localDisk->allFiles();
 
         Http::fake([
             $this->dumpEndpointUrl => Http::response(file_get_contents(__DIR__ . '/../dumps/dump.sql'), 200, ['Chunk-Size' => 1024]),
         ]);
 
         $downloadedFilePath = $this->protector->download();
-        $metadataFilePath = $downloadedFilePath . '.meta';
-        $decodedMetadataFile = json_decode($this->disk->get($metadataFilePath), true);
-        $parsedDumpMetadata = $this->runProtectedMethod('getDumpMetadata', [$downloadedFilePath]);
+        $metadataFilePath = $this->diskHelper->metadataFilePath($downloadedFilePath);
+        $metadataFileContents = json_decode($this->storageDisk->get($metadataFilePath), true);
+        $parsedDumpMetadata = $this->runProtectedMethod('getDumpMetadata', [$this->storageDisk->path($downloadedFilePath)]);
 
-        $this->assertEquals($filesBeforeDownload, $localDisk->allFiles($localBaseDirectory));
+        $this->assertEquals($filesBeforeDownload, $this->localDisk->allFiles());
         $this->assertIsArray($parsedDumpMetadata);
-        $this->assertIsArray($decodedMetadataFile);
-        $this->assertEquals($parsedDumpMetadata, $decodedMetadataFile);
+        $this->assertIsArray($metadataFileContents);
+        $this->assertEquals($parsedDumpMetadata, $metadataFileContents);
     }
 
     #[Test]
@@ -328,28 +316,6 @@ class RemoteDumpTest extends TestCase
         $this->protector = app(ProtectorConfiguratorContract::class)->setConnectionName(env('DB_CONNECTION'))->makeProtector();
 
         $this->assertEquals(__FUNCTION__, $this->runProtectedMethod('getConfig')->getDatabaseName());
-    }
-
-    #[Test]
-    public function canGetConfigValueForKey(): void
-    {
-        Config::set('protector.dump.disks.storage.baseDirectory', __FUNCTION__);
-
-        $result = $this->diskHelper->getStorageBaseDirectory();
-
-        $this->assertEquals(__FUNCTION__, $result);
-    }
-
-    #[Test]
-    public function canResolveBaseDirectoryFromClosure(): void
-    {
-        $functionName = __FUNCTION__;
-
-        Config::set('protector.dump.disks.storage.baseDirectory', fn() => $functionName);
-
-        $result = $this->diskHelper->getStorageBaseDirectory();
-
-        $this->assertEquals($functionName, $result);
     }
 
     #[Test]

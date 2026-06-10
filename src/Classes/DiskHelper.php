@@ -4,14 +4,12 @@ namespace Cybex\Protector\Classes;
 
 use Cybex\Protector\Contracts\CrypterContract;
 use Cybex\Protector\Contracts\DiskHelperContract;
-use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
+use Cybex\Protector\Exceptions\EmptyDumpDirectoryException;
 use Cybex\Protector\Exceptions\EmptyFileWrittenException;
-use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
 use Cybex\Protector\Exceptions\FailedReadingFromDiskException;
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\FailedWritingMetadataFileException;
 use Cybex\Protector\Exceptions\FailedWritingToDiskException;
-use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Collection;
@@ -22,6 +20,8 @@ use Throwable;
 
 class DiskHelper implements DiskHelperContract
 {
+    protected const string LOCAL_DISK_NAME = 'protector_local';
+    protected const string STORAGE_DISK_NAME = 'protector_storage';
     protected const string METADATA_FILE_SUFFIX = '.meta';
 
     public function getLocalDisk(): Filesystem
@@ -36,22 +36,12 @@ class DiskHelper implements DiskHelperContract
 
     public function getLocalDiskName(): string
     {
-        return $this->getConfigValueForKey('dump.disks.local.disk');
+        return static::LOCAL_DISK_NAME;
     }
 
     public function getStorageDiskName(): string
     {
-        return $this->getConfigValueForKey('dump.disks.storage.disk') ?? config('filesystems.default');
-    }
-
-    public function getLocalBaseDirectory(): string
-    {
-        return $this->getConfigValueForKey('dump.disks.local.baseDirectory') ?? '';
-    }
-
-    public function getStorageBaseDirectory(): string
-    {
-        return $this->getConfigValueForKey('dump.disks.storage.baseDirectory') ?? '';
+        return static::STORAGE_DISK_NAME;
     }
 
     /**
@@ -101,13 +91,12 @@ class DiskHelper implements DiskHelperContract
     /**
      * @throws FailedReadingFromDiskException
      * @throws FailedWritingToDiskException
-     * @throws FailedCreatingDestinationPathException
      */
     public function copyStorageToLocal(string $storageFilePath, ?Filesystem $storageDisk = null): string
     {
         $storageDisk ??= $this->getStorageDisk();
         $localDisk = $this->getLocalDisk();
-        $localFilePath = $this->localPath();
+        $localFilePath = $this->getLocalPath();
 
         $stream = $storageDisk->readStream($storageFilePath);
 
@@ -212,22 +201,9 @@ class DiskHelper implements DiskHelperContract
         $this->deleteDumpAndMetaFiles($this->dumpFiles(excludeFile: $excludeFile), $this->getStorageDisk());
     }
 
-    public function storagePath(string $filePath): string
+    public function getLocalPath(): string
     {
-        return implode(DIRECTORY_SEPARATOR, [$this->getStorageBaseDirectory(), $filePath]);
-    }
-
-    /**
-     * @throws FailedCreatingDestinationPathException
-     */
-    public function localPath(?string $fileName = null): string
-    {
-        $baseDirectory = $this->getLocalBaseDirectory();
-
-        // Shell commands will not create directories automatically.
-        $this->createDirectory($baseDirectory, $this->getLocalDisk());
-
-        return implode(DIRECTORY_SEPARATOR, [$baseDirectory, $fileName ?? uniqid('protector_', true) . '.sql']);
+        return sprintf('%s.sql', uniqid('protector_', true));
     }
 
     public function getDownloadDestinationFilePath(string $contentDispositionHeader): string
@@ -236,41 +212,17 @@ class DiskHelper implements DiskHelperContract
             $destinationFileName = $matches['filename'];
         }
 
-        return sprintf(
-            '%s%s%s',
-            $this->getStorageBaseDirectory(),
-            DIRECTORY_SEPARATOR,
-            ($destinationFileName ?? 'remote_dump.sql')
-        );
+        return $destinationFileName ?? 'remote_dump.sql';
     }
 
     public function metadataFilePath(string $dumpFilePath): string
     {
-        return $dumpFilePath . static::METADATA_FILE_SUFFIX;
-    }
-
-    /**
-     * @throws FileNotFoundException
-     */
-    public function dumpFile(string $fileName): string
-    {
-        $filePathOnDisk = implode(DIRECTORY_SEPARATOR, [$this->getStorageBaseDirectory(), $fileName]);
-
-        $file = $this->dumpFiles()->firstWhere(
-            fn($file) => $filePathOnDisk === $file
-        );
-
-        if (!$file) {
-            throw new FileNotFoundException($filePathOnDisk);
-        }
-
-        return $file;
+        return sprintf('%s%s', $dumpFilePath, static::METADATA_FILE_SUFFIX);
     }
 
     public function dumpFiles(?string $excludeFile = null): Collection
     {
-        $allFiles = $this->getStorageDisk()
-            ->allFiles($this->getStorageBaseDirectory());
+        $allFiles = $this->getStorageDisk()->allFiles();
 
         return collect($allFiles)
             ->reject(fn(string $filePath) => $this->isMetadataFile($filePath))
@@ -285,14 +237,14 @@ class DiskHelper implements DiskHelperContract
     }
 
     /**
-     * @throws EmptyBaseDirectoryException
+     * @throws EmptyDumpDirectoryException
      */
     public function latestDumpName(): string
     {
         $files = $this->dumpFiles();
 
         if ($files->isEmpty()) {
-            throw new EmptyBaseDirectoryException();
+            throw new EmptyDumpDirectoryException();
         }
 
         $disk = $this->getStorageDisk();
@@ -335,26 +287,5 @@ class DiskHelper implements DiskHelperContract
             ->toArray();
 
         $disk->delete($pathsToDelete);
-    }
-
-    /**
-     * @throws FailedCreatingDestinationPathException
-     */
-    protected function createDirectory(string $destinationPath, Filesystem $disk): void
-    {
-        if ($disk->missing($destinationPath)) {
-            if ($disk->makeDirectory($destinationPath) === false) {
-                throw new FailedCreatingDestinationPathException(
-                    sprintf('Could not create the non-existing destination path %s on given disk.', $destinationPath)
-                );
-            }
-        }
-    }
-
-    protected function getConfigValueForKey(string $key, mixed $default = null): mixed
-    {
-        $value = config(sprintf('protector.%s', $key), $default);
-
-        return is_callable($value) ? $value() : $value;
     }
 }

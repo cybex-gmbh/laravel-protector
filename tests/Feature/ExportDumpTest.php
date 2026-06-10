@@ -6,7 +6,6 @@ use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
 use Cybex\Protector\Contracts\SchemaStateProxyContract;
 use Cybex\Protector\ProtectorConfigurator;
 use Cybex\Protector\Tests\TestCase;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -17,9 +16,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExportDumpTest extends TestCase
 {
-    protected Filesystem $disk;
-
-    protected string $baseDirectory;
     protected string $filePath;
     protected string $emptyDumpPath;
 
@@ -72,10 +68,7 @@ class ExportDumpTest extends TestCase
     {
         parent::setUp();
 
-        $this->disk = $this->getFakeDumpDisk();
-
-        $this->baseDirectory = Config::get('protector.dump.disks.storage.baseDirectory');
-        $this->filePath = sprintf('%s/dump.sql', $this->baseDirectory);
+        $this->filePath = 'dump.sql';
         $this->emptyDumpPath = 'testDumps/dump.sql';
     }
 
@@ -116,10 +109,10 @@ class ExportDumpTest extends TestCase
     #[Test]
     public function exportWritesMetadataFileWithIdenticalPayload(): void
     {
-        $exportedDumpPath = $this->protector->export(storageFilePath: $this->filePath);
-        $metadataFilePath = $exportedDumpPath . '.meta';
+        $exportedDumpPath = $this->protector->export(storageFilePath: $this->filePath, storageDisk: $this->localDisk);
+        $metadataFilePath = $this->diskHelper->metadataFilePath($exportedDumpPath);
         $parsedDumpMetadata = $this->runProtectedMethod('getDumpMetadata', [$exportedDumpPath]);
-        $decodedMetadataFile = json_decode($this->disk->get($metadataFilePath), true);
+        $decodedMetadataFile = json_decode($this->localDisk->get($metadataFilePath), true);
 
         $this->assertIsArray($parsedDumpMetadata);
         $this->assertIsArray($decodedMetadataFile);

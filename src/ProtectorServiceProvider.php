@@ -35,19 +35,8 @@ class ProtectorServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->registerRoutes();
-        $this->commands([
-            CreateKeys::class,
-            CreateToken::class,
-            DownloadDump::class,
-            ExportDump::class,
-            ImportDump::class,
-        ]);
-
-        // Publish package config to app config space.
-        $this->publishes([
-            __DIR__ . '/../config/protector.php' => config_path('protector.php'),
-        ], ['protector', 'protector.config']);
-
+        $this->registerCommands();
+        $this->publishConfigs();
         $this->publishMigrations();
     }
 
@@ -58,20 +47,81 @@ class ProtectorServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Automatically apply the package configuration.
-        $this->mergeConfigFrom(__DIR__ . '/../config/protector.php', 'protector');
+        $this->mergeProtectorConfig();
+        $this->mergeDiskConfig();
 
+        $this->bindProtector();
+        $this->bindHelpers();
+        $this->bindSchemaStateProxies();
+    }
+
+    protected function registerRoutes(): void
+    {
+        Route::post(config('protector.server.dumpEndpointRoute'))
+            ->middleware(config('protector.server.routeMiddleware'))
+            ->name('protector.server.dump')
+            ->uses([Protector::class, 'generateFileDownloadResponse']);
+    }
+
+    protected function registerCommands(): void
+    {
+        $this->commands([
+            CreateKeys::class,
+            CreateToken::class,
+            DownloadDump::class,
+            ExportDump::class,
+            ImportDump::class,
+        ]);
+    }
+
+    protected function publishConfigs(): void
+    {
+        $this->publishes([
+            __DIR__ . '/../config/protector.php' => config_path('protector.php'),
+        ], ['protector', 'protector.config']);
+    }
+
+    protected function publishMigrations(): void
+    {
+        $timestamp = date('Y_m_d_His', time());
+        $migrationName = 'add_public_key_to_users_table.php';
+
+        $stub = sprintf('%s/../Migrations/%s', __DIR__, $migrationName);
+        $target = $this->app->databasePath(sprintf('migrations/%s_%s', $timestamp, $migrationName));
+
+        $this->publishes([$stub => $target], ['protector', 'protector.migrations']);
+    }
+
+    protected function mergeProtectorConfig(): void
+    {
+        $this->mergeConfigFrom(__DIR__ . '/../config/protector.php', 'protector');
+    }
+
+    protected function mergeDiskConfig(): void
+    {
+        $this->mergeConfigFrom(__DIR__ . '/../config/filesystems/local.php', 'filesystems.disks.protector_local');
+        $this->mergeConfigFrom(__DIR__ . '/../config/filesystems/storage.php', 'filesystems.disks.protector_storage');
+    }
+
+    protected function bindProtector(): void
+    {
         // Register the Protector class as a singleton and bind the alias.
         // Scoped to the request lifecycle to ensure a new instance is created for each request (e.g. for Octane).
         $this->app->scoped(Protector::class, Protector::class);
         $this->app->bind('protector', Protector::class);
 
-        $this->app->singleton(CrypterContract::class, SodiumCrypter::class);
-        $this->app->singleton(DiskHelperContract::class, DiskHelper::class);
         $this->app->bind(ProtectorConfigContract::class, ProtectorConfig::class);
         $this->app->bind(ProtectorConfiguratorContract::class, ProtectorConfigurator::class);
+    }
 
-        // Register the SchemaState proxy classes.
+    protected function bindHelpers(): void
+    {
+        $this->app->singleton(CrypterContract::class, SodiumCrypter::class);
+        $this->app->singleton(DiskHelperContract::class, DiskHelper::class);
+    }
+
+    protected function bindSchemaStateProxies(): void
+    {
         $this->app->bind(SchemaStateProxyContract::class, function ($app, array $params): SchemaStateProxyContract {
             /** @var ProtectorConfig $protectorConfig */
             $protectorConfig = $params['protectorConfig'];
@@ -87,29 +137,5 @@ class ProtectorServiceProvider extends ServiceProvider
                 default => throw new UnsupportedDatabaseException('Unsupported database schema state: ' . class_basename($schemaState)),
             };
         });
-    }
-
-    protected function registerRoutes(): void
-    {
-        Route::post(config('protector.server.dumpEndpointRoute'))
-            ->middleware(config('protector.server.routeMiddleware'))
-            ->name('protector.server.dump')
-            ->uses([Protector::class, 'generateFileDownloadResponse']);
-    }
-
-    /**
-     * Publish the package's migrations.
-     *
-     * @return void
-     */
-    protected function publishMigrations(): void
-    {
-        $timestamp = date('Y_m_d_His', time());
-        $migrationName = 'add_public_key_to_users_table.php';
-
-        $stub = sprintf('%s/../Migrations/%s', __DIR__, $migrationName);
-        $target = $this->app->databasePath(sprintf('migrations/%s_%s', $timestamp, $migrationName));
-
-        $this->publishes([$stub => $target], ['protector', 'protector.migrations']);
     }
 }

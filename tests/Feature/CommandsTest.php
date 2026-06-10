@@ -5,7 +5,6 @@ namespace Cybex\Protector\Tests\Feature;
 use Cybex\Protector\Facades\CrypterFacade;
 use Cybex\Protector\Tests\Support\Models\TestUser;
 use Cybex\Protector\Tests\TestCase;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
@@ -18,8 +17,6 @@ use function Orchestra\Testbench\package_path;
 #[WithMigration]
 class CommandsTest extends TestCase
 {
-    protected string $storageBaseDirectory = 'dumps';
-    protected Filesystem $disk;
     protected static bool $migrated = false;
 
     protected function defineDatabaseMigrations(): void
@@ -38,10 +35,7 @@ class CommandsTest extends TestCase
     {
         parent::setUp();
 
-        Config::set('protector.dump.disks.storage.baseDirectory', $this->storageBaseDirectory);
         Config::set('auth.providers.users.model', TestUser::class);
-
-        $this->disk = $this->getFakeDumpDisk();
     }
 
     #[Test]
@@ -113,8 +107,7 @@ class CommandsTest extends TestCase
 
         $this->artisan('protector:download')->assertSuccessful();
 
-        $downloadedRemoteDump = sprintf('%s%sfake_dump.sql', $this->storageBaseDirectory, DIRECTORY_SEPARATOR);
-        $this->assertContains($downloadedRemoteDump, $this->protector->dumpFiles());
+        $this->assertContains('fake_dump.sql', $this->protector->dumpFiles());
 
         Http::assertSent(fn($request) => $request->hasHeader('Authorization', 'Bearer ' . $context['authToken']));
 

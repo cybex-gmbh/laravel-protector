@@ -7,9 +7,8 @@ use Cybex\Protector\Contracts\CrypterContract;
 use Cybex\Protector\Contracts\DiskHelperContract;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Contracts\SchemaStateProxyContract;
-use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
+use Cybex\Protector\Exceptions\EmptyDumpDirectoryException;
 use Cybex\Protector\Exceptions\EmptyFileWrittenException;
-use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
 use Cybex\Protector\Exceptions\FailedDumpGenerationException;
 use Cybex\Protector\Exceptions\FailedImportException;
 use Cybex\Protector\Exceptions\FailedReadingFromDiskException;
@@ -52,12 +51,13 @@ use Throwable;
 class Protector
 {
     protected array $requiredFunctionsCache;
+    protected DiskHelperContract $diskHelper;
 
     public function __construct(
-        protected ProtectorConfigContract $config,
-        protected DiskHelperContract $diskHelper,
+        protected ProtectorConfigContract $config
     )
     {
+        $this->diskHelper = app(DiskHelperContract::class);
     }
 
     /**
@@ -82,7 +82,6 @@ class Protector
      *
      * @return void
      *
-     * @throws FailedCreatingDestinationPathException
      * @throws FailedImportException
      * @throws FailedReadingFromDiskException
      * @throws FailedWipeException
@@ -180,7 +179,7 @@ class Protector
             throw new InvalidConnectionException('Connection is not configured properly.');
         }
 
-        $storageFilePath ??= $this->diskHelper->storagePath($this->createFilename());
+        $storageFilePath ??= $this->createFilename();
         $metadata = $this->metadata();
 
         $localDumpFile = $this->generateDump($metadata);
@@ -320,7 +319,7 @@ class Protector
         $storageFilePath ??= $this->diskHelper->getDownloadDestinationFilePath($response->header('Content-Disposition'));
 
         $stream = $response->toPsrResponse()->getBody();
-        $localFilePath = $this->diskHelper->localPath();
+        $localFilePath = $this->diskHelper->getLocalPath();
         $shouldEncrypt = filter_var($response->header('Sanctum-Enabled'), FILTER_VALIDATE_BOOLEAN);
 
         try {
@@ -448,7 +447,7 @@ class Protector
     }
 
     /**
-     * @throws EmptyBaseDirectoryException
+     * @throws EmptyDumpDirectoryException
      */
     public function latestDumpName(): string
     {
@@ -458,14 +457,6 @@ class Protector
     public function dumpFiles(?string $excludeFile = null): Collection
     {
         return $this->diskHelper->dumpFiles($excludeFile);
-    }
-
-    /**
-     * @throws FileNotFoundException
-     */
-    public function dumpFile(string $fileName): string
-    {
-        return $this->diskHelper->dumpFile($fileName);
     }
 
     public function dumpFilesWithMetadata(): Collection
@@ -511,7 +502,7 @@ class Protector
     protected function generateDump(?array $metadata = null): string
     {
         $localDisk = $this->diskHelper->getLocalDisk();
-        $localFilePath = $this->diskHelper->localPath();
+        $localFilePath = $this->diskHelper->getLocalPath();
 
         try {
             $this->dump($localFilePath, $localDisk);

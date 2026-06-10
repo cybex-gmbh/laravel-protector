@@ -39,26 +39,6 @@ return [
 
         /*
         |--------------------------------------------------------------------------
-        | Disk Configuration
-        |--------------------------------------------------------------------------
-        |
-        | Local disk is used for temporary file handling.
-        | Storage disk is used for persisting dump files.
-        |
-        */
-        'disks' => [
-            'local' => [
-                'disk' => ProtectorEnv::LOCAL_DISK->get(default: 'local'),
-                'baseDirectory' => ProtectorEnv::LOCAL_BASE_DIRECTORY->get(default: 'protector/local'),
-            ],
-            'storage' => [
-                'disk' => ProtectorEnv::STORAGE_DISK->get(),
-                'baseDirectory' => ProtectorEnv::STORAGE_BASE_DIRECTORY->get(default: 'protector'),
-            ],
-        ],
-
-        /*
-        |--------------------------------------------------------------------------
         | Maximum Packet Length
         |--------------------------------------------------------------------------
         |

@@ -2,14 +2,12 @@
 
 namespace Cybex\Protector\Contracts;
 
-use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
+use Cybex\Protector\Exceptions\EmptyDumpDirectoryException;
 use Cybex\Protector\Exceptions\EmptyFileWrittenException;
-use Cybex\Protector\Exceptions\FailedCreatingDestinationPathException;
 use Cybex\Protector\Exceptions\FailedReadingFromDiskException;
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\FailedWritingMetadataFileException;
 use Cybex\Protector\Exceptions\FailedWritingToDiskException;
-use Cybex\Protector\Exceptions\FileNotFoundException;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Collection;
 use Psr\Http\Message\StreamInterface;
@@ -24,10 +22,6 @@ interface DiskHelperContract
     public function getLocalDiskName(): string;
 
     public function getStorageDiskName(): string;
-
-    public function getLocalBaseDirectory(): string;
-
-    public function getStorageBaseDirectory(): string;
 
     /**
      * This will by default delete local files after completing or on error.
@@ -48,7 +42,6 @@ interface DiskHelperContract
     /**
      * @throws FailedReadingFromDiskException
      * @throws FailedWritingToDiskException
-     * @throws FailedCreatingDestinationPathException
      */
     public function copyStorageToLocal(string $storageFilePath, ?Filesystem $storageDisk = null): string;
 
@@ -89,25 +82,18 @@ interface DiskHelperContract
      */
     public function flushDumps(?string $excludeFile = null): void;
 
-    public function storagePath(string $filePath): string;
-
-    public function localPath(?string $fileName = null): string;
+    public function getLocalPath(): string;
 
     public function getDownloadDestinationFilePath(string $contentDispositionHeader): string;
 
     public function metadataFilePath(string $dumpFilePath): string;
-
-    /**
-     * @throws FileNotFoundException
-     */
-    public function dumpFile(string $fileName): string;
 
     public function dumpFiles(?string $excludeFile = null): Collection;
 
     public function dumpFilesWithMetadata(): Collection;
 
     /**
-     * @throws EmptyBaseDirectoryException
+     * @throws EmptyDumpDirectoryException
      */
     public function latestDumpName(): string;
 

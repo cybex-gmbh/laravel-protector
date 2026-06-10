@@ -3,7 +3,7 @@
 namespace Cybex\Protector\Commands;
 
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
-use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
+use Cybex\Protector\Exceptions\EmptyDumpDirectoryException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
@@ -64,7 +64,7 @@ class ImportDump extends Command
      *
      * @return int
      *
-     * @throws EmptyBaseDirectoryException
+     * @throws EmptyDumpDirectoryException
      * @throws FileNotFoundException
      * @throws InvalidConnectionException
      * @throws InvalidEnvironmentException
@@ -110,7 +110,7 @@ class ImportDump extends Command
 
     protected function getDumpFromRemote(): string
     {
-        $dumpPath = DiskHelper::localPath();
+        $dumpPath = DiskHelper::getLocalPath();
         $this->sourceDisk = DiskHelper::getLocalDisk();
         $this->needsCleanup = true;
 
@@ -132,22 +132,15 @@ class ImportDump extends Command
      */
     protected function getDumpFromFile(): string
     {
-        if (DiskHelper::isAbsolutePath($this->option('file'))) {
-            $absoluteDumpPath = $this->option('file');
+        DiskHelper::isAbsolutePath($this->option('file'))
+            ? file_exists($this->option('file')) || throw new FileNotFoundException($this->option('file'))
+            : DiskHelper::getStorageDisk()->exists($this->option('file')) || throw new FileNotFoundException($this->option('file'));
 
-            if (!file_exists($absoluteDumpPath)) {
-                throw new FileNotFoundException($absoluteDumpPath);
-            }
-
-            return $absoluteDumpPath;
-        }
-
-        // This will throw an exception if the dump file was not found.
-        return $this->protector->dumpFile($this->option('file'));
+        return $this->option('file');
     }
 
     /**
-     * @throws EmptyBaseDirectoryException
+     * @throws EmptyDumpDirectoryException
      */
     protected function getLatestDump(): string
     {
@@ -159,7 +152,7 @@ class ImportDump extends Command
     }
 
     /**
-     * @throws EmptyBaseDirectoryException
+     * @throws EmptyDumpDirectoryException
      * @throws InvalidConnectionException
      */
     protected function getDumpInteractive(): string
@@ -174,7 +167,7 @@ class ImportDump extends Command
     /**
      * Returns the file path to a selected dump.
      *
-     * @throws EmptyBaseDirectoryException
+     * @throws EmptyDumpDirectoryException
      * @throws InvalidConnectionException
      */
 
@@ -238,7 +231,7 @@ class ImportDump extends Command
     /**
      * Returns a list of either all dumps or those for the specified connection name.
      *
-     * @throws InvalidConnectionException|EmptyBaseDirectoryException
+     * @throws InvalidConnectionException|EmptyDumpDirectoryException
      */
     protected function getConnectionFiles(?string $connectionName = null): Collection
     {
@@ -260,7 +253,7 @@ class ImportDump extends Command
             });
 
         if ($sortedFiles->isEmpty()) {
-            throw new EmptyBaseDirectoryException();
+            throw new EmptyDumpDirectoryException();
         }
 
         $filesByConnection = $sortedFiles->groupBy(

@@ -21,6 +21,8 @@ class TestCase extends OrchestraTestCase
      */
     protected Protector $protector;
     protected DiskHelperContract $diskHelper;
+    protected Filesystem $localDisk;
+    protected Filesystem $storageDisk;
 
     protected function setUp(): void
     {
@@ -28,6 +30,8 @@ class TestCase extends OrchestraTestCase
 
         $this->protector = app('protector');
         $this->diskHelper = app(DiskHelperContract::class);
+        $this->localDisk = $this->getLocalDisk();
+        $this->storageDisk = $this->getStorageDiskWithFiles();
     }
 
     /**
@@ -81,25 +85,29 @@ class TestCase extends OrchestraTestCase
         $property->setValue($this->protector, $value);
     }
 
-    protected function getFakeDumpDisk(): Filesystem
+    protected function getStorageDiskWithFiles(): Filesystem
     {
-        $disk = $this->getDumpDisk();
-        $baseDirectory = $this->diskHelper->getStorageBaseDirectory();
+        $disk = $this->getStorageDisk();
 
         foreach (glob(__DIR__ . '/dumps/*.sql') as $filename) {
-            $disk->putFileAs($baseDirectory, $filename, basename($filename));
+            $disk->put(basename($filename), file_get_contents($filename));
         }
 
         return $disk;
     }
 
-    protected function getDumpDisk(): Filesystem
+    protected function getStorageDisk(): Filesystem
     {
         return Storage::fake($this->diskHelper->getStorageDiskName());
     }
 
-    protected function clearDumpDirectory(): void
+    protected function getLocalDisk(): Filesystem
     {
-        $this->getDumpDisk()->deleteDirectory($this->diskHelper->getStorageBaseDirectory());
+        return Storage::fake($this->diskHelper->getLocalDiskName());
+    }
+
+    protected function clearLocal(): void
+    {
+        $this->getStorageDisk()->deleteDirectory('');
     }
 }

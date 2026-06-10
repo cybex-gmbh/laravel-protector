@@ -2,28 +2,22 @@
 
 namespace Cybex\Protector\Tests\Feature;
 
-use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
+use Cybex\Protector\Exceptions\EmptyDumpDirectoryException;
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Cybex\Protector\Facades\DiskHelperFacade as DiskHelper;
 use Cybex\Protector\Tests\TestCase;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 
 class ImportDumpCommandTest extends TestCase
 {
-    protected Filesystem $disk;
-
     protected string $dumpEndpointUrl;
     protected string $shouldDownloadDump;
     protected string $shouldImportDump;
-    protected static string $baseDirectory = 'dumps';
-
     protected const array DUMP_SOURCE_CHOICE = ['Download remote dump', 'Import existing dump'];
 
     protected function setUp(): void
@@ -33,9 +27,6 @@ class ImportDumpCommandTest extends TestCase
         $this->dumpEndpointUrl = 'protector.invalid/protector/exportDump';
 
         Config::set('protector.client.dumpEndpointUrl', $this->dumpEndpointUrl);
-        Config::set('protector.dump.disks.storage.baseDirectory', static::$baseDirectory);
-
-        $this->disk = $this->getFakeDumpDisk();
 
         $this->shouldDownloadDump = 'Do you want to download and import a fresh dump from the server or an existing dump?';
         $this->shouldImportDump = sprintf(
@@ -94,9 +85,9 @@ class ImportDumpCommandTest extends TestCase
         $this->artisan('protector:import --remote')
             ->expectsConfirmation($this->shouldImportDump);
 
-        $this->assertFileDoesNotExist($this->disk->path(static::$baseDirectory . '/remote_dump.sql'));
+        $this->assertFileDoesNotExist($this->storageDisk->path('remote_dump.sql'));
 
-        $localFiles = Storage::disk($this->diskHelper->getLocalDiskName())->files($this->diskHelper->getLocalBaseDirectory());
+        $localFiles = $this->localDisk->files();
         $this->assertCount(0, $localFiles);
     }
 
@@ -113,7 +104,7 @@ class ImportDumpCommandTest extends TestCase
     {
         $fileName = 'thisDumpDoesNotExist.sql';
 
-        $this->expectExceptionObject(new FileNotFoundException(path: sprintf('%s%s%s', static::$baseDirectory, DIRECTORY_SEPARATOR, $fileName)));
+        $this->expectExceptionObject(new FileNotFoundException(path: $fileName));
 
         $this->artisan(sprintf('protector:import --file=%s --force', $fileName));
     }
@@ -121,7 +112,7 @@ class ImportDumpCommandTest extends TestCase
     #[Test]
     public function failOptionFileOnNonExistingAbsoluteFilePath(): void
     {
-        $fileName = $this->disk->path('thisDumpDoesNotExist.sql');
+        $fileName = $this->storageDisk->path('thisDumpDoesNotExist.sql');
 
         $this->expectExceptionObject(new FileNotFoundException(path: $fileName));
 
@@ -131,7 +122,7 @@ class ImportDumpCommandTest extends TestCase
     #[Test]
     public function canImportDumpOnOptionFileWithExistingAbsoluteFilePath(): void
     {
-        $fileName = $this->disk->path($this->protector->dumpFile('dump.sql'));
+        $fileName = $this->storageDisk->path('dump.sql');
 
         $this->artisan(sprintf('protector:import --file=%s --force', $fileName))->assertOk();
     }
@@ -140,9 +131,7 @@ class ImportDumpCommandTest extends TestCase
     public function canImportDumpOnOptionFileWithExistingNestedRelativeFilePath(): void
     {
         $nestedRelativeFilePath = 'nested/dump.sql';
-        $storageFilePath = sprintf('%s%s%s', static::$baseDirectory, DIRECTORY_SEPARATOR, $nestedRelativeFilePath);
-
-        $this->disk->put($storageFilePath, file_get_contents(__DIR__ . '/../dumps/dump.sql'));
+        $this->storageDisk->put($nestedRelativeFilePath, file_get_contents(__DIR__ . '/../dumps/dump.sql'));
 
         $this->artisan(sprintf('protector:import --file=%s --force', $nestedRelativeFilePath))->assertOk();
     }
@@ -153,26 +142,26 @@ class ImportDumpCommandTest extends TestCase
         $this->artisan('protector:import --latest')->expectsConfirmation($this->shouldImportDump);
 
         $this->assertContains(
-            sprintf('%s%sdump.sql', $this->diskHelper->getStorageBaseDirectory(), DIRECTORY_SEPARATOR),
+            'dump.sql',
             $this->protector->dumpFiles()->toArray()
         );
     }
 
     #[Test]
-    public function failChooseImportDumpOnNoFilesInBaseDirectory(): void
+    public function failChooseImportDumpOnNoFilesInDumpDirectory(): void
     {
-        $this->clearDumpDirectory();
+        DiskHelper::flushDumps();
 
-        $this->expectException(EmptyBaseDirectoryException::class);
+        $this->expectException(EmptyDumpDirectoryException::class);
 
         $this->artisan('protector:import')
             ->expectsChoice($this->shouldDownloadDump, 2, static::DUMP_SOURCE_CHOICE);
     }
 
     #[Test]
-    public function chooseImportDumpWithOnlyOneFileInBaseDirectory(): void
+    public function chooseImportDumpWithOnlyOneFileInDumpDirectory(): void
     {
-        DiskHelper::flushDumps(static::$baseDirectory . '/dump.sql');
+        DiskHelper::flushDumps('dump.sql');
 
         $this->assertCount(1, $this->protector->dumpFiles());
 
