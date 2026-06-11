@@ -331,7 +331,10 @@ There are two disks, which use the `local` driver by default:
 
 > [!IMPORTANT]
 >
-> The `protector_local` disk must be a local disk, as certain operations require a local filesystem, such as creating a database dump.
+> The `protector_local` disk must be a local disk, as certain operations require a local filesystem, such as creating or importing a database dump.
+>
+> Almost all operations go through the local disk by creating a local copy first,
+> an exception to this is passing an absolute path to import operations, such as `protector:import --file=/path/to/dump.sql`
 
 If you want to override the disk configuration, add the following to your `config/filesystems.php` file:
 
