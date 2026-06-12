@@ -31,13 +31,13 @@ Protector supports the following databases:
 | MariaDB    | `mariadb` | `mariadb-dump` | `mariadb`   |
 | PostgreSQL | `pgsql`   | `pg_dump`      | `psql`      |
 
-MySQL is no longer officially supported, but the Protector still has capabilities to work with Laravel's `mysql` driver.
-If this should break in the future, feel free to submit a PR.
+MySQL is no longer officially supported, but the Protector still has capabilities to work with Laravel's `mysql` driver. If this should break in the future, feel free to submit a
+PR.
 
 > [!NOTE]
 > - Source and destination databases are not validated. Make sure you run compatible software versions to prevent issues.
-> - Because of different dump formats, dumps will not able to be imported into a different database engine,
-    > e.g. a MariaDB dump will fail to be imported into PostgreSQL, and vice versa.
+> - Because of different dump formats, dumps will not able to be imported into a different database engine, e.g. a MariaDB dump will fail to be imported into PostgreSQL, and vice
+    versa.
 
 ## Notes
 
@@ -67,8 +67,8 @@ To save a copy of your local database, run
 php artisan protector:export
 ```
 
-To configure settings, such as the file name, you can either publish the config file,
-or set the according environment variables found in the [ProtectorEnv](src/Enums/ProtectorEnv.php) class.
+To configure settings, such as the file name, you can either publish the config file, or set the according environment variables found in
+the [ProtectorEnv](src/Enums/ProtectorEnv.php) class.
 
 ```bash
 php artisan vendor:publish --tag=protector.config
@@ -93,11 +93,11 @@ To store and import in one step
 php artisan protector:download --import
 ```
 
-Each stored dump also has a matching metadata file with the `.meta` suffix (for example `dump.sql.meta`).
-The metadata file stores the same metadata object that is embedded in the SQL dump footer under `meta`.
+Each stored dump also has a matching metadata file with the `.meta` suffix (for example `dump.sql.meta`). The metadata file stores the same metadata object that is embedded in the
+SQL dump footer under `meta`.
 
-Interactive import reads metadata from these metadata files. If a metadata file is missing, the dump can still be selected,
-and the import command will group it as an unknown connection.
+Interactive import reads metadata from these metadata files. If a metadata file is missing, the dump can still be selected, and the import command will group it as an unknown
+connection.
 
 ### Import
 
@@ -189,8 +189,7 @@ You can now use the artisan command to write a backup to the Protector storage f
 php artisan protector:export
 ```
 
-By default, the file will be stored in `storage/private/protector` and have a timestamp in the name. You can also specify the
-filepath.
+By default, the file will be stored in `storage/private/protector` and have a timestamp in the name. You can also specify the filepath.
 
 You could also automate this by
 
@@ -204,8 +203,8 @@ php artisan protector:export --file="protector/database.sql"
 
 ### Setup for importing the database of a remote server
 
-This package can run on both servers and client machines of the same software repository.
-You set up authorized developers on the server and give them the key for their local machine.
+This package can run on both servers and client machines of the same software repository. You set up authorized developers on the server and give them the key for their local
+machine.
 
 #### Installing Protector in your Laravel project
 
@@ -246,8 +245,7 @@ Run the migrations on the client and server repository.
 php artisan migrate
 ```
 
-You can use environment variables or optionally publish the Protector config to set options regarding the storage, access and transmission of the
-files.
+You can use environment variables or optionally publish the Protector config to set options regarding the storage, access and transmission of the files.
 
 ```bash
 php artisan vendor:publish --tag=protector.config
@@ -295,11 +293,9 @@ The developer can then download and import the server database on their own.
 
 ### Setup for collecting backups from multiple servers
 
-You can develop a custom client that can access and store remote server backups. The servers can be different Laravel
-projects that have the Protector package installed.
+You can develop a custom client that can access and store remote server backups. The servers can be different Laravel projects that have the Protector package installed.
 
-See the previous chapter on how to give your backup client access to all servers. The backup client will need an
-according user on each target server.
+See the previous chapter on how to give your backup client access to all servers. The backup client will need an according user on each target server.
 
 - All the backup users on the target servers will have the same public key from the client
 - For each target server, the client will store the according url and token
@@ -310,9 +306,8 @@ See [cybex-gmbh/collector](https://github.com/cybex-gmbh/collector) for an examp
 
 The `protector.php` config file sets initial settings for the `Protector` instance.
 
-Generally, you should keep the `Protector` singleton instance as is.
-To create a new instance with different settings, use the `ProtectorConfigurator` class.
-For all available configuration options, take a look at the [ProtectorConfiguratorContract](src/Contracts/ProtectorConfiguratorContract.php).
+Generally, you should keep the `Protector` singleton instance as is. To create a new instance with different settings, use the `ProtectorConfigurator` class. For all available
+configuration options, take a look at the [ProtectorConfiguratorContract](src/Contracts/ProtectorConfiguratorContract.php).
 
 For example, to configure a specific auth token and dump endpoint URL:
 
@@ -325,7 +320,7 @@ $protector = ProtectorConfigurator::setAuthToken($authToken)->setDumpEndpointUrl
 There are two disks, which use the `local` driver by default:
 
 - [protector_local](config/filesystems/local.php) is used for temporary files which are deleted after use
-    - writes to `storage/app/private/protector/local` by default
+    - writes to `storage/app/private/protector_local` by default
 - [protector_storage](config/filesystems/storage.php) is used for storing dumps and their metadata files
     - writes to `storage/app/private/protector` by default
 
@@ -454,8 +449,7 @@ Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 
 ### Security
 
-If you discover any security-related issues, please email webdevelopment@cybex-online.com instead of using the issue
-tracker.
+If you discover any security-related issues, please email webdevelopment@cybex-online.com instead of using the issue tracker.
 
 ## Credits
 

@@ -14,13 +14,10 @@
 - Some config and .env keys have been renamed.
 - `Protector` instances can no longer be reconfigured during runtime. Create new instances using the `ProtectorConfigurator` class.
 - The Protector dump endpoint route name has been changed.
-- Dump metadata has received a new structure.
-  Legacy dumps with old metadata are still supported.
-  However, if you have code that relies on the old metadata structure,
-  you will need to adjust it to work with the new structure.
-- To support config caching, .env key names can no longer be changed during runtime.
-  If you previously relied on setting .env key names,
-  you will now have to set the values directly instead.
+- Dump metadata has received a new structure. Legacy dumps with old metadata are still supported. However, if you have code that relies on the old metadata structure, you will need
+  to adjust it to work with the new structure.
+- To support config caching, .env key names can no longer be changed during runtime. If you previously relied on setting .env key names, you will now have to set the values
+  directly instead.
 - Some functions throw different or more detailed exceptions.
 - The `protector:import` command no longer supports the `--dump`, `--ignore-connection-filter` and `--flush` option.
 - The dump file handling APIs and disk config structure changed.
@@ -37,8 +34,7 @@
 > Impact: Apps running on PHP versions below 8.4 and Laravel versions below 12.1.1
 > will not be able to use this version of the package.
 
-You need to update your system to PHP 8.4 or higher and Laravel 12.1.1 or higher,
-as these are now the minimum required versions.
+You need to update your system to PHP 8.4 or higher and Laravel 12.1.1 or higher, as these are now the minimum required versions.
 
 ### MySQL support dropped
 
@@ -50,9 +46,8 @@ as these are now the minimum required versions.
 Due to the lack of support for the mysql-client (it's aliasing to mariadb)
 in recent Linux distribution versions, official MySQL support has been dropped.
 
-We will no longer run dedicated tests for MySQL.
-The package might still work with MySQL databases, but it might break in the future.
-Migrate to MariaDB or PostgreSQL to continue receiving updates and support.
+We will no longer run dedicated tests for MySQL. The package might still work with MySQL databases, but it might break in the future. Migrate to MariaDB or PostgreSQL to continue
+receiving updates and support.
 
 ### Renamed or removed config keys
 
@@ -61,9 +56,7 @@ Migrate to MariaDB or PostgreSQL to continue receiving updates and support.
 >
 > Impact: App may crash, published `protector.php` config files will no longer work
 
-Config keys have been renamed or removed.
-If you have previously published the config file,
-you need to re-publish it and adjust the configuration accordingly.
+Config keys have been renamed or removed. If you have previously published the config file, you need to re-publish it and adjust the configuration accordingly.
 
 | Old                                      | New                                          |
 |------------------------------------------|----------------------------------------------|
@@ -90,7 +83,7 @@ The dump disk configuration now uses dedicated local and storage disks.
 By default, the disks use the `local` driver and write to
 
 - `storage/app/protector` for storing dumps
-- `storage/app/protector/local` for local file handling
+- `storage/app/protector_local` for local file handling
 
 If you want to overwrite the default, you can add the following disks to your `config/filesystems.php`:
 
@@ -163,11 +156,10 @@ The route name has been changed to `protector.server.dump` to align it with the 
 >
 > Impact: Calls to configuration methods on the `Protector` instance will fail.
 
-The `Protector` class has been split into `Protector`, `ProtectorConfigurator` and `ProtectorConfig`.
-Configuration methods that were previously available on the `Protector` instance are no longer accessible.
+The `Protector` class has been split into `Protector`, `ProtectorConfigurator` and `ProtectorConfig`. Configuration methods that were previously available on the `Protector`
+instance are no longer accessible.
 
-All methods of the `HasConfiguration` trait have been moved to `ProtectorConfig` and `ProtectorConfigurator`.
-Some methods have been renamed:
+All methods of the `HasConfiguration` trait have been moved to `ProtectorConfig` and `ProtectorConfigurator`. Some methods have been renamed:
 
 - `withAuthToken()` -> `setAuthToken()`
 - `withPrivateKey()` -> `setPrivateKey()`
@@ -175,8 +167,7 @@ Some methods have been renamed:
 - `withMaxPacketLength()` -> `setMaxPacketLength()`
 - `withDumpEndpointUrl()` -> `setDumpEndpointUrl()`
 
-`Protector` instances can no longer be reconfigured during runtime.
-Create new instances using the `ProtectorConfigurator` class.
+`Protector` instances can no longer be reconfigured during runtime. Create new instances using the `ProtectorConfigurator` class.
 
 ```php
 ProtectorConfigurator::setAuthToken('my-auth-token')->createProtector();
@@ -228,17 +219,16 @@ The following methods were removed:
 - `Protector::isUnderGitVersionControl()`
 - `Protector::prepareFileDownloadResponse()`
 
-#### Protector::getMetaData()
+#### Protector::getMetaData ()
 
 > [!NOTE]
 > Likelihood of impact: low
 >
-> Impact: Calls to Protector::getMetaData() will fail
+> Impact: Calls to Protector::getMetaData () will fail
 
 The method was renamed from `getMetaData()` to `metadata()`.
 
-Calls to `Protector::metadata()` will no longer return a flat metadata array.
-Instead, they will return a keyed array based on the configured MetadataProviders.
+Calls to `Protector::metadata()` will no longer return a flat metadata array. Instead, they will return a keyed array based on the configured MetadataProviders.
 
 Previously, `getMetaData()` returned:
 
@@ -268,15 +258,14 @@ Now, `metadata()` returns (assuming the default configuration is used and the pr
 ]
 ```
 
-### Protector::getDumpMetaData()
+### Protector::getDumpMetaData ()
 
 > [!NOTE]
 > Likelihood of impact: low
 >
-> Impact: Calls to Protector::getDumpMetaData() will fail
+> Impact: Calls to Protector::getDumpMetaData () will fail
 
-The method was removed.
-Use `Protector::dumpFilesWithMetadata()` instead, which returns an array of dump files with their corresponding metadata.
+The method was removed. Use `Protector::dumpFilesWithMetadata()` instead, which returns an array of dump files with their corresponding metadata.
 
 This makes use of `.meta` files to prevent downloading whole dumps just to access the metadata.
 
@@ -287,22 +276,20 @@ This makes use of `.meta` files to prevent downloading whole dumps just to acces
 >
 > Impact: Calls to `Protector::withAuthTokenKeyName()` and `Protector::withPrivateKeyName()` will fail
 
-This feature has been removed due to issues with config caching.
-Calls to `env()` will return `null` when the config was cached
-using `php artisan config:cache`, `php artisan optimize` or similar.
+This feature has been removed due to issues with config caching. Calls to `env()` will return `null` when the config was cached using `php artisan config:cache`,
+`php artisan optimize` or similar.
 
 Therefore, the following methods are no longer available:
 
 - `Protector::withAuthTokenKeyName()`
 - `Protector::withPrivateKeyName()`
 
-If you need to set the values for the auth token or the private key during runtime,
-use the following methods on the `ProtectorConfigurator` instead:
+If you need to set the values for the auth token or the private key during runtime, use the following methods on the `ProtectorConfigurator` instead:
 
 - `setPrivateKey()`
 - `setAuthToken()`
 
-### Protector::getLatestDumpName()
+### Protector::getLatestDumpName ()
 
 > [!NOTE]
 > Likelihood of impact: low
@@ -338,11 +325,11 @@ No breaking changes are expected.
 
 Likelihood of impact: high
 
-- If your app does not explicitly require the laravel/sanctum package, upgrading Protector to version 2.x will also
-  upgrade Sanctum to version 3.x. This will require you to follow its
+- If your app does not explicitly require the laravel/sanctum package, upgrading Protector to version 2.x will also upgrade Sanctum to version 3.x. This will require you to follow
+  its
   [upgrade guide](https://github.com/laravel/sanctum/blob/3.x/UPGRADE.md).
 
 Likelihood of impact: low
 
-- Access to the formerly public methods `getGitRevision()`, `getGitHeadDate()` or `getGitBranch()` is now protected.
-  You now need to call getMetaData() and extract the information from the returned array.
+- Access to the formerly public methods `getGitRevision()`, `getGitHeadDate()` or `getGitBranch()` is now protected. You now need to call getMetaData () and extract the information
+  from the returned array.

@@ -7,5 +7,3 @@ return [
     'throw' => false,
     'report' => false,
 ];
-
-

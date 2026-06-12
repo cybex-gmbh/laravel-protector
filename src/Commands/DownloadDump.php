@@ -15,7 +15,7 @@ class DownloadDump extends Command
 {
     protected $signature = 'protector:download
                 {--f|file= : The destination file path on the storage disk. }
-                {--c|connection= : The configured database-connection in Laravel\'s config/database.php. }
+                {--c|connection= : The configured database-connection in Laravel\'s config/database.php. Only works with the --import option. }
                 {--flush : Delete all existing dumps except the newly downloaded dump. }
                 {--import : Import the downloaded dump after download. }
                 {--allow-production : Enable importing SQL dumps on a production system. }

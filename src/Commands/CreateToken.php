@@ -20,8 +20,8 @@ class CreateToken extends Command
      * @var string
      */
     protected $signature = 'protector:token
-                {userId : The user id the token is created for.}
-                {--p|publicKey= : The public key for the user.}';
+                {userId : The user id the token is created for. }
+                {--p|publicKey= : The public key for the user. }';
 
     /**
      * The console command description.

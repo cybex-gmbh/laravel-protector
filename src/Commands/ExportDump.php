@@ -20,9 +20,9 @@ class ExportDump extends Command
      * @var string
      */
     protected $signature = 'protector:export
-                {--f|file= : The destination file name of the SQL export. }
+                {--f|file= : The destination file path on the storage disk. }
                 {--c|connection= : The configured database-connection in Laravel\'s config/database.php. }
-                {--no-data : Exclude data from dump.}';
+                {--no-data : Exclude data from dump. }';
 
     /**
      * The console command description.
