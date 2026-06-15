@@ -202,7 +202,7 @@ class ImportDumpTest extends TestCase
     {
         DiskHelper::flushDumps($excludeFromFlush);
 
-        $dumpsAfterFlushing = $this->protector->dumpFiles()->values()->toArray();
+        $dumpsAfterFlushing = $this->protector->dumpFiles()->toArray();
 
         $this->assertEquals($expected, $dumpsAfterFlushing);
     }

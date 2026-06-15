@@ -228,7 +228,8 @@ class DiskHelper implements DiskHelperContract
 
         return collect($allFiles)
             ->reject(fn(string $fileName) => $this->isMetadataFile($fileName))
-            ->when($excludeFile, fn($collection) => $collection->diff([$excludeFile]));
+            ->when($excludeFile, fn($collection) => $collection->diff([$excludeFile]))
+            ->values();
     }
 
     public function dumpFilesWithMetadata(): Collection
