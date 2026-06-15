@@ -110,6 +110,15 @@ class ImportDumpCommandTest extends TestCase
     }
 
     #[Test]
+    public function canImportDumpOnOptionFileWithExistingNestedRelativeFilePath(): void
+    {
+        $nestedRelativeFilePath = 'nested/dump.sql';
+        $this->storageDisk->put($nestedRelativeFilePath, file_get_contents(__DIR__ . '/../dumps/dump.sql'));
+
+        $this->artisan(sprintf('protector:import --file=%s --force', $nestedRelativeFilePath))->assertOk();
+    }
+
+    #[Test]
     public function canImportDumpOnOptionLatest(): void
     {
         $this->artisan('protector:import --latest')->expectsConfirmation($this->shouldImportDump);
