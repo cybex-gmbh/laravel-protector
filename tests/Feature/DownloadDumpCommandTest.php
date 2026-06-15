@@ -10,6 +10,7 @@ use Cybex\Protector\Protector;
 use Cybex\Protector\Tests\TestCase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -79,7 +80,7 @@ class DownloadDumpCommandTest extends TestCase
     public function flushRunsAfterImportAndIsSkippedWhenImportFails(): void
     {
         $existingDumpPath = 'existing_dump.sql';
-        $existingMetadataPath = $this->diskHelper->metadataFilePath($existingDumpPath);
+        $existingMetadataPath = $this->diskHelper->metadataFileName($existingDumpPath);
 
         $this->storageDisk->put($existingDumpPath, '-- existing dump');
         $this->storageDisk->put($existingMetadataPath, '{"meta":{"database":{"connection":"sqlite"}}}');
@@ -102,6 +103,30 @@ class DownloadDumpCommandTest extends TestCase
             $this->assertTrue($this->storageDisk->exists($existingDumpPath));
             $this->assertTrue($this->storageDisk->exists($existingMetadataPath));
         }
+    }
+
+    #[Test]
+    public function usesPassedDisk(): void
+    {
+        $fileName = 'usesPassedDisk.sql';
+        $disk = Storage::fake('local');
+
+        $dump = file_get_contents(__DIR__ . '/../dumps/dump.sql');
+        Http::fake([
+            $this->dumpEndpointUrl => Http::sequence()
+                ->push($dump, 200, ['Chunk-Size' => 1024])
+                ->push($dump, 200, ['Chunk-Size' => 1024])
+        ]);
+
+        $disk->assertMissing($fileName);
+        $this->storageDisk->assertMissing($fileName);
+
+        $this->artisan(sprintf('protector:download --file=%s', $fileName));
+        $disk->assertMissing($fileName);
+        $this->storageDisk->assertExists($fileName);
+
+        $this->artisan(sprintf('protector:download --file=%s --disk=local', $fileName));
+        $disk->assertExists($fileName);
     }
 }
 

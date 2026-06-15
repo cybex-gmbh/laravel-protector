@@ -53,37 +53,36 @@ class DiskHelper implements DiskHelperContract
      * @throws Throwable
      */
     public function moveLocalToStorage(
-        string $localFilePath,
-        string $storageFilePath,
-        ?Filesystem $storageDisk = null,
+        string $localFileName,
+        string $storageFileName,
+        Filesystem $storageDisk,
         bool $keepLocalFile = false,
     ): void
     {
-        $storageDisk ??= $this->getStorageDisk();
-        $localFileStream = $this->getLocalDisk()->readStream($localFilePath);
+        $localFileStream = $this->getLocalDisk()->readStream($localFileName);
 
         try {
             if (!is_resource($localFileStream)) {
-                throw new FailedReadingFromDiskException($localFilePath, 'local');
+                throw new FailedReadingFromDiskException($localFileName, 'local');
             }
 
-            if (!$storageDisk->writeStream($storageFilePath, $localFileStream)) {
-                throw new FailedWritingToDiskException($storageFilePath, 'storage');
+            if (!$storageDisk->writeStream($storageFileName, $localFileStream)) {
+                throw new FailedWritingToDiskException($storageFileName, 'storage');
             }
 
-            if ($storageDisk->size($storageFilePath) === 0) {
-                throw new EmptyFileWrittenException($storageFilePath, 'storage');
+            if ($storageDisk->size($storageFileName) === 0) {
+                throw new EmptyFileWrittenException($storageFileName, 'storage');
             }
         } catch (Throwable $throwable) {
-            $this->deleteLocalFile($localFilePath);
-            $this->deleteStorageFile($storageFilePath, $storageDisk);
+            $this->deleteLocalFile($localFileName);
+            $this->deleteStorageFile($storageFileName, $storageDisk);
 
             throw $throwable;
         } finally {
             fclose($localFileStream);
 
             if (!$keepLocalFile) {
-                $this->deleteLocalFile($localFilePath);
+                $this->deleteLocalFile($localFileName);
             }
         }
     }
@@ -92,11 +91,10 @@ class DiskHelper implements DiskHelperContract
      * @throws FailedReadingFromDiskException
      * @throws FailedWritingToDiskException
      */
-    public function copyStorageToLocal(string $storageFilePath, ?Filesystem $storageDisk = null): string
+    public function copyStorageToLocal(string $storageFilePath, Filesystem $storageDisk): string
     {
-        $storageDisk ??= $this->getStorageDisk();
         $localDisk = $this->getLocalDisk();
-        $localFilePath = $this->getLocalPath();
+        $localFileName = $this->getLocalFileName();
 
         $stream = $storageDisk->readStream($storageFilePath);
 
@@ -105,16 +103,16 @@ class DiskHelper implements DiskHelperContract
         }
 
         try {
-            if (!$localDisk->writeStream($localFilePath, $stream)) {
-                $this->deleteLocalFile($localFilePath);
+            if (!$localDisk->writeStream($localFileName, $stream)) {
+                $this->deleteLocalFile($localFileName);
 
-                throw new FailedWritingToDiskException($localFilePath, 'local');
+                throw new FailedWritingToDiskException($localFileName, 'local');
             }
         } finally {
             fclose($stream);
         }
 
-        return $localFilePath;
+        return $localFileName;
     }
 
     /**
@@ -123,7 +121,7 @@ class DiskHelper implements DiskHelperContract
      */
     public function writeStreamToLocalFile(
         StreamInterface $stream,
-        string $localFilePath,
+        string $localFileName,
         int $chunkSize,
         bool $shouldEncrypt = false,
         ?string $privateKey = null,
@@ -143,14 +141,14 @@ class DiskHelper implements DiskHelperContract
                 }
 
                 // Separator needs to be null, else each chunk will start on a new line.
-                $this->getLocalDisk()->append($localFilePath, $chunk, separator: null);
+                $this->getLocalDisk()->append($localFileName, $chunk, separator: null);
             }
 
-            if (!$this->getLocalDisk()->exists($localFilePath) || $this->getLocalDisk()->size($localFilePath) === 0) {
+            if (!$this->getLocalDisk()->exists($localFileName) || $this->getLocalDisk()->size($localFileName) === 0) {
                 throw new FailedRemoteDatabaseFetchingException('Retrieved empty response from remote dump endpoint.');
             }
         } catch (Throwable $throwable) {
-            $this->deleteLocalFile($localFilePath);
+            $this->deleteLocalFile($localFileName);
 
             throw $throwable;
         }
@@ -159,19 +157,18 @@ class DiskHelper implements DiskHelperContract
     /**
      * @inheritDoc
      */
-    public function writeMetadataFile(string $dumpFilePath, array $metadataPayload, ?Filesystem $storageDisk = null): void
+    public function writeMetadataFile(string $dumpFileName, array $metadataPayload, Filesystem $storageDisk): void
     {
-        $storageDisk ??= $this->getStorageDisk();
-        $metadataFilePath = $this->metadataFilePath($dumpFilePath);
+        $metadataFileName = $this->metadataFileName($dumpFileName);
 
         try {
             $encodedMetadata = json_encode(['meta' => $metadataPayload], flags: JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
 
-            if ($storageDisk->put($metadataFilePath, $encodedMetadata) === false) {
-                throw new FailedWritingMetadataFileException($dumpFilePath);
+            if ($storageDisk->put($metadataFileName, $encodedMetadata) === false) {
+                throw new FailedWritingMetadataFileException($dumpFileName);
             }
         } catch (Throwable $throwable) {
-            $this->deleteStorageFile($dumpFilePath, $storageDisk);
+            $this->deleteStorageFile($dumpFileName, $storageDisk);
 
             throw $throwable;
         }
@@ -180,17 +177,17 @@ class DiskHelper implements DiskHelperContract
     /**
      * @inheritDoc
      */
-    public function deleteLocalFile(string $path): void
+    public function deleteLocalFile(string $name): void
     {
-        $this->deleteDumpAndMetaFiles($path, $this->getLocalDisk());
+        $this->deleteDumpAndMetaFiles($name, $this->getLocalDisk());
     }
 
     /**
      * @inheritDoc
      */
-    public function deleteStorageFile(string $path, ?Filesystem $storageDisk = null): void
+    public function deleteStorageFile(string $name, Filesystem $storageDisk): void
     {
-        $this->deleteDumpAndMetaFiles($path, $storageDisk ?? $this->getStorageDisk());
+        $this->deleteDumpAndMetaFiles($name, $storageDisk);
     }
 
     /**
@@ -198,15 +195,20 @@ class DiskHelper implements DiskHelperContract
      */
     public function flushDumps(?string $excludeFile = null): void
     {
-        $this->deleteDumpAndMetaFiles($this->dumpFiles(excludeFile: $excludeFile), $this->getStorageDisk());
+        // Only delete files which have a .meta file and are not in a directory.
+        $this->deleteDumpAndMetaFiles(
+            names: $this->dumpFiles(excludeFile: $excludeFile)
+                ->where(fn(string $fileName) => $this->getStorageDisk()->exists($this->metadataFileName($fileName)))
+                ->where(fn(string $fileName) => $this->isBaseName($fileName)),
+            disk: $this->getStorageDisk());
     }
 
-    public function getLocalPath(): string
+    public function getLocalFileName(): string
     {
         return sprintf('%s.sql', uniqid('protector_', true));
     }
 
-    public function getDownloadDestinationFilePath(string $contentDispositionHeader): string
+    public function getDownloadDestinationFileName(string $contentDispositionHeader): string
     {
         if (preg_match('/filename="(?P<filename>.+)"/i', $contentDispositionHeader, $matches)) {
             $destinationFileName = $matches['filename'];
@@ -215,9 +217,9 @@ class DiskHelper implements DiskHelperContract
         return $destinationFileName ?? 'remote_dump.sql';
     }
 
-    public function metadataFilePath(string $dumpFilePath): string
+    public function metadataFileName(string $dumpFileName): string
     {
-        return sprintf('%s%s', $dumpFilePath, static::METADATA_FILE_SUFFIX);
+        return sprintf('%s%s', $dumpFileName, static::METADATA_FILE_SUFFIX);
     }
 
     public function dumpFiles(?string $excludeFile = null): Collection
@@ -225,14 +227,14 @@ class DiskHelper implements DiskHelperContract
         $allFiles = $this->getStorageDisk()->allFiles();
 
         return collect($allFiles)
-            ->reject(fn(string $filePath) => $this->isMetadataFile($filePath))
+            ->reject(fn(string $fileName) => $this->isMetadataFile($fileName))
             ->when($excludeFile, fn($collection) => $collection->diff([$excludeFile]));
     }
 
     public function dumpFilesWithMetadata(): Collection
     {
         return $this->dumpFiles()->mapWithKeys(
-            fn(string $dumpFilePath) => [$dumpFilePath => $this->getMetadataFileContents($dumpFilePath) ?? []]
+            fn(string $dumpFileName) => [$dumpFileName => $this->getMetadataFileContents($dumpFileName) ?? []]
         );
     }
 
@@ -252,26 +254,29 @@ class DiskHelper implements DiskHelperContract
         return $files->sortByDesc(fn($file) => $disk->lastModified($file))->values()->firstOrFail();
     }
 
-    public function isAbsolutePath(string $filePath): bool
+    public function isBaseName(?string $file): bool
     {
-        return Str::startsWith($filePath, DIRECTORY_SEPARATOR);
+        // basename does not accept "null".
+        $file ??= '';
+
+        return $file === basename($file);
     }
 
-    protected function isMetadataFile(string $filePath): bool
+    protected function isMetadataFile(string $fileName): bool
     {
-        return Str::endsWith($filePath, static::METADATA_FILE_SUFFIX);
+        return Str::endsWith($fileName, static::METADATA_FILE_SUFFIX);
     }
 
-    protected function getMetadataFileContents(string $dumpFilePath): ?array
+    protected function getMetadataFileContents(string $dumpFileName): ?array
     {
-        $metadataFilePath = $this->metadataFilePath($dumpFilePath);
+        $metadataFileName = $this->metadataFileName($dumpFileName);
         $disk = $this->getStorageDisk();
 
-        if (!$disk->exists($metadataFilePath)) {
+        if (!$disk->exists($metadataFileName)) {
             return null;
         }
 
-        if (!$metadata = $disk->get($metadataFilePath)) {
+        if (!$metadata = $disk->get($metadataFileName)) {
             return null;
         }
 
@@ -280,12 +285,12 @@ class DiskHelper implements DiskHelperContract
         return is_array($decodedMetadata) ? $decodedMetadata : null;
     }
 
-    protected function deleteDumpAndMetaFiles(string|array|Collection $paths, Filesystem $disk): void
+    protected function deleteDumpAndMetaFiles(string|array|Collection $names, Filesystem $disk): void
     {
-        $pathsToDelete = collect($paths)
-            ->flatMap(fn(string $filePath) => [$filePath, $this->metadataFilePath($filePath)])
+        $filesToDelete = collect($names)
+            ->flatMap(fn(string $fileName) => [$fileName, $this->metadataFileName($fileName)])
             ->toArray();
 
-        $disk->delete($pathsToDelete);
+        $disk->delete($filesToDelete);
     }
 }

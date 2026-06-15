@@ -33,9 +33,9 @@ interface DiskHelperContract
      * @throws Throwable
      */
     public function moveLocalToStorage(
-        string $localFilePath,
-        string $storageFilePath,
-        ?Filesystem $storageDisk = null,
+        string $localFileName,
+        string $storageFileName,
+        Filesystem $storageDisk,
         bool $keepLocalFile = false,
     ): void;
 
@@ -43,7 +43,7 @@ interface DiskHelperContract
      * @throws FailedReadingFromDiskException
      * @throws FailedWritingToDiskException
      */
-    public function copyStorageToLocal(string $storageFilePath, ?Filesystem $storageDisk = null): string;
+    public function copyStorageToLocal(string $storageFilePath, Filesystem $storageDisk): string;
 
     /**
      * @throws FailedRemoteDatabaseFetchingException
@@ -51,7 +51,7 @@ interface DiskHelperContract
      */
     public function writeStreamToLocalFile(
         StreamInterface $stream,
-        string $localFilePath,
+        string $localFileName,
         int $chunkSize,
         bool $shouldEncrypt = false,
         ?string $privateKey = null,
@@ -62,17 +62,17 @@ interface DiskHelperContract
      * @throws FailedWritingMetadataFileException
      * @throws Throwable
      */
-    public function writeMetadataFile(string $dumpFilePath, array $metadataPayload, ?Filesystem $storageDisk = null): void;
+    public function writeMetadataFile(string $dumpFileName, array $metadataPayload, Filesystem $storageDisk): void;
 
     /**
      * This will delete a dump file including its .meta file on the local disk.
      */
-    public function deleteLocalFile(string $path): void;
+    public function deleteLocalFile(string $name): void;
 
     /**
      * This will delete a dump file including its .meta file on the passed disk (defaults to the storage disk).
      */
-    public function deleteStorageFile(string $path, ?Filesystem $storageDisk = null): void;
+    public function deleteStorageFile(string $name, Filesystem $storageDisk): void;
 
     /**
      * Deletes all files in the configured dump directory on the storage disk.
@@ -82,11 +82,11 @@ interface DiskHelperContract
      */
     public function flushDumps(?string $excludeFile = null): void;
 
-    public function getLocalPath(): string;
+    public function getLocalFileName(): string;
 
-    public function getDownloadDestinationFilePath(string $contentDispositionHeader): string;
+    public function getDownloadDestinationFileName(string $contentDispositionHeader): string;
 
-    public function metadataFilePath(string $dumpFilePath): string;
+    public function metadataFileName(string $dumpFileName): string;
 
     public function dumpFiles(?string $excludeFile = null): Collection;
 
@@ -97,5 +97,5 @@ interface DiskHelperContract
      */
     public function latestDumpName(): string;
 
-    public function isAbsolutePath(string $filePath): bool;
+    public function isBaseName(string $file): bool;
 }

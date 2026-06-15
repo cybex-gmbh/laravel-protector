@@ -9,6 +9,7 @@ use Cybex\Protector\Tests\TestCase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use PDOException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -109,14 +110,43 @@ class ExportDumpTest extends TestCase
     #[Test]
     public function exportWritesMetadataFileWithIdenticalPayload(): void
     {
-        $exportedDumpPath = $this->protector->export(storageFilePath: $this->filePath, storageDisk: $this->localDisk);
-        $metadataFilePath = $this->diskHelper->metadataFilePath($exportedDumpPath);
+        $exportedDumpPath = $this->protector->export(storageFileName: $this->filePath, storageDisk: $this->localDisk);
+        $metadataFilePath = $this->diskHelper->metadataFileName($exportedDumpPath);
         $parsedDumpMetadata = $this->runProtectedMethod('getDumpMetadata', [$exportedDumpPath]);
         $decodedMetadataFile = json_decode($this->localDisk->get($metadataFilePath), true);
 
         $this->assertIsArray($parsedDumpMetadata);
         $this->assertIsArray($decodedMetadataFile);
         $this->assertEquals($parsedDumpMetadata, $decodedMetadataFile);
+    }
+
+    #[Test]
+    public function usesPassedDisk(): void
+    {
+        $fileName = 'usesPassedDisk.sql';
+        $disk = Storage::fake('local');
+
+        $disk->assertMissing($fileName);
+        $this->storageDisk->assertMissing($fileName);
+
+        $this->artisan(sprintf('protector:export --file=%s', $fileName));
+        $disk->assertMissing($fileName);
+        $this->storageDisk->assertExists($fileName);
+
+        $this->artisan(sprintf('protector:export --file=%s --disk=local', $fileName));
+        $disk->assertExists($fileName);
+    }
+
+    #[Test]
+    public function doesNotCopyOnNoCopy(): void
+    {
+        // Delete root directory.
+        $this->localDisk->deleteDirectory('');
+        $this->assertDirectoryDoesNotExist($this->localDisk->path(''));
+
+        $this->artisan('protector:export --file=dump.sql --no-copy')->assertOk();
+
+        $this->assertDirectoryDoesNotExist($this->localDisk->path(''));
     }
 
     #[Test]

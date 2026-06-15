@@ -21,6 +21,7 @@
 - Some functions throw different or more detailed exceptions.
 - The `protector:import` command no longer supports the `--dump`, `--ignore-connection-filter` and `--flush` option.
 - The dump file handling APIs and disk config structure changed.
+- The Protector will no longer allow creating dumps in directories.
 
 > [!IMPORTANT]
 > The `protector.php` config structure and keys have changed.
@@ -137,17 +138,15 @@ The route name has been changed to `protector.server.dump` to align it with the 
 - Dump files will no longer be retained after importing
     - If you want the old behaviour, use `php artisan protector:download --import` instead
 
-
 - The `--dump` option has been removed
-    - Use `--file` instead
-
+    - There is no replacement, the Protector now fully operates on disks and will not allow absolute file paths anymore
 
 - The `--i|ignore-connection-filter` option has been removed
-    - There is no replacement as of now. This is only relevant for interactive importing.
-
+    - There is no replacement as of now. This is only relevant for interactive importing
 
 - The `--flush` option has been removed. The dump file will now always be deleted after importing
     - If you need the old behaviour, use `php artisan protector:download --import --flush` instead
+    - The new `--flush` will only delete files which have a corresponding `.meta` file, and will not delete files inside directories
 
 ### Protector configuration refactoring
 
@@ -198,7 +197,7 @@ The following methods were renamed and might have changed signatures:
 | `Protector::getLatestDumpName()`            | `Protector::latestDumpName()`        |
 | `Protector::getMetaData()`                  | `Protector::metadata()`              |
 | `Protector::getRemoteDump()`                | `Protector::download()`              |
-| `Protector::importDump()`                   | `Protector::import()`                |           |
+| `Protector::importDump()`                   | `Protector::import()`                |
 
 #### Removed methods
 

@@ -15,6 +15,7 @@ use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Storage;
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\error;
 use function Laravel\Prompts\info;
@@ -37,13 +38,15 @@ class ImportDump extends Command
      * @var string
      */
     protected $signature = 'protector:import
-                {--f|file= : Either an absolute path to a file, or a filename relative to the protector dump directory. }
-                {--c|connection= : The configured database-connection in Laravel\'s config/database.php. }
                 {--allow-production : Enable importing SQL dumps on a production system. }
+                {--c|connection= : The configured database-connection in Laravel\'s config/database.php. }
+                {--d|disk= : A disk from which the dump is read. Only applicable with the --file option. Default is the storage disk. }
                 {--force : Skips confirmation prompts. Requires the file, remote or latest option. }
-                {--r|remote : Pull a fresh dump from the remote server as configured in the .env file. Will be used as fallback when combined with other options. }
+                {--f|file= : A file name on storage disk. }
                 {--l|latest : Import the most recent dump available in the configured dumps directory. }
                 {--m|migrate : Run database migrations after import. }
+                {--no-copy : Do not create a copy of the file on the local disk. Only applicable with the --file option. The passed file must be available on the local filesystem. }
+                {--r|remote : Pull a fresh dump from the remote server as configured in the .env file. Will be used as fallback when combined with other options. }
                 {--w|no-wipe : Do not wipe the database before importing the dump. }';
 
     /**
@@ -58,6 +61,7 @@ class ImportDump extends Command
     protected Protector $protector;
     protected Filesystem $sourceDisk;
     protected bool $needsCleanup = false;
+    protected bool $noCopy = false;
 
     /**
      * Execute the console command.
@@ -110,31 +114,34 @@ class ImportDump extends Command
 
     protected function getDumpFromRemote(): string
     {
-        $dumpPath = DiskHelper::getLocalPath();
+        $dumpName = DiskHelper::getLocalFileName();
         $this->sourceDisk = DiskHelper::getLocalDisk();
         $this->needsCleanup = true;
 
         spin(
-            callback: fn() => $this->protector->download(storageFilePath: $dumpPath, storageDisk: $this->sourceDisk),
+            callback: fn() => $this->protector->download(storageFileName: $dumpName, storageDisk: $this->sourceDisk),
             message: 'Downloading dump...'
         );
 
         info('Successfully retrieved remote dump.');
 
-        return $dumpPath;
+        return $dumpName;
     }
 
     /**
-     * Imports a dump from a specific file path.
-     * The file path may be either absolute or relative to the dump directory.
+     * Imports a dump from a file name.
      *
      * @throws FileNotFoundException
      */
     protected function getDumpFromFile(): string
     {
-        DiskHelper::isAbsolutePath($this->option('file'))
-            ? file_exists($this->option('file')) || throw new FileNotFoundException($this->option('file'))
-            : DiskHelper::getStorageDisk()->exists($this->option('file')) || throw new FileNotFoundException($this->option('file'));
+        if ($this->option('disk')) {
+            $this->sourceDisk = Storage::disk($this->option('disk'));
+        }
+
+        $this->noCopy = $this->option('no-copy');
+
+        $this->sourceDisk->exists($this->option('file')) || throw new FileNotFoundException($this->option('file'));
 
         return $this->option('file');
     }
@@ -144,11 +151,11 @@ class ImportDump extends Command
      */
     protected function getLatestDump(): string
     {
-        $dumpPath = $this->protector->latestDumpName();
+        $dumpName = $this->protector->latestDumpName();
 
-        info(sprintf('Importing %s', $dumpPath));
+        info(sprintf('Importing %s', $dumpName));
 
-        return $dumpPath;
+        return $dumpName;
     }
 
     /**
@@ -165,7 +172,7 @@ class ImportDump extends Command
     }
 
     /**
-     * Returns the file path to a selected dump.
+     * Returns the file name of the selected dump.
      *
      * @throws EmptyDumpDirectoryException
      * @throws InvalidConnectionException
@@ -176,11 +183,11 @@ class ImportDump extends Command
         $connectionFiles = $this->getConnectionFiles($connectionName)->keys();
 
         if ($connectionFiles->count() === 1) {
-            $dumpPath = $connectionFiles->first();
+            $dumpName = $connectionFiles->first();
 
-            info(sprintf('Using file "%s" because there are no other dumps.', $dumpPath));
+            info(sprintf('Using file "%s" because there are no other dumps.', $dumpName));
 
-            return $dumpPath;
+            return $dumpName;
         }
 
         $selectedFile = select(
@@ -194,7 +201,7 @@ class ImportDump extends Command
     /**
      * Imports the selected SQL dump.
      */
-    protected function runImport(string $dumpPath): void
+    protected function runImport(string $dumpName): void
     {
         try {
             if ($this->option('force') || confirm(
@@ -205,11 +212,12 @@ class ImportDump extends Command
                 )) {
                 spin(
                     callback: fn() => $this->protector->import(
-                        $dumpPath,
-                        $this->sourceDisk,
-                        noWipe: $this->option('no-wipe'),
+                        storageFilePath: $dumpName,
+                        storageDisk: $this->sourceDisk,
+                        wipe: !$this->option('no-wipe'),
                         migrate: $this->option('migrate'),
                         allowProduction: $this->option('allow-production'),
+                        copy: !$this->noCopy,
                     ),
                     message: 'Importing dump...'
                 );
@@ -223,7 +231,7 @@ class ImportDump extends Command
         } finally {
             // Clean-up local in case there was a dump downloaded from remote.
             if ($this->needsCleanup) {
-                DiskHelper::deleteLocalFile($dumpPath);
+                DiskHelper::deleteLocalFile($dumpName);
             }
         }
     }

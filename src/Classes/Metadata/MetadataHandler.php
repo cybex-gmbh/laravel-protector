@@ -35,11 +35,11 @@ class MetadataHandler
     }
 
     /**
-     * Returns the appended metadata from a file.
+     * Returns the appended metadata from a local file.
      *
      * @throws FileNotFoundException
      */
-    public function getDumpMetadata(string $dumpFile): bool|array
+    public function getDumpMetadata(string $dumpFileName): bool|array
     {
         // 'options' is only available in legacy dumps.
         $desiredMetaLines = [
@@ -48,7 +48,7 @@ class MetadataHandler
         ];
 
         // We add some extra lines to be sure we get all metadata, even if there are some empty lines at the end of the file.
-        $lines = $this->tail($dumpFile, count($desiredMetaLines) + 3);
+        $lines = $this->tail($dumpFileName, count($desiredMetaLines) + 3);
 
         // Response has not enough lines.
         if (count(array_filter($lines)) < count($desiredMetaLines)) {
@@ -107,11 +107,7 @@ class MetadataHandler
     protected function tail(string $file, int $lines, int $buffer = 1024): array
     {
         // Open file-handle.
-        if ($this->diskHelper->isAbsolutePath($file)) {
-            $fileHandle = fopen($file, 'rb');
-        } else {
-            $fileHandle = $this->diskHelper->getLocalDisk()->readStream($file);
-        }
+        $fileHandle = $this->diskHelper->getLocalDisk()->readStream($file);
 
         if (!is_resource($fileHandle)) {
             throw new FileNotFoundException($file);

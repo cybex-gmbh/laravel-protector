@@ -5,7 +5,7 @@ namespace Cybex\Protector\Tests;
 use Cybex\Protector\Contracts\DiskHelperContract;
 use Cybex\Protector\Protector;
 use Cybex\Protector\ProtectorServiceProvider;
-use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Filesystem\LocalFilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 use Orchestra\Testbench\TestCase as OrchestraTestCase;
 use ReflectionClass;
@@ -21,8 +21,8 @@ class TestCase extends OrchestraTestCase
      */
     protected Protector $protector;
     protected DiskHelperContract $diskHelper;
-    protected Filesystem $localDisk;
-    protected Filesystem $storageDisk;
+    protected LocalFilesystemAdapter $localDisk;
+    protected LocalFilesystemAdapter $storageDisk;
 
     protected function setUp(): void
     {
@@ -85,23 +85,23 @@ class TestCase extends OrchestraTestCase
         $property->setValue($this->protector, $value);
     }
 
-    protected function getStorageDiskWithFiles(): Filesystem
+    protected function getStorageDiskWithFiles(): LocalFilesystemAdapter
     {
         $disk = $this->getStorageDisk();
 
-        foreach (glob(__DIR__ . '/dumps/*.sql') as $filename) {
+        foreach (glob(__DIR__ . '/dumps/*.sql*') as $filename) {
             $disk->put(basename($filename), file_get_contents($filename));
         }
 
         return $disk;
     }
 
-    protected function getStorageDisk(): Filesystem
+    protected function getStorageDisk(): LocalFilesystemAdapter
     {
         return Storage::fake($this->diskHelper->getStorageDiskName());
     }
 
-    protected function getLocalDisk(): Filesystem
+    protected function getLocalDisk(): LocalFilesystemAdapter
     {
         return Storage::fake($this->diskHelper->getLocalDiskName());
     }

@@ -4,8 +4,10 @@ namespace Cybex\Protector\Commands;
 
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
 use Cybex\Protector\Exceptions\ShellAccessDeniedException;
+use Cybex\Protector\Facades\DiskHelperFacade as DiskHelper;
 use Cybex\Protector\Protector;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Storage;
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\spin;
 
@@ -20,8 +22,10 @@ class ExportDump extends Command
      * @var string
      */
     protected $signature = 'protector:export
-                {--f|file= : The destination file path on the storage disk. }
                 {--c|connection= : The configured database-connection in Laravel\'s config/database.php. }
+                {--d|disk= : A disk to which the dump is written. Default is the storage disk. }
+                {--f|file= : The destination file name on the storage disk. }
+                {--no-copy : Do not create a copy of the file on the local disk. The storage disk must be available on the local filesystem. }
                 {--no-data : Exclude data from dump. }';
 
     /**
@@ -53,8 +57,10 @@ class ExportDump extends Command
         $this->protector = $protectorConfigurator->makeProtector();
         $this->protector->guardRequiredFunctionsEnabled();
 
+        $disk = $this->option('disk') ? Storage::disk($this->option('disk')) : DiskHelper::getStorageDisk();
+
         spin(
-            callback: fn() => $this->protector->export(storageFilePath: $this->option('file')),
+            callback: fn() => $this->protector->export(storageFileName: $this->option('file'), storageDisk: $disk, copy: !$this->option('no-copy')),
             message: 'Exporting dump...'
         );
 

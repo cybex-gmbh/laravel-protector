@@ -110,33 +110,6 @@ class ImportDumpCommandTest extends TestCase
     }
 
     #[Test]
-    public function failOptionFileOnNonExistingAbsoluteFilePath(): void
-    {
-        $fileName = $this->storageDisk->path('thisDumpDoesNotExist.sql');
-
-        $this->expectExceptionObject(new FileNotFoundException(path: $fileName));
-
-        $this->artisan(sprintf('protector:import --file=%s --force', $fileName));
-    }
-
-    #[Test]
-    public function canImportDumpOnOptionFileWithExistingAbsoluteFilePath(): void
-    {
-        $fileName = $this->storageDisk->path('dump.sql');
-
-        $this->artisan(sprintf('protector:import --file=%s --force', $fileName))->assertOk();
-    }
-
-    #[Test]
-    public function canImportDumpOnOptionFileWithExistingNestedRelativeFilePath(): void
-    {
-        $nestedRelativeFilePath = 'nested/dump.sql';
-        $this->storageDisk->put($nestedRelativeFilePath, file_get_contents(__DIR__ . '/../dumps/dump.sql'));
-
-        $this->artisan(sprintf('protector:import --file=%s --force', $nestedRelativeFilePath))->assertOk();
-    }
-
-    #[Test]
     public function canImportDumpOnOptionLatest(): void
     {
         $this->artisan('protector:import --latest')->expectsConfirmation($this->shouldImportDump);
@@ -151,6 +124,7 @@ class ImportDumpCommandTest extends TestCase
     public function failChooseImportDumpOnNoFilesInDumpDirectory(): void
     {
         DiskHelper::flushDumps();
+        $this->storageDisk->delete('legacyDump.sql');
 
         $this->expectException(EmptyDumpDirectoryException::class);
 
@@ -162,11 +136,33 @@ class ImportDumpCommandTest extends TestCase
     public function chooseImportDumpWithOnlyOneFileInDumpDirectory(): void
     {
         DiskHelper::flushDumps('dump.sql');
+        $this->storageDisk->delete('legacyDump.sql');
 
         $this->assertCount(1, $this->protector->dumpFiles());
 
         $this->artisan('protector:import')
             ->expectsChoice($this->shouldDownloadDump, 2, static::DUMP_SOURCE_CHOICE)
             ->expectsConfirmation($this->shouldImportDump);
+    }
+
+    #[Test]
+    public function usesPassedDisk(): void
+    {
+        $this->artisan('protector:import --file=dump.sql --force')->assertOk();
+
+        $this->expectException(FileNotFoundException::class);
+        $this->artisan('protector:import --file=dump.sql --disk=local --force');
+    }
+
+    #[Test]
+    public function doesNotCopyOnNoCopy(): void
+    {
+        // Delete root directory.
+        $this->localDisk->deleteDirectory('');
+        $this->assertDirectoryDoesNotExist($this->localDisk->path(''));
+
+        $this->artisan('protector:import --file=dump.sql --no-copy --force')->assertOk();
+
+        $this->assertDirectoryDoesNotExist($this->localDisk->path(''));
     }
 }

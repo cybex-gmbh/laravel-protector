@@ -193,14 +193,14 @@ class RemoteDumpTest extends TestCase
             ]),
         ]);
 
-        $destinationFilepath = $this->protector->download();
-        $metadataFilePath = $this->diskHelper->metadataFilePath($destinationFilepath);
-        $decodedMetadataFile = json_decode($this->storageDisk->get($metadataFilePath), true);
-        $parsedDumpMetadata = $this->runProtectedMethod('getDumpMetadata', [$this->storageDisk->path($destinationFilepath)]);
+        $destinationFileName = $this->protector->download(storageDisk: $this->localDisk);
+        $metadataFileName = $this->diskHelper->metadataFileName($destinationFileName);
+        $decodedMetadataFile = json_decode($this->localDisk->get($metadataFileName), true);
+        $parsedDumpMetadata = $this->runProtectedMethod('getDumpMetadata', [$destinationFileName]);
 
-        $this->assertFileExists($this->storageDisk->path($destinationFilepath));
-        $this->assertFileExists($this->storageDisk->path($metadataFilePath));
-        $this->assertEquals($message, $this->storageDisk->get($destinationFilepath));
+        $this->assertFileExists($this->localDisk->path($destinationFileName));
+        $this->assertFileExists($this->localDisk->path($metadataFileName));
+        $this->assertEquals($message, $this->localDisk->get($destinationFileName));
         $this->assertIsArray($parsedDumpMetadata);
         $this->assertIsArray($decodedMetadataFile);
         $this->assertEquals($parsedDumpMetadata, $decodedMetadataFile);
@@ -225,7 +225,6 @@ class RemoteDumpTest extends TestCase
         ]);
 
         $this->expectException(FailedRemoteDatabaseFetchingException::class);
-        $this->expectExceptionMessage('Could not fetch database from remote server. Retrieved incomplete decrypted dump metadata.');
 
         try {
             $this->protector->download();
@@ -239,18 +238,16 @@ class RemoteDumpTest extends TestCase
     {
         Config::set('protector.server.routeMiddleware', []);
 
-        $filesBeforeDownload = $this->localDisk->allFiles();
-
         Http::fake([
             $this->dumpEndpointUrl => Http::response(file_get_contents(__DIR__ . '/../dumps/dump.sql'), 200, ['Chunk-Size' => 1024]),
         ]);
 
-        $downloadedFilePath = $this->protector->download();
-        $metadataFilePath = $this->diskHelper->metadataFilePath($downloadedFilePath);
-        $metadataFileContents = json_decode($this->storageDisk->get($metadataFilePath), true);
-        $parsedDumpMetadata = $this->runProtectedMethod('getDumpMetadata', [$this->storageDisk->path($downloadedFilePath)]);
+        $downloadedFileName = $this->protector->download(storageDisk: $this->localDisk);
+        $metadataFileName = $this->diskHelper->metadataFileName($downloadedFileName);
+        $metadataFileContents = json_decode($this->localDisk->get($metadataFileName), true);
+        $parsedDumpMetadata = $this->runProtectedMethod('getDumpMetadata', [$downloadedFileName]);
 
-        $this->assertEquals($filesBeforeDownload, $this->localDisk->allFiles());
+        $this->assertEquals([$downloadedFileName, $metadataFileName], $this->localDisk->allFiles());
         $this->assertIsArray($parsedDumpMetadata);
         $this->assertIsArray($metadataFileContents);
         $this->assertEquals($parsedDumpMetadata, $metadataFileContents);

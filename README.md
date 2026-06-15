@@ -93,11 +93,19 @@ To store and import in one step
 php artisan protector:download --import
 ```
 
+If you want to clean up the storage disk except the newly stored dump, run
+
+```bash
+php artisan protector:download --import --flush
+```
+
 Each stored dump also has a matching metadata file with the `.meta` suffix (for example `dump.sql.meta`). The metadata file stores the same metadata object that is embedded in the
 SQL dump footer under `meta`.
 
 Interactive import reads metadata from these metadata files. If a metadata file is missing, the dump can still be selected, and the import command will group it as an unknown
 connection.
+
+Flushing will only delete files with existing `.meta` files, and will not delete files in directories.
 
 ### Import
 
@@ -122,13 +130,7 @@ When used with other options, remote will serve as fallback behavior.
 To import a specific database file that you downloaded earlier, run
 
 ```bash
-php artisan protector:import --file=<absolute path to database file>
-```
-
-Or just reference the database file name relative to the Protector dump directory
-
-```bash
-php artisan protector:import --file=<name of database file>
+php artisan protector:import --file=<relative path on Protector storage disk>
 ```
 
 To import the latest existing database file, run
