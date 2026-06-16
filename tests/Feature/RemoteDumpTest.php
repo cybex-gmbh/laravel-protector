@@ -234,7 +234,7 @@ class RemoteDumpTest extends TestCase
     }
 
     #[Test]
-    public function nonEncryptedDownloadDoesNotLeaveLocalStagingFiles(): void
+    public function nonEncryptedDownloadWorks(): void
     {
         Config::set('protector.server.routeMiddleware', []);
 
@@ -252,6 +252,19 @@ class RemoteDumpTest extends TestCase
         $this->assertIsArray($metadataFileContents);
         $this->assertEquals($parsedDumpMetadata, $metadataFileContents);
     }
+
+    #[Test]
+    public function downloadDoesNotLeaveLocalFiles(): void
+    {
+        Http::fake([
+            $this->dumpEndpointUrl => Http::response(file_get_contents(__DIR__ . '/../dumps/dump.sql'), 200, ['Chunk-Size' => 1024]),
+        ]);
+
+        $this->protector->download();
+
+        $this->localDisk->assertDirectoryEmpty('');
+    }
+
 
     #[Test]
     public function failOnLaravelSanctumIsDisabledAndNoBasicAuthDefined(): void
