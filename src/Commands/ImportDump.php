@@ -243,7 +243,7 @@ class ImportDump extends Command
      */
     protected function getConnectionFiles(?string $connectionName = null): Collection
     {
-        $sortedFiles = $this->protector->dumpFilesWithMetadata()
+        $sortedFiles = DiskHelper::allStorageFilesWithMetadata()
             ->sortByDesc(
             // Supporting the legacy format.
                 fn($file) => Arr::get($file, 'meta.database.dumpedAtDate') ?? Arr::get($file, 'meta.dumpedAtDate')

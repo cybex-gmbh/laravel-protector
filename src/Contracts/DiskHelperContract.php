@@ -92,6 +92,10 @@ interface DiskHelperContract
 
     public function dumpFilesWithMetadata(): Collection;
 
+    public function allStorageFiles(): Collection;
+
+    public function allStorageFilesWithMetadata();
+
     /**
      * @throws EmptyDumpDirectoryException
      */

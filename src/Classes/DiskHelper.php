@@ -197,9 +197,7 @@ class DiskHelper implements DiskHelperContract
     {
         // Only delete files which have a .meta file and are not in a directory.
         $this->deleteDumpAndMetaFiles(
-            names: $this->dumpFiles(excludeFile: $excludeFile)
-                ->filter($this->metadataFileExists(...))
-                ->filter($this->isBaseName(...)),
+            names: $this->dumpFiles(excludeFile: $excludeFile),
             disk: $this->getStorageDisk());
     }
 
@@ -224,9 +222,10 @@ class DiskHelper implements DiskHelperContract
 
     public function dumpFiles(?string $excludeFile = null): Collection
     {
-        $allFiles = $this->getStorageDisk()->allFiles();
+        $dumpFiles = $this->getStorageDisk()->files();
 
-        return collect($allFiles)
+        return collect($dumpFiles)
+            ->filter($this->metadataFileExists(...))
             ->reject($this->isMetadataFile(...))
             ->when($excludeFile, fn(Collection $collection) => $collection->diff([$excludeFile]))
             ->values();
@@ -235,6 +234,18 @@ class DiskHelper implements DiskHelperContract
     public function dumpFilesWithMetadata(): Collection
     {
         return $this->dumpFiles()->mapWithKeys($this->getKeyedMetadataFileContents(...));
+    }
+
+    public function allStorageFiles(): Collection
+    {
+        return collect($this->getStorageDisk()->allFiles())
+            ->reject($this->isMetadataFile(...))
+            ->values();
+    }
+
+    public function allStorageFilesWithMetadata(): Collection
+    {
+        return $this->allStorageFiles()->mapWithKeys($this->getKeyedMetadataFileContents(...));
     }
 
     /**

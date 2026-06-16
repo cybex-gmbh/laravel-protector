@@ -104,15 +104,15 @@ class ImportDumpTest extends TestCase
     {
         return [
             ['dump.sql', false],
-            ['secondDump.sql', true],
+            ['dumpWithGit.sql', true],
         ];
     }
 
     public static function provideEmptyDumpsForFlushingDumps(): array
     {
         return [
-            [['legacyDump.sql'], null],
-            [['emptyDump.sql', 'legacyDump.sql'], 'emptyDump.sql'],
+            [[], null],
+            [['emptyDump.sql'], 'emptyDump.sql'],
         ];
     }
 
@@ -200,11 +200,13 @@ class ImportDumpTest extends TestCase
     #[DataProvider('provideEmptyDumpsForFlushingDumps')]
     public function flushDumps(array $expected, ?string $excludeFromFlush): void
     {
+        $allFiles = DiskHelper::allStorageFiles();
         DiskHelper::flushDumps($excludeFromFlush);
 
         $dumpsAfterFlushing = $this->protector->dumpFiles()->toArray();
 
         $this->assertEquals($expected, $dumpsAfterFlushing);
+        $this->assertContains('legacyDump.sql', $allFiles);
     }
 
     #[Test]
@@ -234,7 +236,7 @@ class ImportDumpTest extends TestCase
 
         $this->storageDisk->delete($this->diskHelper->metadataFileName($dumpFile));
 
-        $dumpFilesWithMetadata = $this->protector->dumpFilesWithMetadata();
+        $dumpFilesWithMetadata = $this->diskHelper->allStorageFilesWithMetadata();
 
         $this->assertSame([], $dumpFilesWithMetadata->get($dumpFile));
     }

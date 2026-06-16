@@ -476,11 +476,17 @@ class Protector
         return $this->diskHelper->latestDumpName();
     }
 
+    /**
+     * Returns all dump files on the storage disk root.
+     */
     public function dumpFiles(?string $excludeFile = null): Collection
     {
         return $this->diskHelper->dumpFiles($excludeFile);
     }
 
+    /**
+     * Returns all dump files on the storage disk root including their metadata.
+     */
     public function dumpFilesWithMetadata(): Collection
     {
         return $this->diskHelper->dumpFilesWithMetadata();
