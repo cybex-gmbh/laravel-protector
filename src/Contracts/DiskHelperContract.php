@@ -82,7 +82,7 @@ interface DiskHelperContract
      */
     public function flushDumps(?string $excludeFile = null): void;
 
-    public function getLocalFileName(): string;
+    public function createLocalFileName(): string;
 
     public function getDownloadDestinationFileName(string $contentDispositionHeader): string;
 

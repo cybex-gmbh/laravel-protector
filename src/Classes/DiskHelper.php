@@ -94,7 +94,7 @@ class DiskHelper implements DiskHelperContract
     public function copyStorageToLocal(string $storageFilePath, Filesystem $storageDisk): string
     {
         $localDisk = $this->getLocalDisk();
-        $localFileName = $this->getLocalFileName();
+        $localFileName = $this->createLocalFileName();
 
         $stream = $storageDisk->readStream($storageFilePath);
 
@@ -203,7 +203,7 @@ class DiskHelper implements DiskHelperContract
             disk: $this->getStorageDisk());
     }
 
-    public function getLocalFileName(): string
+    public function createLocalFileName(): string
     {
         return sprintf('%s.sql', uniqid('protector_', true));
     }

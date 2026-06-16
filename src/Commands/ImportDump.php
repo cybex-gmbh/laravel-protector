@@ -114,7 +114,7 @@ class ImportDump extends Command
 
     protected function getDumpFromRemote(): string
     {
-        $dumpName = DiskHelper::getLocalFileName();
+        $dumpName = DiskHelper::createLocalFileName();
         $this->sourceDisk = DiskHelper::getLocalDisk();
         $this->needsCleanup = true;
 

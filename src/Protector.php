@@ -341,7 +341,7 @@ class Protector
         $storageDisk ??= $this->diskHelper->getStorageDisk();
 
         $stream = $response->toPsrResponse()->getBody();
-        $localFileName = $this->diskHelper->getLocalFileName();
+        $localFileName = $this->diskHelper->createLocalFileName();
         $shouldEncrypt = filter_var($response->header('Sanctum-Enabled'), FILTER_VALIDATE_BOOLEAN);
 
         try {
@@ -524,7 +524,7 @@ class Protector
     protected function generateDump(?array $metadata = null, ?string $fileName = null, ?Filesystem $localDisk = null): string
     {
         $localDisk ??= $this->diskHelper->getLocalDisk();
-        $fileName ??= $this->diskHelper->getLocalFileName();
+        $fileName ??= $this->diskHelper->createLocalFileName();
 
         try {
             $this->dump($fileName, $localDisk);
