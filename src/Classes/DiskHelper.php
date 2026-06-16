@@ -198,8 +198,8 @@ class DiskHelper implements DiskHelperContract
         // Only delete files which have a .meta file and are not in a directory.
         $this->deleteDumpAndMetaFiles(
             names: $this->dumpFiles(excludeFile: $excludeFile)
-                ->where(fn(string $fileName) => $this->getStorageDisk()->exists($this->metadataFileName($fileName)))
-                ->where(fn(string $fileName) => $this->isBaseName($fileName)),
+                ->filter($this->metadataFileExists(...))
+                ->filter($this->isBaseName(...)),
             disk: $this->getStorageDisk());
     }
 
@@ -227,16 +227,14 @@ class DiskHelper implements DiskHelperContract
         $allFiles = $this->getStorageDisk()->allFiles();
 
         return collect($allFiles)
-            ->reject(fn(string $fileName) => $this->isMetadataFile($fileName))
-            ->when($excludeFile, fn($collection) => $collection->diff([$excludeFile]))
+            ->reject($this->isMetadataFile(...))
+            ->when($excludeFile, fn(Collection $collection) => $collection->diff([$excludeFile]))
             ->values();
     }
 
     public function dumpFilesWithMetadata(): Collection
     {
-        return $this->dumpFiles()->mapWithKeys(
-            fn(string $dumpFileName) => [$dumpFileName => $this->getMetadataFileContents($dumpFileName) ?? []]
-        );
+        return $this->dumpFiles()->mapWithKeys($this->getKeyedMetadataFileContents(...));
     }
 
     /**
@@ -252,7 +250,7 @@ class DiskHelper implements DiskHelperContract
 
         $disk = $this->getStorageDisk();
 
-        return $files->sortByDesc(fn($file) => $disk->lastModified($file))->values()->firstOrFail();
+        return $files->sortByDesc($disk->lastModified(...))->values()->firstOrFail();
     }
 
     public function isBaseName(?string $file): bool
@@ -266,6 +264,11 @@ class DiskHelper implements DiskHelperContract
     protected function isMetadataFile(string $fileName): bool
     {
         return Str::endsWith($fileName, static::METADATA_FILE_SUFFIX);
+    }
+
+    protected function metadataFileExists(string $dumpFileName): bool
+    {
+        return $this->getStorageDisk()->exists($this->metadataFileName($dumpFileName));
     }
 
     protected function getMetadataFileContents(string $dumpFileName): ?array
@@ -286,12 +289,22 @@ class DiskHelper implements DiskHelperContract
         return is_array($decodedMetadata) ? $decodedMetadata : null;
     }
 
+    protected function getKeyedMetadataFileContents(string $dumpFileName): array
+    {
+        return [$dumpFileName => $this->getMetadataFileContents($dumpFileName) ?? []];
+    }
+
     protected function deleteDumpAndMetaFiles(string|array|Collection $names, Filesystem $disk): void
     {
         $filesToDelete = collect($names)
-            ->flatMap(fn(string $fileName) => [$fileName, $this->metadataFileName($fileName)])
+            ->flatMap($this->getDumpAndMetadataFile(...))
             ->toArray();
 
         $disk->delete($filesToDelete);
+    }
+
+    protected function getDumpAndMetadataFile(string $fileName): array
+    {
+        return [$fileName, $this->metadataFileName($fileName)];
     }
 }

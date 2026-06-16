@@ -195,7 +195,7 @@ class ImportDump extends Command
             options: $connectionFiles,
         );
 
-        return $connectionFiles->firstWhere(fn($file) => $file === $selectedFile);
+        return $connectionFiles->filter(fn($file) => $file === $selectedFile)->first();
     }
 
     /**
