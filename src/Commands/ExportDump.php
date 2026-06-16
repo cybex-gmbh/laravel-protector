@@ -57,10 +57,10 @@ class ExportDump extends Command
         $this->protector = $protectorConfigurator->makeProtector();
         $this->protector->guardRequiredFunctionsEnabled();
 
-        $disk = $this->option('disk') ? Storage::disk($this->option('disk')) : DiskHelper::getStorageDisk();
+        $targetDisk = $this->option('disk') ? Storage::disk($this->option('disk')) : DiskHelper::getStorageDisk();
 
         spin(
-            callback: fn() => $this->protector->export(storageFileName: $this->option('file'), storageDisk: $disk, copy: !$this->option('no-copy')),
+            callback: fn() => $this->protector->export(targetFileName: $this->option('file'), targetDisk: $targetDisk, copy: !$this->option('no-copy')),
             message: 'Exporting dump...'
         );
 

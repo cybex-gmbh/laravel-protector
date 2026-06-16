@@ -60,10 +60,10 @@ class DownloadDumpCommandTest extends TestCase
     }
 
     #[Test]
-    public function importFlagDoesNotStageBackFromStorageForImport(): void
+    public function importFlagShouldNotRedownloadFromStorage(): void
     {
         $diskHelper = Mockery::mock(DiskHelper::class)->makePartial();
-        $diskHelper->shouldReceive('copyStorageToLocal')->never();
+        $diskHelper->shouldReceive('copySourceToLocal')->never();
 
         $this->app->instance(DiskHelperContract::class, $diskHelper);
 
@@ -98,7 +98,7 @@ class DownloadDumpCommandTest extends TestCase
         $this->expectException(FailedImportException::class);
 
         try {
-            $this->artisan('protector:download --import --force --flush');
+            $this->artisan('protector:download --import --force --flush-storage');
         } finally {
             $this->assertTrue($this->storageDisk->exists($existingDumpPath));
             $this->assertTrue($this->storageDisk->exists($existingMetadataPath));

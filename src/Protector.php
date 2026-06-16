@@ -74,9 +74,9 @@ class Protector
     /**
      * Imports a specific SQL dump.
      *
-     * @param string $storageFilePath A file path on the specified disk.
-     * @param Filesystem|null $storageDisk Defaults to the Protector storage disk.
-     * @param bool|null $wipe Whether the database should be wiped before import.
+     * @param string $sourceFilePath A file path on the specified disk.
+     * @param Filesystem|null $sourceDisk Defaults to the Protector storage disk.
+     * @param bool|null $wipeDb Whether the database should be wiped before import.
      * @param bool|null $migrate Whether to run migrations after import.
      * @param bool|null $allowProduction Allow importing in the production enviroment.
      * @param bool|null $copy Whether to create a temporary copy of the file on the local disk. Only disable this if the given file on the storage disk is available on the local filesystem.
@@ -93,9 +93,9 @@ class Protector
      * @throws ShellAccessDeniedException
      */
     public function import(
-        string $storageFilePath,
-        ?Filesystem $storageDisk = null,
-        ?bool $wipe = true,
+        string $sourceFilePath,
+        ?Filesystem $sourceDisk = null,
+        ?bool $wipeDb = true,
         ?bool $migrate = false,
         ?bool $allowProduction = false,
         ?bool $copy = true,
@@ -112,13 +112,13 @@ class Protector
             throw new InvalidConnectionException('Connection is not configured properly');
         }
 
-        $storageDisk ??= $this->diskHelper->getStorageDisk();
+        $sourceDisk ??= $this->diskHelper->getStorageDisk();
 
         if ($copy) {
-            $localFileName = $this->diskHelper->copyStorageToLocal(storageFilePath: $storageFilePath, storageDisk: $storageDisk);
+            $localFileName = $this->diskHelper->copySourceToLocal(sourceFilePath: $sourceFilePath, sourceDisk: $sourceDisk);
             $absoluteImportFilePath = $this->diskHelper->getLocalDisk()->path($localFileName);
         } else {
-            $absoluteImportFilePath = $storageDisk->path($storageFilePath);
+            $absoluteImportFilePath = $sourceDisk->path($sourceFilePath);
         }
 
         if (!file_exists($absoluteImportFilePath)) {
@@ -126,7 +126,7 @@ class Protector
         }
 
         try {
-            if ($wipe) {
+            if ($wipeDb) {
                 try {
                     $this->wipeDatabase(DB::connection($this->config->getConnectionName()));
                 } catch (Throwable $throwable) {
@@ -159,8 +159,8 @@ class Protector
     /**
      * Generates a dump from the current app database and saves it to the specified disk (defaults to the storage disk).
      *
-     * @param string|null $storageFileName Optional file name on the disk to which the dump is written.
-     * @param Filesystem|null $storageDisk Defaults to the Protector storage disk.
+     * @param string|null $targetFileName Optional file name on the disk to which the dump is written.
+     * @param Filesystem|null $targetDisk Defaults to the Protector storage disk.
      * @param bool|null $copy Whether to create a temporary copy on the local disk. Only use this if the storage disk is available on the local filesystem.
      *
      * @return string The dump file path on the disk.
@@ -177,7 +177,7 @@ class Protector
      * @throws ShellAccessDeniedException
      * @throws Throwable
      */
-    public function export(?string $storageFileName = null, ?Filesystem $storageDisk = null, ?bool $copy = true): string
+    public function export(?string $targetFileName = null, ?Filesystem $targetDisk = null, ?bool $copy = true): string
     {
         $this->guardRequiredFunctionsEnabled();
 
@@ -185,42 +185,42 @@ class Protector
             throw new InvalidConnectionException('Connection is not configured properly.');
         }
 
-        if (!$this->diskHelper->isBaseName($storageFileName)) {
-            throw new FileNameMayNotContainDirectoryException($storageFileName);
+        if (!$this->diskHelper->isBaseName($targetFileName)) {
+            throw new FileNameMayNotContainDirectoryException($targetFileName);
         }
 
-        $storageFileName ??= $this->createFilename();
-        $storageDisk ??= $this->diskHelper->getStorageDisk();
+        $targetFileName ??= $this->createFilename();
+        $targetDisk ??= $this->diskHelper->getStorageDisk();
         $metadata = $this->metadata();
 
-        $this->diskHelper->writeMetadataFile($storageFileName, $metadata, $storageDisk);
+        $this->diskHelper->writeMetadataFile($targetFileName, $metadata, $targetDisk);
 
         try {
             if ($copy) {
                 $localDumpFile = $this->generateDump($metadata);
 
-                $this->diskHelper->moveLocalToStorage(
+                $this->diskHelper->moveLocalToTarget(
                     localFileName: $localDumpFile,
-                    storageFileName: $storageFileName,
-                    storageDisk: $storageDisk,
+                    targetFileName: $targetFileName,
+                    targetDisk: $targetDisk,
                 );
             } else {
-                $this->generateDump(metadata: $metadata, fileName: $storageFileName, localDisk: $storageDisk);
+                $this->generateDump(metadata: $metadata, fileName: $targetFileName, localDisk: $targetDisk);
             }
         } catch (Throwable $throwable) {
-            $this->diskHelper->deleteStorageFile($storageFileName, $storageDisk);
+            $this->diskHelper->deleteFileOnDisk($targetFileName, $targetDisk);
 
             throw $throwable;
         }
 
-        return $storageFileName;
+        return $targetFileName;
     }
 
     /**
      * Downloads a dump file from a remote system and stores it on the specified disk (defaults to the storage disk).
      *
-     * @param string|null $storageFileName Optional file name on the disk to which the dump is written.
-     * @param Filesystem|null $storageDisk Defaults to the storage disk.
+     * @param string|null $targetFileName Optional file name on the disk to which the dump is written.
+     * @param Filesystem|null $targetDisk Defaults to the storage disk.
      *
      * @return string The dump file name on the disk.
      *
@@ -235,23 +235,23 @@ class Protector
      * @throws SanctumBasicAuthConflictException
      * @throws Throwable
      */
-    public function download(?string $storageFileName = null, ?Filesystem $storageDisk = null): string
+    public function download(?string $targetFileName = null, ?Filesystem $targetDisk = null): string
     {
-        [$storageFileName] = $this->downloadToDisk(
-            storageFileName: $storageFileName,
-            storageDisk: $storageDisk,
+        [$targetFileName] = $this->downloadToDisk(
+            targetFileName: $targetFileName,
+            targetDisk: $targetDisk,
         );
 
-        return $storageFileName;
+        return $targetFileName;
     }
 
     /**
      * Downloads a dump file from a remote system and stores it on the specified disk (defaults to the storage disk).
      * Afterwards the dump will be imported, without re-downloading it from storage.
      *
-     * @param string|null $storageFileName Optional file name on the disk to which the dump is written.
-     * @param Filesystem|null $storageDisk Defaults to the storage disk.
-     * @param bool|null $wipe Whether the database should not be wiped before import.
+     * @param string|null $targetFileName Optional file name on the disk to which the dump is written.
+     * @param Filesystem|null $targetDisk Defaults to the storage disk.
+     * @param bool|null $wipeDb Whether the database should not be wiped before import.
      * @param bool|null $migrate Whether to run migrations after import.
      * @param bool|null $allowProduction Allow importing in the production enviroment.
      *
@@ -275,24 +275,24 @@ class Protector
      * @throws Throwable
      */
     public function downloadAndImport(
-        ?string $storageFileName = null,
-        ?Filesystem $storageDisk = null,
-        ?bool $wipe = true,
+        ?string $targetFileName = null,
+        ?Filesystem $targetDisk = null,
+        ?bool $wipeDb = true,
         ?bool $migrate = false,
         ?bool $allowProduction = false,
     ): string
     {
-        [$storageFileName, $localFileName] = $this->downloadToDisk(
-            storageFileName: $storageFileName,
-            storageDisk: $storageDisk,
+        [$targetFileName, $localFileName] = $this->downloadToDisk(
+            targetFileName: $targetFileName,
+            targetDisk: $targetDisk,
             keepLocalFile: true,
         );
 
         try {
             $this->import(
-                storageFilePath: $localFileName,
-                storageDisk: $this->diskHelper->getLocalDisk(),
-                wipe: $wipe,
+                sourceFilePath: $localFileName,
+                sourceDisk: $this->diskHelper->getLocalDisk(),
+                wipeDb: $wipeDb,
                 migrate: $migrate,
                 allowProduction: $allowProduction,
                 copy: false,
@@ -301,7 +301,7 @@ class Protector
             $this->diskHelper->deleteLocalFile($localFileName);
         }
 
-        return $storageFileName;
+        return $targetFileName;
     }
 
     /**
@@ -316,9 +316,9 @@ class Protector
      * @throws SanctumBasicAuthConflictException
      * @throws Throwable
      */
-    protected function downloadToDisk(?string $storageFileName = null, ?Filesystem $storageDisk = null, bool $keepLocalFile = false): array
+    protected function downloadToDisk(?string $targetFileName = null, ?Filesystem $targetDisk = null, bool $keepLocalFile = false): array
     {
-        $this->guardDownload($storageFileName);
+        $this->guardDownload($targetFileName);
 
         // Telescope is interfering with the request / response.
         $telescopeWasRecording = $this->stopTelescopeRecording();
@@ -337,8 +337,8 @@ class Protector
             $this->handleDownloadResponseError($response);
         }
 
-        $storageFileName ??= $this->diskHelper->getDownloadDestinationFileName($response->header('Content-Disposition'));
-        $storageDisk ??= $this->diskHelper->getStorageDisk();
+        $targetFileName ??= $this->diskHelper->getDownloadDestinationFileName($response->header('Content-Disposition'));
+        $targetDisk ??= $this->diskHelper->getStorageDisk();
 
         $stream = $response->toPsrResponse()->getBody();
         $localFileName = $this->diskHelper->createLocalFileName();
@@ -362,12 +362,12 @@ class Protector
                 throw new FailedRemoteDatabaseFetchingException('Retrieved incomplete dump metadata.');
             }
 
-            $this->diskHelper->writeMetadataFile($storageFileName, $metadataPayload, $storageDisk);
+            $this->diskHelper->writeMetadataFile($targetFileName, $metadataPayload, $targetDisk);
 
-            $this->diskHelper->moveLocalToStorage(
+            $this->diskHelper->moveLocalToTarget(
                 localFileName: $localFileName,
-                storageFileName: $storageFileName,
-                storageDisk: $storageDisk,
+                targetFileName: $targetFileName,
+                targetDisk: $targetDisk,
                 keepLocalFile: $keepLocalFile,
             );
         } catch (Throwable $throwable) {
@@ -378,7 +378,7 @@ class Protector
             $stream->close();
         }
 
-        return [$storageFileName, $localFileName];
+        return [$targetFileName, $localFileName];
     }
 
     public function generateFileDownloadResponse(Request $request): Response|StreamedResponse

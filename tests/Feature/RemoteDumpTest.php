@@ -193,7 +193,7 @@ class RemoteDumpTest extends TestCase
             ]),
         ]);
 
-        $destinationFileName = $this->protector->download(storageDisk: $this->localDisk);
+        $destinationFileName = $this->protector->download(targetDisk: $this->localDisk);
         $metadataFileName = $this->diskHelper->metadataFileName($destinationFileName);
         $decodedMetadataFile = json_decode($this->localDisk->get($metadataFileName), true);
         $parsedDumpMetadata = $this->runProtectedMethod('getDumpMetadata', [$destinationFileName]);
@@ -242,7 +242,7 @@ class RemoteDumpTest extends TestCase
             $this->dumpEndpointUrl => Http::response(file_get_contents(__DIR__ . '/../dumps/dump.sql'), 200, ['Chunk-Size' => 1024]),
         ]);
 
-        $downloadedFileName = $this->protector->download(storageDisk: $this->localDisk);
+        $downloadedFileName = $this->protector->download(targetDisk: $this->localDisk);
         $metadataFileName = $this->diskHelper->metadataFileName($downloadedFileName);
         $metadataFileContents = json_decode($this->localDisk->get($metadataFileName), true);
         $parsedDumpMetadata = $this->runProtectedMethod('getDumpMetadata', [$downloadedFileName]);

@@ -8,6 +8,7 @@ use Cybex\Protector\Protector;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 use function Laravel\Prompts\confirm;
+use function Laravel\Prompts\error;
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\spin;
 use function Laravel\Prompts\warning;
@@ -18,12 +19,12 @@ class DownloadDump extends Command
                 {--allow-production : Enable importing SQL dumps on a production system. }
                 {--c|connection= : The configured database-connection in Laravel\'s config/database.php. Only works with the --import option. }
                 {--d|disk= : A disk to which the dump is written. Default is the storage disk. }
-                {--flush : Delete all existing dumps which have a .meta file, except the newly downloaded dump. Only applies to the Protector storage disk, not a disk passed with --disk. }
+                {--flush-storage : Delete all existing dumps which have a .meta file, except the newly downloaded dump. Only applies to the Protector storage disk, not a disk passed with --disk. }
                 {--force : Skips confirmation prompts for import. }
                 {--f|file= : The destination file name on the storage disk. }
                 {--import : Import the downloaded dump after download. }
                 {--m|migrate : Run database migrations after import. }
-                {--w|no-wipe : Do not wipe the database before importing the dump. }';
+                {--no-wipe-db : Do not wipe the database before importing the dump. }';
 
     protected $description = 'Downloads a database dump to the configured storage disk.';
 
@@ -31,29 +32,35 @@ class DownloadDump extends Command
 
     public function handle(): int
     {
+        if ($this->option('disk') && $this->option('flush-storage')) {
+            error('The --flush-storage option cannot be used with the --disk option.');
+
+            return self::FAILURE;
+        }
+
         $this->configureProtector();
 
         $shouldImport = $this->option('import') && $this->confirmImport();
 
-        $storageDisk = $this->option('disk') ? Storage::disk($this->option('disk')) : DiskHelper::getStorageDisk();
+        $targetDisk = $this->option('disk') ? Storage::disk($this->option('disk')) : DiskHelper::getStorageDisk();
 
         $fileName = spin(
             callback: fn() => $shouldImport
                 ? $this->protector->downloadAndImport(
-                    storageFileName: $this->option('file'),
-                    storageDisk: $storageDisk,
-                    wipe: !$this->option('no-wipe'),
+                    targetFileName: $this->option('file'),
+                    targetDisk: $targetDisk,
+                    wipeDb: !$this->option('no-wipe-db'),
                     migrate: $this->option('migrate'),
                     allowProduction: $this->option('allow-production'),
                 )
-                : $this->protector->download(storageFileName: $this->option('file'), storageDisk: $storageDisk),
+                : $this->protector->download(targetFileName: $this->option('file'), targetDisk: $targetDisk),
             message: $shouldImport ? 'Downloading and importing...' : 'Downloading dump...'
         );
 
         info('Successfully downloaded dump to disk.');
         $shouldImport && info('Import done!');
 
-        if ($this->option('flush')) {
+        if ($this->option('flush-storage')) {
             $this->flush($fileName);
         }
 
@@ -86,7 +93,7 @@ class DownloadDump extends Command
 
     protected function flush(string $fileName): void
     {
-        DiskHelper::flushDumps(excludeFile: $fileName);
+        DiskHelper::flushStorage(excludeFile: $fileName);
 
         warning('Storage directory has been flushed. Downloaded dump was retained.');
     }

@@ -32,10 +32,10 @@ interface DiskHelperContract
      * @throws EmptyFileWrittenException
      * @throws Throwable
      */
-    public function moveLocalToStorage(
+    public function moveLocalToTarget(
         string $localFileName,
-        string $storageFileName,
-        Filesystem $storageDisk,
+        string $targetFileName,
+        Filesystem $targetDisk,
         bool $keepLocalFile = false,
     ): void;
 
@@ -43,7 +43,7 @@ interface DiskHelperContract
      * @throws FailedReadingFromDiskException
      * @throws FailedWritingToDiskException
      */
-    public function copyStorageToLocal(string $storageFilePath, Filesystem $storageDisk): string;
+    public function copySourceToLocal(string $sourceFilePath, Filesystem $sourceDisk): string;
 
     /**
      * @throws FailedRemoteDatabaseFetchingException
@@ -62,7 +62,7 @@ interface DiskHelperContract
      * @throws FailedWritingMetadataFileException
      * @throws Throwable
      */
-    public function writeMetadataFile(string $dumpFileName, array $metadataPayload, Filesystem $storageDisk): void;
+    public function writeMetadataFile(string $dumpFileName, array $metadataPayload, Filesystem $targetDisk): void;
 
     /**
      * This will delete a dump file including its .meta file on the local disk.
@@ -72,7 +72,7 @@ interface DiskHelperContract
     /**
      * This will delete a dump file including its .meta file on the passed disk (defaults to the storage disk).
      */
-    public function deleteStorageFile(string $name, Filesystem $storageDisk): void;
+    public function deleteFileOnDisk(string $name, Filesystem $disk): void;
 
     /**
      * Deletes all files in the configured dump directory on the storage disk.
@@ -80,7 +80,7 @@ interface DiskHelperContract
      *
      * @param string|null $excludeFile The relative file path on the storage disk to exclude from deletion.
      */
-    public function flushDumps(?string $excludeFile = null): void;
+    public function flushStorage(?string $excludeFile = null): void;
 
     public function createLocalFileName(): string;
 

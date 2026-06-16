@@ -47,7 +47,7 @@ class ImportDump extends Command
                 {--m|migrate : Run database migrations after import. }
                 {--no-copy : Do not create a copy of the file on the local disk. Only applicable with the --file option. The passed file must be available on the local filesystem. }
                 {--r|remote : Pull a fresh dump from the remote server as configured in the .env file. Will be used as fallback when combined with other options. }
-                {--w|no-wipe : Do not wipe the database before importing the dump. }';
+                {--no-wipe-db : Do not wipe the database before importing the dump. }';
 
     /**
      * The console command description.
@@ -60,7 +60,7 @@ class ImportDump extends Command
     protected const string IMPORT_EXISTING_LOCAL_DUMP = 'Import existing dump';
     protected Protector $protector;
     protected Filesystem $sourceDisk;
-    protected bool $needsCleanup = false;
+    protected bool $localDiskNeedsCleanup = false;
     protected bool $noCopy = false;
 
     /**
@@ -116,10 +116,10 @@ class ImportDump extends Command
     {
         $dumpName = DiskHelper::createLocalFileName();
         $this->sourceDisk = DiskHelper::getLocalDisk();
-        $this->needsCleanup = true;
+        $this->localDiskNeedsCleanup = true;
 
         spin(
-            callback: fn() => $this->protector->download(storageFileName: $dumpName, storageDisk: $this->sourceDisk),
+            callback: fn() => $this->protector->download(targetFileName: $dumpName, targetDisk: $this->sourceDisk),
             message: 'Downloading dump...'
         );
 
@@ -212,9 +212,9 @@ class ImportDump extends Command
                 )) {
                 spin(
                     callback: fn() => $this->protector->import(
-                        storageFilePath: $dumpName,
-                        storageDisk: $this->sourceDisk,
-                        wipe: !$this->option('no-wipe'),
+                        sourceFilePath: $dumpName,
+                        sourceDisk: $this->sourceDisk,
+                        wipeDb: !$this->option('no-wipe-db'),
                         migrate: $this->option('migrate'),
                         allowProduction: $this->option('allow-production'),
                         copy: !$this->noCopy,
@@ -230,7 +230,7 @@ class ImportDump extends Command
             info('Import aborted');
         } finally {
             // Clean-up local in case there was a dump downloaded from remote.
-            if ($this->needsCleanup) {
+            if ($this->localDiskNeedsCleanup) {
                 DiskHelper::deleteLocalFile($dumpName);
             }
         }

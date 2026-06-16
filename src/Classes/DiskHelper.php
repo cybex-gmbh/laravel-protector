@@ -52,10 +52,10 @@ class DiskHelper implements DiskHelperContract
      * @throws EmptyFileWrittenException
      * @throws Throwable
      */
-    public function moveLocalToStorage(
+    public function moveLocalToTarget(
         string $localFileName,
-        string $storageFileName,
-        Filesystem $storageDisk,
+        string $targetFileName,
+        Filesystem $targetDisk,
         bool $keepLocalFile = false,
     ): void
     {
@@ -66,16 +66,16 @@ class DiskHelper implements DiskHelperContract
                 throw new FailedReadingFromDiskException($localFileName, 'local');
             }
 
-            if (!$storageDisk->writeStream($storageFileName, $localFileStream)) {
-                throw new FailedWritingToDiskException($storageFileName, 'storage');
+            if (!$targetDisk->writeStream($targetFileName, $localFileStream)) {
+                throw new FailedWritingToDiskException($targetFileName, 'target');
             }
 
-            if ($storageDisk->size($storageFileName) === 0) {
-                throw new EmptyFileWrittenException($storageFileName, 'storage');
+            if ($targetDisk->size($targetFileName) === 0) {
+                throw new EmptyFileWrittenException($targetFileName, 'target');
             }
         } catch (Throwable $throwable) {
             $this->deleteLocalFile($localFileName);
-            $this->deleteStorageFile($storageFileName, $storageDisk);
+            $this->deleteFileOnDisk($targetFileName, $targetDisk);
 
             throw $throwable;
         } finally {
@@ -91,15 +91,15 @@ class DiskHelper implements DiskHelperContract
      * @throws FailedReadingFromDiskException
      * @throws FailedWritingToDiskException
      */
-    public function copyStorageToLocal(string $storageFilePath, Filesystem $storageDisk): string
+    public function copySourceToLocal(string $sourceFilePath, Filesystem $sourceDisk): string
     {
         $localDisk = $this->getLocalDisk();
         $localFileName = $this->createLocalFileName();
 
-        $stream = $storageDisk->readStream($storageFilePath);
+        $stream = $sourceDisk->readStream($sourceFilePath);
 
         if (!is_resource($stream)) {
-            throw new FailedReadingFromDiskException($storageFilePath, 'storage');
+            throw new FailedReadingFromDiskException($sourceFilePath, 'source');
         }
 
         try {
@@ -157,18 +157,18 @@ class DiskHelper implements DiskHelperContract
     /**
      * @inheritDoc
      */
-    public function writeMetadataFile(string $dumpFileName, array $metadataPayload, Filesystem $storageDisk): void
+    public function writeMetadataFile(string $dumpFileName, array $metadataPayload, Filesystem $targetDisk): void
     {
         $metadataFileName = $this->metadataFileName($dumpFileName);
 
         try {
             $encodedMetadata = json_encode(['meta' => $metadataPayload], flags: JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
 
-            if ($storageDisk->put($metadataFileName, $encodedMetadata) === false) {
+            if ($targetDisk->put($metadataFileName, $encodedMetadata) === false) {
                 throw new FailedWritingMetadataFileException($dumpFileName);
             }
         } catch (Throwable $throwable) {
-            $this->deleteStorageFile($dumpFileName, $storageDisk);
+            $this->deleteFileOnDisk($dumpFileName, $targetDisk);
 
             throw $throwable;
         }
@@ -185,15 +185,15 @@ class DiskHelper implements DiskHelperContract
     /**
      * @inheritDoc
      */
-    public function deleteStorageFile(string $name, Filesystem $storageDisk): void
+    public function deleteFileOnDisk(string $name, Filesystem $disk): void
     {
-        $this->deleteDumpAndMetaFiles($name, $storageDisk);
+        $this->deleteDumpAndMetaFiles($name, $disk);
     }
 
     /**
      * @inheritDoc
      */
-    public function flushDumps(?string $excludeFile = null): void
+    public function flushStorage(?string $excludeFile = null): void
     {
         // Only delete files which have a .meta file and are not in a directory.
         $this->deleteDumpAndMetaFiles(
@@ -259,9 +259,7 @@ class DiskHelper implements DiskHelperContract
             throw new EmptyDumpDirectoryException();
         }
 
-        $disk = $this->getStorageDisk();
-
-        return $files->sortByDesc($disk->lastModified(...))->values()->firstOrFail();
+        return $files->sortByDesc($this->getStorageDisk()->lastModified(...))->values()->firstOrFail();
     }
 
     public function isBaseName(?string $file): bool

@@ -19,7 +19,7 @@
 - To support config caching, .env key names can no longer be changed during runtime. If you previously relied on setting .env key names, you will now have to set the values
   directly instead.
 - Some functions throw different or more detailed exceptions.
-- The `protector:import` command no longer supports the `--dump`, `--ignore-connection-filter` and `--flush` option.
+- The `protector:import` command no longer supports the `--dump`, `--ignore-connection-filter` and `--flush` option. The `--no-wipe` option has been renamed.
 - The dump file handling APIs and disk config structure changed.
 - The Protector will no longer allow creating dumps in directories.
 
@@ -145,8 +145,11 @@ The route name has been changed to `protector.server.dump` to align it with the 
     - There is no replacement as of now. This is only relevant for interactive importing
 
 - The `--flush` option has been removed. The dump file will now always be deleted after importing
-    - If you need the old behaviour, use `php artisan protector:download --import --flush` instead
-    - The new `--flush` will only delete files which have a corresponding `.meta` file, and will not delete files inside directories
+    - If you need the old behaviour, use `php artisan protector:download --import --flush-storage` instead
+    - The new `--flush-storage` will only delete files which have a corresponding `.meta` file, and will not delete files inside directories
+
+- The `--no-wipe` option has been renamed and can no longer be called with `-w`
+    - Use `--no-wipe-db` instead
 
 ### Protector configuration refactoring
 
@@ -218,12 +221,12 @@ The following methods were removed:
 - `Protector::isUnderGitVersionControl()`
 - `Protector::prepareFileDownloadResponse()`
 
-#### Protector::getMetaData ()
+#### Protector::getMetaData()
 
 > [!NOTE]
 > Likelihood of impact: low
 >
-> Impact: Calls to Protector::getMetaData () will fail
+> Impact: Calls to Protector::getMetaData() will fail
 
 The method was renamed from `getMetaData()` to `metadata()`.
 
@@ -257,12 +260,12 @@ Now, `metadata()` returns (assuming the default configuration is used and the pr
 ]
 ```
 
-### Protector::getDumpMetaData ()
+### Protector::getDumpMetaData()
 
 > [!NOTE]
 > Likelihood of impact: low
 >
-> Impact: Calls to Protector::getDumpMetaData () will fail
+> Impact: Calls to Protector::getDumpMetaData() will fail
 
 The method was removed. Use `Protector::dumpFilesWithMetadata()` instead, which returns an array of dump files with their corresponding metadata.
 
@@ -288,7 +291,7 @@ If you need to set the values for the auth token or the private key during runti
 - `setPrivateKey()`
 - `setAuthToken()`
 
-### Protector::getLatestDumpName ()
+### Protector::getLatestDumpName()
 
 > [!NOTE]
 > Likelihood of impact: low
@@ -330,5 +333,5 @@ Likelihood of impact: high
 
 Likelihood of impact: low
 
-- Access to the formerly public methods `getGitRevision()`, `getGitHeadDate()` or `getGitBranch()` is now protected. You now need to call getMetaData () and extract the information
+- Access to the formerly public methods `getGitRevision()`, `getGitHeadDate()` or `getGitBranch()` is now protected. You now need to call getMetaData() and extract the information
   from the returned array.

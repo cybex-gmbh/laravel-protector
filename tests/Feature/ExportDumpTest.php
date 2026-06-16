@@ -110,7 +110,7 @@ class ExportDumpTest extends TestCase
     #[Test]
     public function exportWritesMetadataFileWithIdenticalPayload(): void
     {
-        $exportedDumpPath = $this->protector->export(storageFileName: $this->filePath, storageDisk: $this->localDisk);
+        $exportedDumpPath = $this->protector->export(targetFileName: $this->filePath, targetDisk: $this->localDisk);
         $metadataFilePath = $this->diskHelper->metadataFileName($exportedDumpPath);
         $parsedDumpMetadata = $this->runProtectedMethod('getDumpMetadata', [$exportedDumpPath]);
         $decodedMetadataFile = json_decode($this->localDisk->get($metadataFilePath), true);

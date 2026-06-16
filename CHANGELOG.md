@@ -18,6 +18,10 @@ All notable changes to `protector` will be documented in this file.
 - Restructured the `Protector` class by splitting it into `Protector` and `ProtectorConfig`. Configuration can no longer be accessed after the `Protector` instance has been created
 - Custom protector instances are now created through the new `ProtectorConfigurator` class
 - Restructured the `protector.php` configuration file for better organization and clarity
+- The Protector now operates on two disk
+    - local disk for temporary file handling, such as decryption or import
+    - storage disk for storing dumps
+    - By default, for all operations, the Protector will create copies on the local disk for processing, and delete it afterwards
 - Importing remote dumps using `protector:import` will now clean up downloaded files after importing
 - The `protector:import` command no longer supports the `--dump`, `--ignore-connection-filter` and `--flush` options The `--file` option now accepts both a relative and an absolute
   path

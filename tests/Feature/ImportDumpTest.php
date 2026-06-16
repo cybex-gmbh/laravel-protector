@@ -46,11 +46,6 @@ class ImportDumpTest extends TestCase
                             'maxPacketLength' => '8M',
                             'dumpedAtDate' => Carbon::parse(static::DUMP_DATE)->toDateTimeString(),
                         ],
-                        'git' => [
-                            'revision' => '',
-                            'branch' => '',
-                            'revisionDate' => '',
-                        ],
                     ],
                 ],
             ],
@@ -171,7 +166,7 @@ class ImportDumpTest extends TestCase
     #[Test]
     public function throwsExceptionIfNoFileExists(): void
     {
-        DiskHelper::flushDumps();
+        DiskHelper::flushStorage();
         $this->storageDisk->delete('legacyDump.sql');
 
         $this->expectException(EmptyDumpDirectoryException::class);
@@ -198,10 +193,10 @@ class ImportDumpTest extends TestCase
 
     #[Test]
     #[DataProvider('provideEmptyDumpsForFlushingDumps')]
-    public function flushDumps(array $expected, ?string $excludeFromFlush): void
+    public function flushStorage(array $expected, ?string $excludeFromFlush): void
     {
         $allFiles = DiskHelper::allStorageFiles();
-        DiskHelper::flushDumps($excludeFromFlush);
+        DiskHelper::flushStorage($excludeFromFlush);
 
         $dumpsAfterFlushing = $this->protector->dumpFiles()->toArray();
 

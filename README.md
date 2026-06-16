@@ -93,10 +93,10 @@ To store and import in one step
 php artisan protector:download --import
 ```
 
-If you want to clean up the storage disk except the newly stored dump, run
+If you want to delete all files on the storage disk except the newly stored dump, run
 
 ```bash
-php artisan protector:download --import --flush
+php artisan protector:download --import --flush-storage
 ```
 
 Each stored dump also has a matching metadata file with the `.meta` suffix (for example `dump.sql.meta`). The metadata file stores the same metadata object that is embedded in the
@@ -200,7 +200,7 @@ You could also automate this by
 - creating a Laravel Job and queueing it
 
 ```bash
-php artisan protector:export --file="protector/database.sql"
+php artisan protector:export --file="database.sql"
 ```
 
 ### Setup for importing the database of a remote server
