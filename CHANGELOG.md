@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `protector` will be documented in this file.
+All notable changes to `laravel-protector` will be documented in this file.
 
 ## [v4.0.0 - 2026-XX-XX](https://github.com/cybex-gmbh/laravel-protector/compare/v3.2.1...v4.0.0)
 
@@ -11,43 +11,61 @@ All notable changes to `protector` will be documented in this file.
 
 ### General
 
-- The minimum required PHP version is now 8.4
-- The minimum required Laravel version is now 12.1.1
+System
+
+- The minimum required PHP version is now 8.4.
+- The minimum required Laravel version is now 12.1.1.
 - Added MariaDB driver support
 - Dropped official MySQL support
-- Restructured the `Protector` class by splitting it into `Protector` and `ProtectorConfig`. Configuration can no longer be accessed after the `Protector` instance has been created
-- Custom protector instances are now created through the new `ProtectorConfigurator` class
-- Restructured the `protector.php` configuration file for better organization and clarity
+
+Configuration
+
+- Config keys and `.env` keys have been renamed and restructured.
+- Disk handling has been extended and is now configured via the `filesystems.php` config file.
+- Restructured the `Protector` class by splitting it into `Protector` and `ProtectorConfig`. Configuration can no longer be accessed after the `Protector` instance has been
+  created.
+- Configured `Protector` instances are now created through the new `ProtectorConfigurator` class.
 - The Protector now operates on two disk
     - local disk for temporary file handling, such as decryption or import
     - storage disk for storing dumps
-    - By default, for all operations, the Protector will create copies on the local disk for processing, and delete it afterwards
-- Importing remote dumps using `protector:import` will now clean up downloaded files after importing
-- The `protector:import` command no longer supports the `--dump`, `--ignore-connection-filter` and `--flush` options The `--file` option now accepts both a relative and an absolute
-  path
-- Reformatted the output of the `protector:keys` and `protector:token` commands to easier spot relevant information
-- A new `protector:download` command was added. This command allows storing downloaded dumps
-- Metadata files (`.meta`) are written alongside dumps and used by interactive import, to avoid downloading database dump files just for metadata
-- Dump metadata structure has changed from a flat array to a hierarchical structure grouped by provider
-- A lot of methods have been renamed, have changed signatures or throw different exceptions
+    - by default, for all operations, the Protector will create copies on the local disk for processing, and delete it afterwards
+- The Protector dump endpoint route name has been changed.
+- To support config caching, .env key names can no longer be changed during runtime.
+
+Commands
+
+- Importing remote dumps using `protector:import` will now clean up downloaded files after importing.
+- Various command options have been removed or renamed
+- A new `protector:download` command was added, which allows downloading dumps to a configured storage disk with optional import.
+- Reformatted the output of the `protector:keys` and `protector:token` commands to easier spot relevant information.
+
+API
+
+- Some methods throw different or more detailed exceptions.
+- Some method names and signatures have changed.
+- Some methods have been removed.
+- Dump metadata structure has changed from a flat array to a hierarchical structure grouped by [MetadataProviders](README.md#dump-metadata).
+- Metadata files (`.meta`) are written alongside dumps and used by the interactive import, to avoid downloading database dump files just for metadata.
 - The Protector will no longer allow creating dumps in directories.
 
 ### Features
 
-- Added support for Laravel 13
-- Added MariaDB support via Laravel's `mariadb` driver and dedicated `MariaDbSchemaStateProxy`
-- The metadata which is appended at the end of a dump file can now be customized, see the [Dump Metadata README section](README.md#dump-metadata) for more information
+- Added support for Laravel 13.
+- Added MariaDB support via Laravel's `mariadb` driver and dedicated `MariaDbSchemaStateProxy`.
+- The metadata which is appended at the end of a dump file can now be customized, see the [Dump Metadata README section](README.md#dump-metadata) for more information.
 - More options can now be configured per Protector instance via `ProtectorConfigurator`, see the [ProtectorConfiguratorContract](src/Contracts/ProtectorConfiguratorContract.php)
-  for all configuration options
-- The `Protector` now fully operates Laravel disks, which can be configured separately. The `local` disk is used for temporary files, while the `storage` disk is used for storing
-  dumps and metadata files.
-- The `protector:import` command will now clean up downloaded files after importing
-- A new `protector:download` command was added, which allows downloading dumps to a configured storage disk with optional import
+  for all configuration options.
+- The `Protector` now fully operates on Laravel disks, which can be configured separately.
+  The `protector_local` disk is used for temporary files, while the `protector_storage` disk is used for storing dumps and metadata files.
+- The `protector:import` command will now clean up downloaded files after importing.
+- A new `protector:download` command was added, which allows downloading dumps to a configured storage disk with optional import.
+- The `protector:import`, `protector:export` and `protector:download` commands and their corresponding methods
+  now support an optional `--disk` option to specify the disk to use for the operation.
 
 ### Fixes
 
-- Fixed an issue where the Protector would not work when caching the config using `php artisan config:cache` or similar
-- Fixed an issue for MySQL where `CREATE DATABASE` statements were not included despite being enabled in the configuration
+- Fixed an issue where the Protector would not work when caching the config using `php artisan config:cache` or similar.
+- Fixed an issue for MySQL where `CREATE DATABASE` statements were not included despite being enabled in the configuration.
 
 ### Development
 
