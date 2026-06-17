@@ -52,7 +52,7 @@ class DiskHelper implements DiskHelperContract
      * @throws EmptyFileWrittenException
      * @throws Throwable
      */
-    public function moveLocalToTarget(
+    public function moveFromLocal(
         string $localFileName,
         string $targetFileName,
         Filesystem $targetDisk,
@@ -91,7 +91,7 @@ class DiskHelper implements DiskHelperContract
      * @throws FailedReadingFromDiskException
      * @throws FailedWritingToDiskException
      */
-    public function copySourceToLocal(string $sourceFilePath, Filesystem $sourceDisk): string
+    public function copyToLocal(string $sourceFilePath, Filesystem $sourceDisk): string
     {
         $localDisk = $this->getLocalDisk();
         $localFileName = $this->createLocalFileName();

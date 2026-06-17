@@ -31,13 +31,13 @@ Protector supports the following databases:
 | MariaDB    | `mariadb` | `mariadb-dump` | `mariadb`   |
 | PostgreSQL | `pgsql`   | `pg_dump`      | `psql`      |
 
-MySQL is no longer officially supported, but the Protector still has capabilities to work with Laravel's `mysql` driver. If this should break in the future, feel free to submit a
-PR.
+MySQL is no longer officially supported, but the Protector still has capabilities to work with Laravel's `mysql` driver.
+If this should break in the future, feel free to submit a PR.
 
 > [!NOTE]
 > - Source and destination databases are not validated. Make sure you run compatible software versions to prevent issues.
-> - Because of different dump formats, dumps will not able to be imported into a different database engine, e.g. a MariaDB dump will fail to be imported into PostgreSQL, and vice
-    versa.
+> - Because of different dump formats, dumps will not able to be imported into a different database engine,
+>   e.g. a MariaDB dump will fail to be imported into PostgreSQL, and vice versa.
 
 ## Notes
 
@@ -99,11 +99,11 @@ If you want to delete all files on the storage disk except the newly stored dump
 php artisan protector:download --import --flush-storage
 ```
 
-Each stored dump also has a matching metadata file with the `.meta` suffix (for example `dump.sql.meta`). The metadata file stores the same metadata object that is embedded in the
-SQL dump footer under `meta`.
+Each stored dump also has a matching metadata file with the `.meta` suffix (for example `dump.sql.meta`).
+The metadata file stores the same metadata object that is embedded in the SQL dump footer under `meta`.
 
-Interactive import reads metadata from these metadata files. If a metadata file is missing, the dump can still be selected, and the import command will group it as an unknown
-connection.
+Interactive import reads metadata from these metadata files.
+If a metadata file is missing, the dump can still be selected, and the import command will group it as an unknown connection.
 
 Flushing will only delete files with existing `.meta` files, and will not delete files in directories.
 
@@ -205,8 +205,8 @@ php artisan protector:export --file="database.sql"
 
 ### Setup for importing the database of a remote server
 
-This package can run on both servers and client machines of the same software repository. You set up authorized developers on the server and give them the key for their local
-machine.
+This package can run on both servers and client machines of the same software repository.
+You set up authorized developers on the server and give them the key for their local machine.
 
 #### Installing Protector in your Laravel project
 
@@ -295,7 +295,8 @@ The developer can then download and import the server database on their own.
 
 ### Setup for collecting backups from multiple servers
 
-You can develop a custom client that can access and store remote server backups. The servers can be different Laravel projects that have the Protector package installed.
+You can develop a custom client that can access and store remote server backups.
+The servers can be different Laravel projects that have the Protector package installed.
 
 See the previous chapter on how to give your backup client access to all servers. The backup client will need an according user on each target server.
 
@@ -308,8 +309,9 @@ See [cybex-gmbh/collector](https://github.com/cybex-gmbh/collector) for an examp
 
 The `protector.php` config file sets initial settings for the `Protector` instance.
 
-Generally, you should keep the `Protector` singleton instance as is. To create a new instance with different settings, use the `ProtectorConfigurator` class. For all available
-configuration options, take a look at the [ProtectorConfiguratorContract](src/Contracts/ProtectorConfiguratorContract.php).
+Generally, you should keep the `Protector` singleton instance as is. 
+To create a new instance with different settings, use the `ProtectorConfigurator` class.
+For all available configuration options, take a look at the [ProtectorConfiguratorContract](src/Contracts/ProtectorConfiguratorContract.php).
 
 For example, to configure a specific auth token and dump endpoint URL:
 

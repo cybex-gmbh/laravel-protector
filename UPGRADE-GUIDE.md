@@ -7,19 +7,20 @@
 
 #### Overview (see below for details):
 
-- The minimum required PHP version is now 8.4
-- The minimum required Laravel version is now 12.1.1
-- Laravel 9, 10, and 11 are no longer supported
-- MySQL is no longer officially supported
+- The minimum required PHP version is now 8.4.
+- The minimum required Laravel version is now 12.1.1.
+- Laravel 9, 10, and 11 are no longer supported.
+- MySQL is no longer officially supported.
 - Some config and .env keys have been renamed.
 - `Protector` instances can no longer be reconfigured during runtime. Create new instances using the `ProtectorConfigurator` class.
 - The Protector dump endpoint route name has been changed.
-- Dump metadata has received a new structure. Legacy dumps with old metadata are still supported. However, if you have code that relies on the old metadata structure, you will need
-  to adjust it to work with the new structure.
-- To support config caching, .env key names can no longer be changed during runtime. If you previously relied on setting .env key names, you will now have to set the values
-  directly instead.
+- Dump metadata has received a new structure. Legacy dumps with old metadata are still supported.
+  However, if you have code that relies on the old metadata structure, you will need to adjust it to work with the new structure.
+- To support config caching, .env key names can no longer be changed during runtime. 
+  If you previously relied on setting .env key names, you will now have to set the values directly instead.
 - Some functions throw different or more detailed exceptions.
-- The `protector:import` command no longer supports the `--dump`, `--ignore-connection-filter` and `--flush` option. The `--no-wipe` option has been renamed.
+- The `protector:import` command no longer supports the `--dump`, `--ignore-connection-filter` and `--flush` option.
+  The `--no-wipe` option has been renamed to `--no-wipe-db` and can no longer be called with `-w`.
 - The dump file handling APIs and disk config structure changed.
 - The Protector will no longer allow creating dumps in directories.
 
@@ -47,8 +48,8 @@ You need to update your system to PHP 8.4 or higher and Laravel 12.1.1 or higher
 Due to the lack of support for the mysql-client (it's aliasing to mariadb)
 in recent Linux distribution versions, official MySQL support has been dropped.
 
-We will no longer run dedicated tests for MySQL. The package might still work with MySQL databases, but it might break in the future. Migrate to MariaDB or PostgreSQL to continue
-receiving updates and support.
+We will no longer run dedicated tests for MySQL. The package might still work with MySQL databases, but it might break in the future.
+Migrate to MariaDB or PostgreSQL to continue receiving updates and support.
 
 ### Renamed or removed config keys
 
@@ -158,10 +159,11 @@ The route name has been changed to `protector.server.dump` to align it with the 
 >
 > Impact: Calls to configuration methods on the `Protector` instance will fail.
 
-The `Protector` class has been split into `Protector`, `ProtectorConfigurator` and `ProtectorConfig`. Configuration methods that were previously available on the `Protector`
-instance are no longer accessible.
+The `Protector` class has been split into `Protector`, `ProtectorConfigurator` and `ProtectorConfig`.
+Configuration methods that were previously available on the `Protector` instance are no longer accessible.
 
-All methods of the `HasConfiguration` trait have been moved to `ProtectorConfig` and `ProtectorConfigurator`. Some methods have been renamed:
+All methods of the `HasConfiguration` trait have been moved to `ProtectorConfig` and `ProtectorConfigurator`. 
+Some methods have been renamed:
 
 - `withAuthToken()` -> `setAuthToken()`
 - `withPrivateKey()` -> `setPrivateKey()`
@@ -230,7 +232,8 @@ The following methods were removed:
 
 The method was renamed from `getMetaData()` to `metadata()`.
 
-Calls to `Protector::metadata()` will no longer return a flat metadata array. Instead, they will return a keyed array based on the configured MetadataProviders.
+Calls to `Protector::metadata()` will no longer return a flat metadata array.
+Instead, they will return a keyed array based on the configured MetadataProviders.
 
 Previously, `getMetaData()` returned:
 
@@ -327,11 +330,10 @@ No breaking changes are expected.
 
 Likelihood of impact: high
 
-- If your app does not explicitly require the laravel/sanctum package, upgrading Protector to version 2.x will also upgrade Sanctum to version 3.x. This will require you to follow
-  its
-  [upgrade guide](https://github.com/laravel/sanctum/blob/3.x/UPGRADE.md).
+- If your app does not explicitly require the laravel/sanctum package, upgrading Protector to version 2.x will also upgrade Sanctum to version 3.x. 
+  This will require you to follow its [upgrade guide](https://github.com/laravel/sanctum/blob/3.x/UPGRADE.md).
 
 Likelihood of impact: low
 
-- Access to the formerly public methods `getGitRevision()`, `getGitHeadDate()` or `getGitBranch()` is now protected. You now need to call getMetaData() and extract the information
-  from the returned array.
+- Access to the formerly public methods `getGitRevision()`, `getGitHeadDate()` or `getGitBranch()` is now protected.
+  You now need to call getMetaData() and extract the information from the returned array.

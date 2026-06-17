@@ -196,7 +196,7 @@ class ImportDumpTest extends TestCase
     public function flushStorage(array $expected, ?string $excludeFromFlush): void
     {
         $allFiles = DiskHelper::allStorageFiles();
-        DiskHelper::flushStorage($excludeFromFlush);
+        DiskHelper::flushStorage(excludeFile: $excludeFromFlush);
 
         $dumpsAfterFlushing = $this->protector->dumpFiles()->toArray();
 

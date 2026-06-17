@@ -115,7 +115,7 @@ class Protector
         $sourceDisk ??= $this->diskHelper->getStorageDisk();
 
         if ($copy) {
-            $localFileName = $this->diskHelper->copySourceToLocal(sourceFilePath: $sourceFilePath, sourceDisk: $sourceDisk);
+            $localFileName = $this->diskHelper->copyToLocal(sourceFilePath: $sourceFilePath, sourceDisk: $sourceDisk);
             $absoluteImportFilePath = $this->diskHelper->getLocalDisk()->path($localFileName);
         } else {
             $absoluteImportFilePath = $sourceDisk->path($sourceFilePath);
@@ -163,7 +163,7 @@ class Protector
      * @param Filesystem|null $targetDisk Defaults to the Protector storage disk.
      * @param bool|null $copy Whether to create a temporary copy on the local disk. Only use this if the storage disk is available on the local filesystem.
      *
-     * @return string The dump file path on the disk.
+     * @return string The dump file name on the disk.
      *
      * @throws BindingResolutionException
      * @throws EmptyFileWrittenException
@@ -199,7 +199,7 @@ class Protector
             if ($copy) {
                 $localDumpFile = $this->generateDump($metadata);
 
-                $this->diskHelper->moveLocalToTarget(
+                $this->diskHelper->moveFromLocal(
                     localFileName: $localDumpFile,
                     targetFileName: $targetFileName,
                     targetDisk: $targetDisk,
@@ -364,7 +364,7 @@ class Protector
 
             $this->diskHelper->writeMetadataFile($targetFileName, $metadataPayload, $targetDisk);
 
-            $this->diskHelper->moveLocalToTarget(
+            $this->diskHelper->moveFromLocal(
                 localFileName: $localFileName,
                 targetFileName: $targetFileName,
                 targetDisk: $targetDisk,
