@@ -16,7 +16,7 @@
 - The Protector dump endpoint route name has been changed.
 - Dump metadata has received a new structure. Legacy dumps with old metadata are still supported.
   However, if you have code that relies on the old metadata structure, you will need to adjust it to work with the new structure.
-- To support config caching, .env key names can no longer be changed during runtime. 
+- To support config caching, .env key names can no longer be changed during runtime.
   If you previously relied on setting .env key names, you will now have to set the values directly instead.
 - Some functions throw different or more detailed exceptions.
 - The `protector:import` command no longer supports the `--dump`, `--ignore-connection-filter` and `--flush` option.
@@ -162,7 +162,7 @@ The route name has been changed to `protector.server.dump` to align it with the 
 The `Protector` class has been split into `Protector`, `ProtectorConfigurator` and `ProtectorConfig`.
 Configuration methods that were previously available on the `Protector` instance are no longer accessible.
 
-All methods of the `HasConfiguration` trait have been moved to `ProtectorConfig` and `ProtectorConfigurator`. 
+All methods of the `HasConfiguration` trait have been moved to `ProtectorConfig` and `ProtectorConfigurator`.
 Some methods have been renamed:
 
 - `withAuthToken()` -> `setAuthToken()`
@@ -330,7 +330,7 @@ No breaking changes are expected.
 
 Likelihood of impact: high
 
-- If your app does not explicitly require the laravel/sanctum package, upgrading Protector to version 2.x will also upgrade Sanctum to version 3.x. 
+- If your app does not explicitly require the laravel/sanctum package, upgrading Protector to version 2.x will also upgrade Sanctum to version 3.x.
   This will require you to follow its [upgrade guide](https://github.com/laravel/sanctum/blob/3.x/UPGRADE.md).
 
 Likelihood of impact: low

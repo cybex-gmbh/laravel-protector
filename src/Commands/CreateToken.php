@@ -3,8 +3,7 @@
 namespace Cybex\Protector\Commands;
 
 use Cybex\Protector\Enums\ProtectorEnv;
-use Illuminate\Console\Command;
-use function Laravel\Prompts\error;
+use Throwable;
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\intro;
 
@@ -12,7 +11,7 @@ use function Laravel\Prompts\intro;
  * Class CreateToken
  * @package Cybex\Protector\Commands;
  */
-class CreateToken extends Command
+class CreateToken extends AbstractCommand
 {
     /**
      * The name and signature of the console command.
@@ -31,11 +30,9 @@ class CreateToken extends Command
     protected $description = 'Creates a token for a specified user id and optionally sets the public key.';
 
     /**
-     * Execute the console command.
-     *
-     * @return int
+     * @throws Throwable
      */
-    public function handle(): int
+    protected function executeCommand(): int
     {
         $publicKey = $this->option('publicKey');
         $user = config('auth.providers.users.model')::findOrFail($this->argument('userId'));
@@ -44,9 +41,7 @@ class CreateToken extends Command
         intro(sprintf('Executing for User %s|%s (%s)', $user->id, $user->name, $user->email));
 
         if (!$user->protector_public_key && !$publicKey) {
-            error('The user doesn\'t have a protector public key and none was specified. Please provide a public key for the user.');
-
-            return self::FAILURE;
+            $this->fail('The user doesn\'t have a protector public key and none was specified. Please provide a public key for the user.');
         }
 
         if ($publicKey) {

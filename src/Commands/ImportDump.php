@@ -10,14 +10,13 @@ use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Cybex\Protector\Exceptions\ShellAccessDeniedException;
 use Cybex\Protector\Facades\DiskHelperFacade as DiskHelper;
 use Cybex\Protector\Protector;
-use Illuminate\Console\Command;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 use function Laravel\Prompts\confirm;
-use function Laravel\Prompts\error;
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\select;
 use function Laravel\Prompts\spin;
@@ -28,7 +27,7 @@ use function Laravel\Prompts\warning;
  *
  * @package Cybex\Protector\Commands
  */
-class ImportDump extends Command
+class ImportDump extends AbstractCommand
 {
     protected const string UNKNOWN_CONNECTION_NAME = 'unknown_connection';
 
@@ -45,7 +44,7 @@ class ImportDump extends Command
                 {--f|file= : A file name on the storage disk. }
                 {--l|latest : Import the most recent dump available in the configured dumps directory. }
                 {--m|migrate : Run database migrations after import. }
-                {--no-copy : Do not create a copy of the file on the local disk. Only applicable with the --file option. The passed file must be available on the local filesystem. }
+                {--no-copy : Do not create a copy of the file on the local disk. Only applicable with the --file option. The passed file must be available on a local disk. }
                 {--r|remote : Pull a fresh dump from the remote server as configured in the .env file. Will be used as fallback when combined with other options. }
                 {--no-wipe-db : Do not wipe the database before importing the dump. }';
 
@@ -59,73 +58,59 @@ class ImportDump extends Command
     protected const string DOWNLOAD_REMOTE_DUMP = 'Download remote dump';
     protected const string IMPORT_EXISTING_LOCAL_DUMP = 'Import existing dump';
     protected Protector $protector;
-    protected Filesystem $sourceDisk;
-    protected bool $localDiskNeedsCleanup = false;
-    protected bool $noCopy = false;
+    protected Filesystem $disk;
+    protected bool $shouldImportRemoteDump = false;
 
     /**
-     * Execute the console command.
-     *
-     * @return int
-     *
-     * @throws EmptyDumpDirectoryException
      * @throws FileNotFoundException
+     * @throws EmptyDumpDirectoryException
+     * @throws ShellAccessDeniedException
      * @throws InvalidConnectionException
      * @throws InvalidEnvironmentException
-     * @throws ShellAccessDeniedException
+     * @throws Throwable
      */
-    public function handle(): int
+    protected function executeCommand(): int
     {
-        if (App::environment('production') && !$this->option('allow-production')) {
-            throw new InvalidEnvironmentException(
-                'Import is not allowed on production systems! Use --allow-production'
-            );
-        }
-
-        $protectorConfigurator = app(ProtectorConfiguratorContract::class);
-
-        if ($this->option('connection')) {
-            $protectorConfigurator->setConnectionName($this->option('connection'));
-        }
-
-        $this->protector = $protectorConfigurator->makeProtector();
-        $this->protector->guardRequiredFunctionsEnabled();
-        $this->sourceDisk = DiskHelper::getStorageDisk();
-
         $hasFile = !empty(trim($this->option('file')));
 
-        if ($this->option('force') && !($this->option('remote') || $hasFile || $this->option('latest'))) {
-            error('Nothing to import. You need to specify either --remote, --file, or --latest.');
+        $this->guard(hasFile: $hasFile);
+        $this->configureProtector();
+        $this->confirmImport();
 
-            return self::FAILURE;
-        }
+        $this->disk = $this->option('disk') ? Storage::disk($this->option('disk')) : DiskHelper::getStorageDisk();
 
         $dumpSource = match (true) {
-            $this->option('remote') => $this->getDumpFromRemote(),
+            $this->option('remote') => $this->shouldImportRemoteDump = true,
             $hasFile => $this->getDumpFromFile(),
             $this->option('latest') => $this->getLatestDump(),
             default => $this->getDumpInteractive(),
         };
+
+        if ($this->shouldImportRemoteDump) {
+            return $this->importRemoteDump();
+        }
 
         $this->runImport($dumpSource);
 
         return self::SUCCESS;
     }
 
-    protected function getDumpFromRemote(): string
+    protected function importRemoteDump(): int
     {
         $dumpName = DiskHelper::createLocalFileName();
-        $this->sourceDisk = DiskHelper::getLocalDisk();
-        $this->localDiskNeedsCleanup = true;
 
-        spin(
-            callback: fn() => $this->protector->download(targetFileName: $dumpName, targetDisk: $this->sourceDisk),
-            message: 'Downloading dump...'
-        );
+        try {
+            spin(
+                callback: fn() => $this->protector->downloadAndImport(targetFileName: $dumpName, targetDisk: DiskHelper::getLocalDisk()),
+                message: 'Downloading and importing...'
+            );
 
-        info('Successfully retrieved remote dump.');
+            info('Successfully retrieved and imported remote dump.');
+        } finally {
+            DiskHelper::deleteLocalFile($dumpName);
+        }
 
-        return $dumpName;
+        return self::SUCCESS;
     }
 
     /**
@@ -135,13 +120,7 @@ class ImportDump extends Command
      */
     protected function getDumpFromFile(): string
     {
-        if ($this->option('disk')) {
-            $this->sourceDisk = Storage::disk($this->option('disk'));
-        }
-
-        $this->noCopy = $this->option('no-copy');
-
-        $this->sourceDisk->exists($this->option('file')) || throw new FileNotFoundException($this->option('file'));
+        $this->disk->exists($this->option('file')) || throw new FileNotFoundException($this->option('file'));
 
         return $this->option('file');
     }
@@ -165,7 +144,9 @@ class ImportDump extends Command
     protected function getDumpInteractive(): string
     {
         if ($this->userWantsRemoteDump()) {
-            return $this->getDumpFromRemote();
+            $this->shouldImportRemoteDump = true;
+
+            return self::SUCCESS;
         }
 
         return $this->chooseImportDump($this->option('connection'));
@@ -203,37 +184,19 @@ class ImportDump extends Command
      */
     protected function runImport(string $dumpName): void
     {
-        try {
-            if ($this->option('force') || confirm(
-                    sprintf(
-                        'Are you sure that you want to import the dump into the database: %s?',
-                        $this->protector->getDatabaseName()
-                    )
-                )) {
-                spin(
-                    callback: fn() => $this->protector->import(
-                        sourceFilePath: $dumpName,
-                        sourceDisk: $this->sourceDisk,
-                        wipeDb: !$this->option('no-wipe-db'),
-                        migrate: $this->option('migrate'),
-                        allowProduction: $this->option('allow-production'),
-                        copy: !$this->noCopy,
-                    ),
-                    message: 'Importing dump...'
-                );
+        spin(
+            callback: fn() => $this->protector->import(
+                sourceFilePath: $dumpName,
+                sourceDisk: $this->disk,
+                wipeDb: !$this->option('no-wipe-db'),
+                migrate: $this->option('migrate'),
+                allowProduction: $this->option('allow-production'),
+                copy: !$this->option('no-copy'),
+            ),
+            message: 'Importing dump...'
+        );
 
-                info('Import done!');
-
-                return;
-            }
-
-            info('Import aborted');
-        } finally {
-            // Clean-up local in case there was a dump downloaded from remote.
-            if ($this->localDiskNeedsCleanup) {
-                DiskHelper::deleteLocalFile($dumpName);
-            }
-        }
+        info('Import done!');
     }
 
     /**
@@ -324,5 +287,56 @@ class ImportDump extends Command
             label: 'Import dump for which connection?',
             options: $connectionNames,
         );
+    }
+
+    /**
+     * @throws ShellAccessDeniedException
+     * @throws InvalidEnvironmentException
+     * @throws Throwable
+     */
+    protected function guard(bool $hasFile): void
+    {
+        app('protector')->guardRequiredFunctionsEnabled();
+
+        if (App::environment('production') && !$this->option('allow-production')) {
+            throw new InvalidEnvironmentException(
+                'Import is not allowed on production systems! Use --allow-production'
+            );
+        }
+
+        if ($this->option('force') && !($this->option('remote') || $hasFile || $this->option('latest'))) {
+            $this->fail('Nothing to import. You need to specify either --remote, --file, or --latest.');
+        }
+
+        if (($this->option('disk') || $this->option('no-copy')) && !$this->option('file')) {
+            $this->fail('When using --disk or the --no-copy option, --file needs to be specified.');
+        }
+    }
+
+    protected function configureProtector(): void
+    {
+        $protectorConfigurator = app(ProtectorConfiguratorContract::class);
+
+        if ($this->option('connection')) {
+            $protectorConfigurator->setConnectionName($this->option('connection'));
+        }
+
+        $this->protector = $protectorConfigurator->makeProtector();
+    }
+
+    /**
+     * @throws Throwable
+     */
+    protected function confirmImport(): void
+    {
+        if (!$this->option('force') && !confirm(
+                sprintf(
+                    'Are you sure that you want to import a dump into the database: %s?',
+                    $this->protector->getDatabaseName()
+                )
+            )
+        ) {
+            $this->fail('Import aborted.');
+        }
     }
 }

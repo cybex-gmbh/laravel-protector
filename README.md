@@ -37,7 +37,7 @@ If this should break in the future, feel free to submit a PR.
 > [!NOTE]
 > - Source and destination databases are not validated. Make sure you run compatible software versions to prevent issues.
 > - Because of different dump formats, dumps will not able to be imported into a different database engine,
->   e.g. a MariaDB dump will fail to be imported into PostgreSQL, and vice versa.
+    e.g. a MariaDB dump will fail to be imported into PostgreSQL, and vice versa.
 
 ## Notes
 
@@ -309,7 +309,7 @@ See [cybex-gmbh/collector](https://github.com/cybex-gmbh/collector) for an examp
 
 The `protector.php` config file sets initial settings for the `Protector` instance.
 
-Generally, you should keep the `Protector` singleton instance as is. 
+Generally, you should keep the `Protector` singleton instance as is.
 To create a new instance with different settings, use the `ProtectorConfigurator` class.
 For all available configuration options, take a look at the [ProtectorConfiguratorContract](src/Contracts/ProtectorConfiguratorContract.php).
 

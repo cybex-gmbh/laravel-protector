@@ -3,17 +3,18 @@
 namespace Cybex\Protector\Commands;
 
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
+use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Cybex\Protector\Facades\DiskHelperFacade as DiskHelper;
 use Cybex\Protector\Protector;
-use Illuminate\Console\Command;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 use function Laravel\Prompts\confirm;
-use function Laravel\Prompts\error;
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\spin;
 use function Laravel\Prompts\warning;
 
-class DownloadDump extends Command
+class DownloadDump extends AbstractCommand
 {
     protected $signature = 'protector:download
                 {--allow-production : Enable importing SQL dumps on a production system. }
@@ -30,18 +31,15 @@ class DownloadDump extends Command
 
     protected Protector $protector;
 
-    public function handle(): int
+    /**
+     * @throws Throwable
+     */
+    protected function executeCommand(): int
     {
-        if ($this->option('disk') && $this->option('flush-storage')) {
-            error('The --flush-storage option cannot be used with the --disk option.');
-
-            return self::FAILURE;
-        }
-
+        $this->guard();
         $this->configureProtector();
 
         $shouldImport = $this->option('import') && $this->confirmImport();
-
         $targetDisk = $this->option('disk') ? Storage::disk($this->option('disk')) : DiskHelper::getStorageDisk();
 
         $fileName = spin(
@@ -61,10 +59,26 @@ class DownloadDump extends Command
         $shouldImport && info('Import done!');
 
         if ($this->option('flush-storage')) {
-            $this->flush($fileName);
+            $this->flushStorage(excludeFile: $fileName);
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * @throws Throwable
+     */
+    protected function guard(): void
+    {
+        if ($this->option('import') && App::environment('production') && !$this->option('allow-production')) {
+            throw new InvalidEnvironmentException(
+                'Import is not allowed on production systems! Use --allow-production'
+            );
+        }
+
+        if ($this->option('disk') && $this->option('flush-storage')) {
+            $this->fail('The --flush-storage option cannot be used with the --disk option.');
+        }
     }
 
     protected function configureProtector(): void
@@ -91,9 +105,9 @@ class DownloadDump extends Command
         return $shouldImport;
     }
 
-    protected function flush(string $fileName): void
+    protected function flushStorage(string $excludeFile): void
     {
-        DiskHelper::flushStorage(excludeFile: $fileName);
+        DiskHelper::flushStorage(excludeFile: $excludeFile);
 
         warning('Storage directory has been flushed. Downloaded dump was retained.');
     }

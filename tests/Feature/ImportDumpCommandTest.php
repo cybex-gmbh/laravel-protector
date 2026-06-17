@@ -9,6 +9,7 @@ use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
 use Cybex\Protector\Facades\DiskHelperFacade as DiskHelper;
 use Cybex\Protector\Tests\TestCase;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
@@ -30,7 +31,7 @@ class ImportDumpCommandTest extends TestCase
 
         $this->shouldDownloadDump = 'Do you want to download and import a fresh dump from the server or an existing dump?';
         $this->shouldImportDump = sprintf(
-            'Are you sure that you want to import the dump into the database: %s?',
+            'Are you sure that you want to import a dump into the database: %s?',
             $this->protector->getDatabaseName()
         );
     }
@@ -38,7 +39,7 @@ class ImportDumpCommandTest extends TestCase
     #[Test]
     public function failOnProductionEnvironment(): void
     {
-        $this->app->detectEnvironment(fn() => 'production');
+        App::shouldReceive('environment')->andReturn('production');
 
         $this->expectException(InvalidEnvironmentException::class);
 
@@ -57,6 +58,7 @@ class ImportDumpCommandTest extends TestCase
         $this->expectException(InvalidConnectionException::class);
 
         $this->artisan('protector:import --connection=sqlite')
+            ->expectsConfirmation($this->shouldImportDump, 'yes')
             ->expectsChoice($this->shouldDownloadDump, 2, static::DUMP_SOURCE_CHOICE);
     }
 
@@ -83,7 +85,7 @@ class ImportDumpCommandTest extends TestCase
         ]);
 
         $this->artisan('protector:import --remote')
-            ->expectsConfirmation($this->shouldImportDump);
+            ->expectsConfirmation($this->shouldImportDump, 'yes');
 
         $this->assertFileDoesNotExist($this->storageDisk->path('remote_dump.sql'));
 
@@ -96,7 +98,7 @@ class ImportDumpCommandTest extends TestCase
     {
         $this->expectException(FailedRemoteDatabaseFetchingException::class);
 
-        $this->artisan('protector:import --remote');
+        $this->artisan('protector:import --remote --force');
     }
 
     #[Test]
@@ -121,7 +123,7 @@ class ImportDumpCommandTest extends TestCase
     #[Test]
     public function canImportDumpOnOptionLatest(): void
     {
-        $this->artisan('protector:import --latest')->expectsConfirmation($this->shouldImportDump);
+        $this->artisan('protector:import --latest')->expectsConfirmation($this->shouldImportDump, 'yes');
 
         $this->assertContains(
             'dump.sql',
@@ -138,6 +140,7 @@ class ImportDumpCommandTest extends TestCase
         $this->expectException(EmptyDumpDirectoryException::class);
 
         $this->artisan('protector:import')
+            ->expectsConfirmation($this->shouldImportDump, 'yes')
             ->expectsChoice($this->shouldDownloadDump, 2, static::DUMP_SOURCE_CHOICE);
     }
 
@@ -150,8 +153,8 @@ class ImportDumpCommandTest extends TestCase
         $this->assertCount(1, $this->protector->dumpFiles());
 
         $this->artisan('protector:import')
-            ->expectsChoice($this->shouldDownloadDump, 2, static::DUMP_SOURCE_CHOICE)
-            ->expectsConfirmation($this->shouldImportDump);
+            ->expectsConfirmation($this->shouldImportDump, 'yes')
+            ->expectsChoice($this->shouldDownloadDump, 2, static::DUMP_SOURCE_CHOICE);
     }
 
     #[Test]
