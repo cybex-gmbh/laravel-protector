@@ -74,6 +74,8 @@ class ProtectorServiceProvider extends ServiceProvider
             CreateToken::class,
             DownloadDump::class,
             ExportDump::class,
+            FlushLocal::class,
+            FlushStorage::class,
             ImportDump::class,
         ]);
     }

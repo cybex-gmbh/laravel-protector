@@ -2,7 +2,6 @@
 
 namespace Cybex\Protector\Tests\Feature;
 
-use Cybex\Protector\Classes\DiskHelper;
 use Cybex\Protector\Contracts\DiskHelperContract;
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
 use Cybex\Protector\Exceptions\FailedImportException;
@@ -62,7 +61,7 @@ class DownloadDumpCommandTest extends TestCase
     #[Test]
     public function importFlagShouldNotRedownloadFromStorage(): void
     {
-        $diskHelper = Mockery::mock(DiskHelper::class)->makePartial();
+        $diskHelper = Mockery::mock(app(DiskHelperContract::class))->makePartial();
         $diskHelper->shouldReceive('copySourceToLocal')->never();
 
         $this->app->instance(DiskHelperContract::class, $diskHelper);

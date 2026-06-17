@@ -82,6 +82,11 @@ interface DiskHelperContract
      */
     public function flushStorage(?string $excludeFile = null): void;
 
+    /**
+     * Deletes all files on the protector_local disk which are older than 1 day.
+     */
+    public function flushOldLocalFiles(): void;
+
     public function createLocalFileName(): string;
 
     public function getDownloadDestinationFileName(string $contentDispositionHeader): string;
