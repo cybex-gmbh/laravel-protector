@@ -11,6 +11,8 @@ use function Laravel\Prompts\info;
 
 /**
  * Class ExportDump
+ *
+ * @package Cybex\Protector\Commands
  */
 class ExportDump extends AbstractCommand
 {

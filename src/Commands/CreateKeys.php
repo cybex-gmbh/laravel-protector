@@ -8,6 +8,7 @@ use function Laravel\Prompts\intro;
 
 /**
  * Class CreateKeys
+ *
  * @package Cybex\Protector\Commands;
  */
 class CreateKeys extends AbstractCommand

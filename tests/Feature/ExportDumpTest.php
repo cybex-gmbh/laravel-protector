@@ -2,9 +2,9 @@
 
 namespace Cybex\Protector\Tests\Feature;
 
+use Cybex\Protector\Classes\Config\ProtectorConfigurator;
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
 use Cybex\Protector\Contracts\SchemaStateProxyContract;
-use Cybex\Protector\ProtectorConfigurator;
 use Cybex\Protector\Tests\TestCase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;

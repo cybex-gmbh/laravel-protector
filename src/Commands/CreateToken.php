@@ -9,6 +9,7 @@ use function Laravel\Prompts\intro;
 
 /**
  * Class CreateToken
+ *
  * @package Cybex\Protector\Commands;
  */
 class CreateToken extends AbstractCommand

@@ -2,6 +2,8 @@
 
 namespace Cybex\Protector;
 
+use Cybex\Protector\Classes\Config\ProtectorConfig;
+use Cybex\Protector\Classes\Config\ProtectorConfigurator;
 use Cybex\Protector\Classes\DiskHelper;
 use Cybex\Protector\Classes\SchemaState\MariaDb\MariaDbSchemaStateProxy;
 use Cybex\Protector\Classes\SchemaState\MySql\MySqlSchemaStateProxy;
@@ -11,6 +13,8 @@ use Cybex\Protector\Commands\CreateKeys;
 use Cybex\Protector\Commands\CreateToken;
 use Cybex\Protector\Commands\DownloadDump;
 use Cybex\Protector\Commands\ExportDump;
+use Cybex\Protector\Commands\FlushLocal;
+use Cybex\Protector\Commands\FlushStorage;
 use Cybex\Protector\Commands\ImportDump;
 use Cybex\Protector\Contracts\CrypterContract;
 use Cybex\Protector\Contracts\DiskHelperContract;

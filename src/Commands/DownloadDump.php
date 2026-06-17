@@ -13,6 +13,11 @@ use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\warning;
 
+/**
+ * Class DownloadDump
+ *
+ * @package Cybex\Protector\Commands
+ */
 class DownloadDump extends AbstractCommand
 {
     protected $signature = 'protector:download

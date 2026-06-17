@@ -1,10 +1,11 @@
 <?php
 
-namespace Cybex\Protector;
+namespace Cybex\Protector\Classes\Config;
 
 use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
+use Cybex\Protector\Protector;
 use Illuminate\Contracts\Container\BindingResolutionException;
 
 class ProtectorConfigurator extends AbstractProtectorConfig implements ProtectorConfiguratorContract
