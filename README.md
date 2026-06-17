@@ -2,27 +2,61 @@
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/cybex/laravel-protector.svg?style=flat-square)](https://packagist.org/packages/cybex/laravel-protector)
 
-This package allows you to download, export and import your application's database backups.
+This package allows you to download, export and import your application's database.
 
 > [!IMPORTANT]
 > This package will not work if you have disabled "proc_open" in your PHP configuration.
 
-## Common usage scenarios
+## Table of contents
 
-- Store your local database in a file
-- Non-productive developer machines can download the live server database
+* [Introduction](#introduction)
+    * [Common usage scenarios](#common-usage-scenarios)
+    * [Feature set](#feature-set)
+    * [Disks](#disks)
+* [Database Support](#database-support)
+* [Setup](#setup)
+    * [General](#general)
+    * [Local usage](#local-usage)
+    * [Importing or storing the database of a remote server](#importing-or-storing-the-database-of-a-remote-server)
+* [Usage](#usage)
+    * [General information](#general-information)
+    * [Export](#export)
+    * [Import](#import)
+    * [Importing or downloading remote databases](#importing-or-downloading-remote-databases)
+* [Configuration](#configuration)
+    * [Protector instances](#protector-instances)
+    * [Disks](#disks-1)
+    * [Dump metadata](#dump-metadata)
+* [Development](#development)
+    * [Testing](#testing)
+
+## Introduction
+
+### Common usage scenarios
+
+- Export your local database to a file
+- Developer machines can download the live server database
 - A central backup server can collect backups from multiple live servers
 
-## Feature set
+### Feature set
 
 - Download and optionally import databases from a server
 - Import existing database files
 - Export the local database to a file
 - User authentication through Laravel Sanctum tokens
 - Transport encryption using Sodium
-- Laravel disk support
+- Operates fully on Laravel disks
 
-## Supported databases
+### Disks
+
+The Protector always operates on two local disks, which can be configured separately:
+
+All operations that require file handling, such as creating or importing a database dump,
+will create a local copy on the `protector_local` disk for processing, and delete it afterwards.
+
+See the [Configuration](#disks-1) section for more details on disk configuration.
+
+## Database Support
 
 Protector supports the following databases:
 
@@ -39,135 +73,14 @@ If this should break in the future, feel free to submit a PR.
 > - Because of different dump formats, dumps will not able to be imported into a different database engine,
     e.g. a MariaDB dump will fail to be imported into PostgreSQL, and vice versa.
 
-## Notes
+## Setup
 
-- Enabling Laravel Telescope will prevent remote files from being downloaded, as it opens and discards the HTTP stream!
+There are two setup scenarios, depending on your use case.
 
-## Table of contents
+- if you only want to operate locally, the General section is sufficient
+- if you want to import or download the database of a remote server, follow the additional setup
 
-* [Usage](#usage)
-    * [Export to file](#export-to-file)
-    * [Import](#import)
-* [Setup instructions](#setup-instructions)
-    * [Setup for storing the local database](#setup-for-storing-the-local-database)
-    * [Setup for importing the database of a remote server](#setup-for-importing-the-database-of-a-remote-server)
-    * [Setup for collecting backups from multiple servers](#setup-for-collecting-backups-from-multiple-servers)
-* [Configuration](#configuration)
-    * [Disks](#disks)
-    * [Dump metadata](#dump-metadata)
-* [Development](#development)
-
-## Usage
-
-### Export to file
-
-To save a copy of your local database, run
-
-```bash
-php artisan protector:export
-```
-
-To configure settings, such as the file name, you can either publish the config file, or set the according environment variables found in
-the [ProtectorEnv](src/Enums/ProtectorEnv.php) class.
-
-```bash
-php artisan vendor:publish --tag=protector.config
-```
-
-For configuring
-
-- the storage location, see the [Disks](#disks) section.
-- the metadata appended to the dump file, see the [Dump metadata](#dump-metadata) section.
-
-### Download from remote
-
-To store the newest remote dump without importing it, run
-
-```bash
-php artisan protector:download
-```
-
-To store and import in one step
-
-```bash
-php artisan protector:download --import
-```
-
-If you want to delete all files on the storage disk except the newly stored dump, run
-
-```bash
-php artisan protector:download --import --flush-storage
-```
-
-Each stored dump also has a matching metadata file with the `.meta` suffix (for example `dump.sql.meta`).
-The metadata file stores the same metadata object that is embedded in the SQL dump footer under `meta`.
-
-Interactive import reads metadata from these metadata files.
-If a metadata file is missing, the dump can still be selected, and the import command will group it as an unknown connection.
-
-Flushing will only delete files with existing `.meta` files, and will not delete files in directories.
-
-### Import
-
-Run the following command for an interactive shell
-
-```bash
-php artisan protector:import
-```
-
-#### Importing a specific source
-
-To download and import the server database in one go without storing the dump, run
-
-```bash
-php artisan protector:import --remote
-```
-
-`protector:import` cleans up the used disks after importing.
-
-When used with other options, remote will serve as fallback behavior.
-
-To import a specific database file that you downloaded earlier, run
-
-```bash
-php artisan protector:import --file=<relative path on Protector storage disk>
-```
-
-To import the latest existing database file, run
-
-```bash
-php artisan protector:import --latest
-```
-
-#### Options
-
-If you want to run migrations after the import of the database file, run
-
-```bash
-php artisan protector:import --migrate
-```
-
-For automation, consider the force option to bypass user interaction.
-
-```bash
-php artisan protector:import --remote --migrate --force
-```
-
-To learn more about import options, run
-
-```bash
-php artisan protector:import --help
-```
-
-## Setup instructions
-
-Find below three common scenarios of usage. These are not mutually exclusive.
-
-### Setup for storing the local database
-
-If you only want to store a copy of your local database to a disk, the setup is pretty straightforward.
-
-#### Installing Protector in your local Laravel project
+### General
 
 Install the package via composer.
 
@@ -183,40 +96,20 @@ You can optionally publish the Protector config to have more fine-grained contro
 php artisan vendor:publish --tag=protector.config
 ```
 
-#### Local usage
+See the [Configuration](#configuration) section for specific details for certain config options.
 
-You can now use the artisan command to write a backup to the Protector storage folder.
+### Local usage
 
-```bash
-php artisan protector:export
-```
+There is no additional setup required for using the package locally.
 
-By default, the file will be stored in `storage/private/protector` and have a timestamp in the name. You can also specify the filepath.
+See the [Usage](#usage) section for how to export your local database to a file or import existing database dumps.
 
-You could also automate this by
-
-- installing a cronjob on linux
-- running it when you deploy to your server
-- creating a Laravel Job and queueing it
-
-```bash
-php artisan protector:export --file="database.sql"
-```
-
-### Setup for importing the database of a remote server
+### Importing or storing the database of a remote server
 
 This package can run on both servers and client machines of the same software repository.
 You set up authorized developers on the server and give them the key for their local machine.
 
-#### Installing Protector in your Laravel project
-
-Install the package via composer.
-
-```bash
-composer require cybex/laravel-protector
-```
-
-In your User model class, add the following trait.
+In your User model class, add the following trait:
 
 ```php
 use Laravel\Sanctum\HasApiTokens;
@@ -245,12 +138,6 @@ Run the migrations on the client and server repository.
 
 ```bash
 php artisan migrate
-```
-
-You can use environment variables or optionally publish the Protector config to set options regarding the storage, access and transmission of the files.
-
-```bash
-php artisan vendor:publish --tag=protector.config
 ```
 
 #### On the client machine
@@ -298,14 +185,126 @@ The developer can then download and import the server database on their own.
 You can develop a custom client that can access and store remote server backups.
 The servers can be different Laravel projects that have the Protector package installed.
 
-See the previous chapter on how to give your backup client access to all servers. The backup client will need an according user on each target server.
+See the previous chapter on how to give your backup client access to all servers.
 
+- The backup client will need an according user on each target server.
 - All the backup users on the target servers will have the same public key from the client
 - For each target server, the client will store the according url and token
 
-See [cybex-gmbh/collector](https://github.com/cybex-gmbh/collector) for an example implementation.
+## Usage
+
+### General information
+
+Each stored dump also has a matching metadata file with the `.meta` suffix (for example `dump.sql.meta`).
+The metadata file stores the same metadata object that is embedded in the SQL dump footer under `meta`.
+
+Interactive import reads metadata from these metadata files to prevent downloading the whole dump file.
+If a metadata file is missing, the dump can still be selected, and the import command will group it as an unknown connection.
+
+### Export
+
+To write a dump to the Protector storage folder:
+
+```bash
+php artisan protector:export
+```
+
+To write the dump to a different location, you can specify a custom file name and disk:
+
+```bash
+php artisan protector:export --file='custom_filename.sql' --disk='custom_disk'
+```
+
+For more information on the available options:
+
+```bash
+php artisan protector:export --help
+```
+
+You could also automate this by
+
+- installing a cronjob on linux
+- running it when you deploy to your server
+- creating a Laravel Job and queueing it
+
+### Import
+
+To import a dump file interactively:
+
+```bash
+php artisan protector:import
+```
+
+To import a specific dump file (optionally on a specific disk):
+
+```bash
+php artisan protector:import --file='custom_filename.sql' --disk='custom_disk'
+```
+
+You could also automate this similar to the export command,
+for this you want to use the `--force` option to bypass user interaction.
+
+For example, to import the latest dump without interaction and migrate afterwards:
+
+```bash
+php artisan protector:import --latest --migrate --force
+```
+
+For more information on the available options:
+
+```bash
+php artisan protector:import --help
+```
+
+### Importing or downloading remote databases
+
+To import a remote dump either run the command interactively or use the `--remote` option:
+
+```bash
+php artisan protector:import --remote
+```
+
+When used with other options, remote will serve as fallback behaviour.
+
+> [!NOTE]
+> Importing remote dumps will not leave any files on storage disk.
+
+If you need to store the remote dump on the storage disk:
+
+```bash
+php artisan protector:download
+```
+
+To store and import in one step:
+
+```bash
+php artisan protector:download --import
+```
+
+To store the dump on a different disk with a specific file name:
+
+```bash
+php artisan protector:download --file='custom_filename.sql' --disk='custom_disk'
+```
+
+If you want to delete all files on the Protector storage disk except the newly stored dump, use the `--flush-storage` option.
+Flushing will only delete files with existing `.meta` files, and will not delete files in directories.
+
+```bash
+php artisan protector:download --flush-storage
+```
+
+For more information on the available options:
+
+```bash
+php artisan protector:download --help
+```
+
+Like the import and export commands, a `--force` option is available to bypass user interaction, e.g. to automate this process.
 
 ## Configuration
+
+### Protector instances
 
 The `protector.php` config file sets initial settings for the `Protector` instance.
 
@@ -316,7 +315,7 @@ For all available configuration options, take a look at the [ProtectorConfigurat
 For example, to configure a specific auth token and dump endpoint URL:
 
 ```php
-$protector = ProtectorConfigurator::setAuthToken($authToken)->setDumpEndpointUrl($dumpEndpointUrl)->createProtector();
+$protector = ProtectorConfigurator::setAuthToken($authToken)->setDumpEndpointUrl($dumpEndpointUrl)->makeProtector();
 ```
 
 ### Disks
@@ -332,8 +331,7 @@ There are two disks, which use the `local` driver by default:
 >
 > The `protector_local` disk must be a local disk, as certain operations require a local filesystem, such as creating or importing a database dump.
 >
-> Almost all operations go through the local disk by creating a local copy first,
-> an exception to this is passing an absolute path to import operations, such as `protector:import --file=/path/to/dump.sql`
+> All operations go through the local disk by creating a local copy first. Some commands offer a --no-copy option to skip the local copy.
 
 If you want to override the disk configuration, add the following to your `config/filesystems.php` file:
 
@@ -406,6 +404,8 @@ docker compose up -d
 docker compose exec app shell
 ```
 
+Make sure to run composer install in both the example app and the package to install dependencies:
+
 ```bash
 composer install
 ```
@@ -473,7 +473,7 @@ If you discover any security-related issues, please email webdevelopment@cybex-o
 
 ## Credits
 
-- [Web Development team at Cybex GmbH - cybex-online.com](https://github.com/cybex-gmbh)
+- [Web Development team at CYBEX GmbH - cybex-online.com](https://github.com/cybex-gmbh)
 - [Gael Connan](https://github.com/gael-connan-cybex)
 - [Jörn Heusinger](https://github.com/jheusinger)
 - [Fabian Holy](https://github.com/holyfabi)
@@ -484,7 +484,3 @@ If you discover any security-related issues, please email webdevelopment@cybex-o
 ## License
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
-
-## Laravel Package Boilerplate
-
-This package was generated using the [Laravel Package Boilerplate](https://laravelpackageboilerplate.com).
