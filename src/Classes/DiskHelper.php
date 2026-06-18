@@ -4,6 +4,7 @@ namespace Cybex\Protector\Classes;
 
 use Cybex\Protector\Contracts\CrypterContract;
 use Cybex\Protector\Contracts\DiskHelperContract;
+use Cybex\Protector\Enums\FlushMode;
 use Cybex\Protector\Exceptions\EmptyDumpDirectoryException;
 use Cybex\Protector\Exceptions\EmptyFileWrittenException;
 use Cybex\Protector\Exceptions\FailedReadingFromDiskException;
@@ -187,6 +188,10 @@ class DiskHelper implements DiskHelperContract
     public function deleteLocalFile(string $name): void
     {
         $this->deleteDumpAndMetaFiles($name, $this->getLocalDisk());
+
+        if (!FlushMode::getConfiguredMode()->shouldSchedule()) {
+            $this->flushOldLocalFiles();
+        }
     }
 
     /**

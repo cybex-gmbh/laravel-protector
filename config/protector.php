@@ -4,6 +4,7 @@ use Cybex\Protector\Classes\Metadata\Providers\EnvMetadataProvider;
 use Cybex\Protector\Classes\Metadata\Providers\GitMetadataProvider;
 use Cybex\Protector\Classes\Metadata\Providers\JsonFileMetadataProvider;
 use Cybex\Protector\Classes\Metadata\Providers\ProtectorMetadataProvider;
+use Cybex\Protector\Enums\FlushMode;
 use Cybex\Protector\Enums\ProtectorEnv;
 
 return [
@@ -211,4 +212,41 @@ return [
         */
         'chunkSize' => ProtectorEnv::CHUNK_SIZE->get(default: 20 * 1024 * 1024),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Flush Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Here you may configure the deletion of temporary files on the protector_local disk.
+    | All temporary Protector files which are older than 1 day will be deleted from the disk.
+    |
+    | Normally there should be no remnants of temporary files, but unexpected errors can cause temporary files to remain on the disk.
+    |
+    */
+    'flush' => [
+        /*
+        |--------------------------------------------------------------------------
+        | Mode
+        |--------------------------------------------------------------------------
+        |
+        | Here you may configure the flush mode. There are two modes available:
+        | - sync: Will run synchronously everytime a local file is deleted. May impact performance.
+        | - scheduled: Will schedule the protector:flush-local command according to the cron configuration below.
+        |   This will run in the background, but will require you to run the Laravel Scheduler https://laravel.com/docs/master/scheduling#running-the-scheduler.
+        */
+        'mode' => ProtectorEnv::FLUSH_MODE->get(default: FlushMode::SYNC->value),
+
+        /*
+        |--------------------------------------------------------------------------
+        | Cron
+        |--------------------------------------------------------------------------
+        |
+        | Only applicable when in 'schedule' mode.
+        | Here you may configure how often the cleanup command will be scheduled.
+        | Default is '0 0 * * *' for running every day at midnight.
+        |
+        */
+        'cron' => ProtectorEnv::FLUSH_CRON->get(default: '* * * * *'),
+    ]
 ];

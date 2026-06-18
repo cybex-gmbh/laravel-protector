@@ -36,7 +36,6 @@ Commands
 
 - Importing remote dumps using `protector:import` will now clean up downloaded files after importing.
 - Various command options have been removed or renamed
-- A new `protector:download` command was added, which allows downloading dumps to a configured storage disk with optional import.
 - Reformatted the output of the `protector:keys` and `protector:token` commands to easier spot relevant information.
 
 API
@@ -61,6 +60,9 @@ API
 - A new `protector:download` command was added, which allows downloading dumps to a configured storage disk with optional import.
 - The `protector:import`, `protector:export` and `protector:download` commands and their corresponding methods
   now support an optional `--disk` option to specify the disk to use for the operation.
+- A new `protector:flush-storage` command was added, which will delete all files on the storage disk root, which have a corresponding `.meta` file.
+- A new `protector:flush-local` command was added, which will delete all temporary files on the local disk root, which are older than 1 day.
+    - New config options are available for automatic flushing, see the [Flushing Protector disks README section](README.md#flushing-protector-disks) for more information.
 
 ### Fixes
 

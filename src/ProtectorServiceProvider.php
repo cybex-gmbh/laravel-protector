@@ -21,7 +21,9 @@ use Cybex\Protector\Contracts\DiskHelperContract;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
 use Cybex\Protector\Contracts\SchemaStateProxyContract;
+use Cybex\Protector\Enums\FlushMode;
 use Cybex\Protector\Exceptions\UnsupportedDatabaseException;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Schema\MariaDbSchemaState;
 use Illuminate\Database\Schema\MySqlSchemaState;
 use Illuminate\Database\Schema\PostgresSchemaState;
@@ -40,8 +42,11 @@ class ProtectorServiceProvider extends ServiceProvider
     {
         $this->registerRoutes();
         $this->registerCommands();
+
         $this->publishConfigs();
         $this->publishMigrations();
+
+        $this->scheduleTasks();
     }
 
     /**
@@ -96,6 +101,17 @@ class ProtectorServiceProvider extends ServiceProvider
         $target = $this->app->databasePath(sprintf('migrations/%s_%s', $timestamp, $migrationName));
 
         $this->publishes([$stub => $target], ['protector', 'protector.migrations']);
+    }
+
+    protected function scheduleTasks(): void
+    {
+        if (FlushMode::getConfiguredMode()->shouldSchedule()) {
+            $this->app->booted(fn() => app(Schedule::class)
+                ->command(FlushLocal::class)
+                ->cron(FlushMode::getConfiguredCron())
+                ->runInBackground(),
+            );
+        }
     }
 
     protected function mergeProtectorConfig(): void

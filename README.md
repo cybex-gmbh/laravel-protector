@@ -387,6 +387,50 @@ Available metadata providers:
 >       '{gitRepo: $repo, gitBranch: $branch, gitRevision: $revision, buildDate: $buildDate}' > protector_metadata.json
 > ```
 
+### Flushing Protector disks
+
+#### protector_local
+
+Normally there should be no remnants of temporary files.
+In case of unexpected errors, such as when the PHP process is killed, temporary files might remain on the disk.
+
+The Protector will automatically delete these files on every operation involving the local disk.
+Due to this running synchronously, performance might be impacted.
+
+> [!NOTE]
+> Only files older than 1 day will be deleted, to prevent deleting files that are currently being processed.
+
+To run this asynchronously instead, you can set
+
+```env
+PROTECTOR_FLUSH_MODE=schedule
+```
+
+This will schedule the deletion based on a cron expression defined with `PROTECTOR_FLUSH_CRON`, which defaults to `0 0 * * *` (every day at midnight).
+
+> [!NOTE]
+> You need to run the [Laravel Scheduler](https://laravel.com/docs/master/scheduling#running-the-scheduler) for this.
+
+To manually delete all temporary files older than 1 day on the `protector_local` disk:
+
+```bash
+php artisan protector:flush-local
+```
+
+#### protector_storage
+
+Either use the dedicated command
+
+```bash
+php artisan protector:flush-storage
+```
+
+or flush when downloading a new dump
+
+```bash
+php artisan protector:download --flush-storage
+```
+
 ## Development
 
 There is an example app with the Laravel Protector package installed.
@@ -449,6 +493,12 @@ Run tests on the MySQL database:
 
 ```bash
 composer test-mysql
+```
+
+To test scheduling functionalities, run the Laravel Scheduler:
+
+```bash
+php artisan schedule:work
 ```
 
 #### Test coverage

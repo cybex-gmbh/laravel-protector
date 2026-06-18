@@ -66,6 +66,7 @@ interface DiskHelperContract
 
     /**
      * This will delete a dump file including its .meta file on the local disk.
+     * Additionally, if the flush mode is set to sync, it will delete temporary files older than 1 day.
      */
     public function deleteLocalFile(string $name): void;
 
