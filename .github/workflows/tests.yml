@@ -25,6 +25,7 @@ jobs:
         with:
             DATABASE_IMAGE: postgres:18
             DATABASE_CLIENT_VERSION: 18
+            DATABASE_HOST: localhost # For some reason postgres runs extremely slow when not using localhost, while mysql and mariadb don't accept localhost
             DATABASE_PORT: 5432
             DATABASE_USERNAME: postgres
             DATABASE_CONNECTION: pgsql
