@@ -12,6 +12,7 @@ use Cybex\Protector\Tests\TestCase;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 
 class ImportDumpCommandTest extends TestCase
@@ -176,5 +177,26 @@ class ImportDumpCommandTest extends TestCase
         $this->artisan('protector:import --file=dump.sql --no-copy --force')->assertOk();
 
         $this->assertDirectoryDoesNotExist($this->localDisk->path(''));
+    }
+
+    #[Test]
+    #[DataProvider('provideInvalidParameters')]
+    public function failOnInvalidParameters(string $fileOption): void
+    {
+        $this->artisan(sprintf('protector:import %s', $fileOption))->assertFailed();
+    }
+
+    public static function provideInvalidParameters(): array
+    {
+        return [
+            ['--remote --file=dump.sql'],
+            ['--remote --latest'],
+            ['--remote --file=dump.sql --latest'],
+            ['--disk=local'],
+            ['--disk=local --no-copy'],
+            ['--no-copy'],
+            ['--file=""'],
+            ['--file='],
+        ];
     }
 }
