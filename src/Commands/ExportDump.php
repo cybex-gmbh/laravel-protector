@@ -61,7 +61,7 @@ class ExportDump extends AbstractCommand
      */
     protected function guard(): void
     {
-        app('protector')->guardRequiredFunctionsEnabled();
+        app('protector')->validateSystemRequirements();
     }
 
     protected function configureProtector(): void

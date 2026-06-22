@@ -51,7 +51,7 @@ use Throwable;
 
 class Protector
 {
-    protected array $requiredFunctionsCache;
+    protected array $requiredPhpFunctionsCache;
     protected DiskHelperContract $diskHelper;
 
     public function __construct(
@@ -101,7 +101,7 @@ class Protector
         ?bool $copy = true,
     ): void
     {
-        $this->guardRequiredFunctionsEnabled();
+        $this->validateSystemRequirements();
 
         // Production environment is not allowed unless set in options.
         if (App::environment('production') && !$allowProduction) {
@@ -179,7 +179,7 @@ class Protector
      */
     public function export(?string $targetFileName = null, ?Filesystem $targetDisk = null, ?bool $copy = true): string
     {
-        $this->guardRequiredFunctionsEnabled();
+        $this->validateSystemRequirements();
 
         if (!$this->config->getConnectionConfig()) {
             throw new InvalidConnectionException('Connection is not configured properly.');
@@ -495,15 +495,15 @@ class Protector
     /**
      * @throws ShellAccessDeniedException
      */
-    public function guardRequiredFunctionsEnabled(): void
+    public function validateSystemRequirements(): void
     {
-        $this->requiredFunctionsCache ??= [
+        $this->requiredPhpFunctionsCache ??= [
             'proc_open' => $this->checkFunctionExists('proc_open'),
             'proc_close' => $this->checkFunctionExists('proc_close'),
         ];
 
-        if (in_array(false, $this->requiredFunctionsCache, strict: true)) {
-            throw new ShellAccessDeniedException($this->requiredFunctionsCache);
+        if (in_array(false, $this->requiredPhpFunctionsCache, strict: true)) {
+            throw new ShellAccessDeniedException($this->requiredPhpFunctionsCache);
         }
     }
 

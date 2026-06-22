@@ -16,6 +16,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
+use function is_null;
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\select;
@@ -59,6 +60,7 @@ class ImportDump extends AbstractCommand
     protected const string IMPORT_EXISTING_LOCAL_DUMP = 'Import existing dump';
     protected Protector $protector;
     protected Filesystem $disk;
+    protected bool $fileIsValid = false;
     protected bool $shouldImportRemoteDump = false;
 
     /**
@@ -71,17 +73,15 @@ class ImportDump extends AbstractCommand
      */
     protected function executeCommand(): int
     {
-        $hasFile = !empty(trim($this->option('file')));
+        $this->disk = $this->option('disk') ? Storage::disk($this->option('disk')) : DiskHelper::getStorageDisk();
 
-        $this->guard(hasFile: $hasFile);
+        $this->guard();
         $this->configureProtector();
         $this->confirmImport();
 
-        $this->disk = $this->option('disk') ? Storage::disk($this->option('disk')) : DiskHelper::getStorageDisk();
-
         $dumpSource = match (true) {
             $this->option('remote') => $this->shouldImportRemoteDump = true,
-            $hasFile => $this->getDumpFromFile(),
+            $this->fileIsValid => $this->option('file'),
             $this->option('latest') => $this->getLatestDump(),
             default => $this->getDumpInteractive(),
         };
@@ -111,18 +111,6 @@ class ImportDump extends AbstractCommand
         }
 
         return self::SUCCESS;
-    }
-
-    /**
-     * Imports a dump from a file name.
-     *
-     * @throws FileNotFoundException
-     */
-    protected function getDumpFromFile(): string
-    {
-        $this->disk->exists($this->option('file')) || throw new FileNotFoundException($this->option('file'));
-
-        return $this->option('file');
     }
 
     /**
@@ -290,26 +278,67 @@ class ImportDump extends AbstractCommand
     }
 
     /**
-     * @throws ShellAccessDeniedException
+     * @throws FileNotFoundException
      * @throws InvalidEnvironmentException
+     * @throws ShellAccessDeniedException
      * @throws Throwable
      */
-    protected function guard(bool $hasFile): void
+    protected function guard(): void
     {
-        app('protector')->guardRequiredFunctionsEnabled();
+        app('protector')->validateSystemRequirements();
+        $this->validateSource();
+        $this->validateEnvironment();
+    }
 
+    /**
+     * @throws Throwable
+     */
+    protected function validateSource(): void
+    {
+        count(
+            array_filter([
+                $this->option('remote'),
+                !is_null($this->option('file')),
+                $this->option('latest')
+            ])
+        ) > 1 && $this->fail('You can only specify one of the following options: --remote, --file, --latest.');
+
+        $this->validateFile();
+
+        if ($this->option('force') && !($this->option('remote') || $this->fileIsValid || $this->option('latest'))) {
+            $this->fail('Nothing to import. You need to specify either --remote, --file, or --latest.');
+        }
+
+        if (($this->option('disk') || $this->option('no-copy')) && !$this->fileIsValid) {
+            $this->fail('When using --disk or the --no-copy option, --file needs to be specified.');
+        }
+    }
+
+    /**
+     * @throws Throwable
+     * @throws FileNotFoundException
+     */
+    protected function validateFile(): void
+    {
+        if (!is_null($this->option('file'))) {
+            if (trim($this->option('file')) === '') {
+                $this->fail('The --file option cannot be empty. Please provide a valid file name.');
+            }
+
+            $this->disk->exists($this->option('file')) || throw new FileNotFoundException($this->option('file'));
+            $this->fileIsValid = true;
+        }
+    }
+
+    /**
+     * @throws InvalidEnvironmentException
+     */
+    protected function validateEnvironment(): void
+    {
         if (App::environment('production') && !$this->option('allow-production')) {
             throw new InvalidEnvironmentException(
                 'Import is not allowed on production systems! Use --allow-production'
             );
-        }
-
-        if ($this->option('force') && !($this->option('remote') || $hasFile || $this->option('latest'))) {
-            $this->fail('Nothing to import. You need to specify either --remote, --file, or --latest.');
-        }
-
-        if (($this->option('disk') || $this->option('no-copy')) && !$this->option('file')) {
-            $this->fail('When using --disk or the --no-copy option, --file needs to be specified.');
         }
     }
 
