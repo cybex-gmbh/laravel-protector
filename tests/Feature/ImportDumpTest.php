@@ -78,9 +78,6 @@ class ImportDumpTest extends TestCase
             [
                 'legacyDump.sql',
                 [
-                    'options' => [
-                        'no-data' => false,
-                    ],
                     'meta' => [
                         'database' => 'protector-tests',
                         'connection' => 'mysql',

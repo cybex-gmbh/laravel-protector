@@ -195,13 +195,11 @@ class ImportDump extends AbstractCommand
     protected function getConnectionFiles(?string $connectionName = null): Collection
     {
         $sortedFiles = DiskHelper::allStorageFilesWithMetadata()
-            ->sortByDesc(
-            // Supporting the legacy format.
-                fn($file) => Arr::get($file, 'meta.database.dumpedAtDate') ?? Arr::get($file, 'meta.dumpedAtDate')
-            )->filter(function ($fileInfo, $fileName) {
-                // Filter connections which are not defined in the database config file.
-                $connection = Arr::get($fileInfo, 'meta.database.connection') ?? Arr::get($fileInfo, 'meta.connection') ?: static::UNKNOWN_CONNECTION_NAME;
+            ->sortByDesc(fn($file) => Arr::get($file, 'meta.database.dumpedAtDate'))
+            ->filter(function ($fileInfo, $fileName) {
+                $connection = Arr::get($fileInfo, 'meta.database.connection') ?: static::UNKNOWN_CONNECTION_NAME;
 
+                // Filter connections which are not defined in the database config file.
                 if ($connection === static::UNKNOWN_CONNECTION_NAME || Arr::exists(config('database.connections'), $connection)) {
                     return true;
                 }
@@ -216,8 +214,7 @@ class ImportDump extends AbstractCommand
         }
 
         $filesByConnection = $sortedFiles->groupBy(
-        // Supporting the legacy format.
-            fn($file) => Arr::get($file, 'meta.database.connection') ?? Arr::get($file, 'meta.connection') ?: static::UNKNOWN_CONNECTION_NAME,
+            fn($file) => Arr::get($file, 'meta.database.connection') ?: static::UNKNOWN_CONNECTION_NAME,
             preserveKeys: true
         );
 

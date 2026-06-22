@@ -14,7 +14,7 @@
 - Some config and .env keys have been renamed.
 - `Protector` instances can no longer be reconfigured during runtime. Create new instances using the `ProtectorConfigurator` class.
 - The Protector dump endpoint route name has been changed.
-- Dump metadata has received a new structure. Legacy dumps with old metadata are still supported.
+- Dump metadata has received a new structure. Legacy dumps with old metadata can still be imported.
   However, if you have code that relies on the old metadata structure, you will need to adjust it to work with the new structure.
 - To support config caching, .env key names can no longer be changed during runtime.
   If you previously relied on setting .env key names, you will now have to set the values directly instead.
