@@ -447,6 +447,18 @@ Run tests on the MySQL database:
 composer test-mysql
 ```
 
+#### Test coverage
+
+To generate coverage, you need to run the tests from the package directory.
+
+```bash
+cd ../package
+```
+
+```bash
+composer test
+```
+
 ## Contributing
 
 Please see [CONTRIBUTING](CONTRIBUTING.md) for details.

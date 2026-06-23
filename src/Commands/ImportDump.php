@@ -60,7 +60,6 @@ class ImportDump extends AbstractCommand
     protected const string IMPORT_EXISTING_LOCAL_DUMP = 'Import existing dump';
     protected Protector $protector;
     protected Filesystem $disk;
-    protected bool $fileIsValid = false;
     protected bool $shouldImportRemoteDump = false;
 
     /**
@@ -81,7 +80,7 @@ class ImportDump extends AbstractCommand
 
         $dumpSource = match (true) {
             $this->option('remote') => $this->shouldImportRemoteDump = true,
-            $this->fileIsValid => $this->option('file'),
+            $this->option('file') == true => $this->option('file'),
             $this->option('latest') => $this->getLatestDump(),
             default => $this->getDumpInteractive(),
         };
@@ -292,21 +291,23 @@ class ImportDump extends AbstractCommand
      */
     protected function validateSource(): void
     {
-        count(
+        $sourceCount = count(
             array_filter([
                 $this->option('remote'),
                 !is_null($this->option('file')),
                 $this->option('latest')
             ])
-        ) > 1 && $this->fail('You can only specify one of the following options: --remote, --file, --latest.');
+        );
+
+        $sourceCount > 1 && $this->fail('You can only specify one of the following options: --remote, --file, --latest.');
 
         $this->validateFile();
 
-        if ($this->option('force') && !($this->option('remote') || $this->fileIsValid || $this->option('latest'))) {
+        if ($this->option('force') && !$sourceCount) {
             $this->fail('Nothing to import. You need to specify either --remote, --file, or --latest.');
         }
 
-        if (($this->option('disk') || $this->option('no-copy')) && !$this->fileIsValid) {
+        if (($this->option('disk') || $this->option('no-copy')) && !$this->option('file')) {
             $this->fail('When using --disk or the --no-copy option, --file needs to be specified.');
         }
     }
@@ -323,7 +324,6 @@ class ImportDump extends AbstractCommand
             }
 
             $this->disk->exists($this->option('file')) || throw new FileNotFoundException($this->option('file'));
-            $this->fileIsValid = true;
         }
     }
 
