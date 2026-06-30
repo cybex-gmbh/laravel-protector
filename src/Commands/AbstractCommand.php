@@ -4,7 +4,6 @@ namespace Cybex\Protector\Commands;
 
 use Closure;
 use Illuminate\Console\Command;
-use InvalidArgumentException;
 use Throwable;
 use function Laravel\Prompts\error;
 use function Laravel\Prompts\spin;
@@ -39,7 +38,7 @@ abstract class AbstractCommand extends Command
 
     /**
      * Wrapper for the `spin` function.
-     * Resets the shell output state, since the spinner uses \r, which can mess with the following output.
+     * Resets the shell output state, since the spinner uses \r, which can mess with the output.
      */
     protected function spinner(Closure $callback, string $message = ''): mixed
     {
@@ -50,13 +49,9 @@ abstract class AbstractCommand extends Command
             message: $message
         );
 
-        try {
-            // Migration output does not end with an extra newline, so the following output would be directly beneath.
-            $this->option('migrate') && $this->newLine();
-        } catch (InvalidArgumentException) {
-            // Ignore, since the option might not exist.
+        if ($this->hasOption('migrate') && $this->option('migrate')) {
+            $this->newLine();
         }
-
 
         return $result;
     }
