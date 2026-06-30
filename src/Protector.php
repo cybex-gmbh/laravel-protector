@@ -41,8 +41,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use JsonException;
+use Laravel\Telescope\Telescope;
 use LogicException;
-use Symfony\Component\Console\Output\BufferedOutput;
+use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -146,13 +147,10 @@ class Protector
         }
 
         if ($migrate) {
-            $output = new BufferedOutput;
+            $output = app()->runningInConsole() ? new ConsoleOutput() : null;
 
-            Artisan::call('migrate', [], $output);
-
-            if (app()->runningInConsole()) {
-                echo $output->fetch();
-            }
+            Artisan::call('migrate', parameters: ['--force' => $allowProduction], outputBuffer: $output);
+            $output->write("\n");
         }
     }
 
@@ -655,16 +653,16 @@ class Protector
     protected function startTelescopeRecording(bool $wasRecording): void
     {
         if ($wasRecording) {
-            \Laravel\Telescope\Telescope::startRecording();
+            Telescope::startRecording();
         }
     }
 
     protected function stopTelescopeRecording(): bool
     {
         if ($isTelescopeRecording = class_exists(
-                \Laravel\Telescope\Telescope::class
-            ) && \Laravel\Telescope\Telescope::isRecording()) {
-            \Laravel\Telescope\Telescope::stopRecording();
+                Telescope::class
+            ) && Telescope::isRecording()) {
+            Telescope::stopRecording();
         }
 
         return $isTelescopeRecording;
