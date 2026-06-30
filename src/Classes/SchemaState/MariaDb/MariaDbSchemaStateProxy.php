@@ -3,6 +3,7 @@
 namespace Cybex\Protector\Classes\SchemaState\MariaDb;
 
 use Illuminate\Database\Connection;
+use Throwable;
 
 /**
  * This is a proxy to the MariaDbSchemaState class which allows us to override methods to match our own requirements.
@@ -13,6 +14,8 @@ class MariaDbSchemaStateProxy extends AbstractMariaDbSchemaStateProxy
 {
     /**
      * @inheritDoc
+     *
+     * @throws Throwable
      */
     public function dump(Connection $connection, $path): void
     {

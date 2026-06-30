@@ -13,24 +13,36 @@ All notable changes to `protector` will be documented in this file.
 
 - The minimum required PHP version is now 8.4
 - The minimum required Laravel version is now 12.1.1
-- Dropped support for Laravel 9, 10, and 11
 - Added MariaDB driver support
 - Dropped official MySQL support
-- Restructured the `Protector` class by splitting it into `Protector` and `ProtectorConfig`.
-  Configuration can no longer be accessed after the `Protector` instance has been created.
+- Restructured the `Protector` class by splitting it into `Protector` and `ProtectorConfig`. Configuration can no longer be accessed after the `Protector` instance has been created
 - Custom protector instances are now created through the new `ProtectorConfigurator` class
 - Restructured the `protector.php` configuration file for better organization and clarity
-- The `protector:import` command no longer supports the `--dump` option. The `--file` option now accepts both a relative and an absolute path
+- The Protector now operates on two disk
+    - local disk for temporary file handling, such as decryption or import
+    - storage disk for storing dumps
+    - By default, for all operations, the Protector will create copies on the local disk for processing, and delete it afterwards
+- Importing remote dumps using `protector:import` will now clean up downloaded files after importing
+- The `protector:import` command no longer supports the `--dump`, `--ignore-connection-filter` and `--flush` options The `--file` option now accepts both a relative and an absolute
+  path
 - Reformatted the output of the `protector:keys` and `protector:token` commands to easier spot relevant information
+- A new `protector:download` command was added. This command allows storing downloaded dumps
+- Metadata files (`.meta`) are written alongside dumps and used by interactive import, to avoid downloading database dump files just for metadata
+- Dump metadata structure has changed from a flat array to a hierarchical structure grouped by provider
+- A lot of methods have been renamed, have changed signatures or throw different exceptions
+- The Protector will no longer allow creating dumps in directories.
 
 ### Features
 
 - Added support for Laravel 13
 - Added MariaDB support via Laravel's `mariadb` driver and dedicated `MariaDbSchemaStateProxy`
-- The metadata which is appended at the end of a dump file can now be customized,
-  see the [Dump Metadata README section](README.md#dump-metadata) for more information
-- More options can now be configured on a `Protector` instance,
-  see the [ProtectorConfiguratorContract](src/Contracts/ProtectorConfiguratorContract.php) for all configuration options
+- The metadata which is appended at the end of a dump file can now be customized, see the [Dump Metadata README section](README.md#dump-metadata) for more information
+- More options can now be configured per Protector instance via `ProtectorConfigurator`, see the [ProtectorConfiguratorContract](src/Contracts/ProtectorConfiguratorContract.php)
+  for all configuration options
+- The `Protector` now fully operates Laravel disks, which can be configured separately. The `local` disk is used for temporary files, while the `storage` disk is used for storing
+  dumps and metadata files.
+- The `protector:import` command will now clean up downloaded files after importing
+- A new `protector:download` command was added, which allows downloading dumps to a configured storage disk with optional import
 
 ### Fixes
 
@@ -95,8 +107,8 @@ All notable changes to `protector` will be documented in this file.
 
 ## [v1.1.0 - 2021-08-04](https://github.com/cybex-gmbh/laravel-protector/compare/v1.0.1...v1.1.0)
 
-- Migrations now need to be explicitly published, as they are optional for some use cases and because they might need to be modified.
-  Run `php artisan vendor:publish --tag=protector.migrations` to publish the protector migration to your `database/migrations` folder.
+- Migrations now need to be explicitly published, as they are optional for some use cases and because they might need to be modified. Run
+  `php artisan vendor:publish --tag=protector.migrations` to publish the protector migration to your `database/migrations` folder.
 - Removed the Guzzle dependency, as it is already required by Laravel.
 
 ## [v1.0.1 - 2021-08-02](https://github.com/cybex-gmbh/laravel-protector/compare/v1.0.0...v1.0.1)

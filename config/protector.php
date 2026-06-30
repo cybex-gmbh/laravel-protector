@@ -39,18 +39,6 @@ return [
 
         /*
         |--------------------------------------------------------------------------
-        | Disk Configuration
-        |--------------------------------------------------------------------------
-        |
-        | Here you may customize the base directory and the disk in which database dumps are stored.
-        | By default, the default filesystem disk stated in your filesystems-config will be used.
-        |
-        */
-        'baseDirectory' => ProtectorEnv::BASE_DIRECTORY->get(default: 'protector'),
-        // 'diskName' => ProtectorEnv::DISK_NAME->value(default: 'protector'),
-
-        /*
-        |--------------------------------------------------------------------------
         | Maximum Packet Length
         |--------------------------------------------------------------------------
         |
@@ -196,7 +184,7 @@ return [
         | Here you may customize the route for the dump endpoint.
         |
         */
-        'dumpEndpointRoute' => ProtectorEnv::DUMP_ENDPOINT_ROUTE->get('/protector/exportDump'),
+        'dumpEndpointRoute' => ProtectorEnv::DUMP_ENDPOINT_ROUTE->get(default: '/protector/exportDump'),
 
         /*
         |--------------------------------------------------------------------------

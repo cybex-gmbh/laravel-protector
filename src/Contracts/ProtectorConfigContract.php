@@ -2,7 +2,6 @@
 
 namespace Cybex\Protector\Contracts;
 
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Collection;
 
 interface ProtectorConfigContract
@@ -26,17 +25,6 @@ interface ProtectorConfigContract
         ?array $metadataProviders = null
     );
 
-    /**
-     * Returns the config value for the baseDirectory key.
-     */
-    public function getBaseDirectory(): string;
-
-    /**
-     * Returns the disk which is stated in the config. If no disk is stated, the default filesystem disk will be returned.
-     */
-    public function getDisk(): Filesystem;
-
-    public function getDiskName(): string;
 
     /**
      * Returns the current connection configuration.

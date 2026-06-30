@@ -5,9 +5,13 @@ namespace Cybex\Protector;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
+use Illuminate\Contracts\Container\BindingResolutionException;
 
 class ProtectorConfigurator extends AbstractProtectorConfig implements ProtectorConfiguratorContract
 {
+    /**
+     * @throws BindingResolutionException
+     */
     public function makeProtector(): Protector
     {
         return Protector::withConfig(app()->makeWith(ProtectorConfigContract::class, get_object_vars($this)));

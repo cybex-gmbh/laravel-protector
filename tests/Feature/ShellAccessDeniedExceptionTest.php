@@ -21,7 +21,7 @@ class ShellAccessDeniedExceptionTest extends TestCase
         $mock = $this->getCheckFunctionExistsMock(returnValue: false);
 
         $this->expectException(ShellAccessDeniedException::class);
-        $mock->guardRequiredFunctionsEnabled();
+        $mock->validateSystemRequirements();
     }
 
     #[Test]
@@ -29,7 +29,7 @@ class ShellAccessDeniedExceptionTest extends TestCase
     {
         $mock = $this->getCheckFunctionExistsMock(returnValue: true);
 
-        $mock->guardRequiredFunctionsEnabled();
+        $mock->validateSystemRequirements();
         $this->expectNotToPerformAssertions();
     }
 

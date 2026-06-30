@@ -6,10 +6,10 @@ use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
 use Cybex\Protector\Contracts\SchemaStateProxyContract;
 use Cybex\Protector\ProtectorConfigurator;
 use Cybex\Protector\Tests\TestCase;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use PDOException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -17,9 +17,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExportDumpTest extends TestCase
 {
-    protected Filesystem $disk;
-
-    protected string $baseDirectory;
     protected string $filePath;
     protected string $emptyDumpPath;
 
@@ -72,10 +69,7 @@ class ExportDumpTest extends TestCase
     {
         parent::setUp();
 
-        $this->disk = $this->getFakeDumpDisk();
-
-        $this->baseDirectory = Config::get('protector.dump.baseDirectory');
-        $this->filePath = sprintf('%s/dump.sql', $this->baseDirectory);
+        $this->filePath = 'dump.sql';
         $this->emptyDumpPath = 'testDumps/dump.sql';
     }
 
@@ -99,7 +93,7 @@ class ExportDumpTest extends TestCase
 
         // Expect an exception when trying to connect and determine if the connected database is a MariaDB database.
         $this->expectException(PDOException::class);
-        $this->runProtectedMethod('generateDump');
+        $this->runProtectedMethod('generateDump', [$this->protector->metadata()]);
     }
 
     #[Test]
@@ -111,6 +105,48 @@ class ExportDumpTest extends TestCase
 
         $this->assertInstanceOf(StreamedResponse::class, $response);
         $this->assertEquals(200, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function exportWritesMetadataFileWithIdenticalPayload(): void
+    {
+        $exportedDumpPath = $this->protector->export(targetFileName: $this->filePath, targetDisk: $this->localDisk);
+        $metadataFilePath = $this->diskHelper->metadataFileName($exportedDumpPath);
+        $parsedDumpMetadata = $this->runProtectedMethod('getDumpMetadata', [$exportedDumpPath]);
+        $decodedMetadataFile = json_decode($this->localDisk->get($metadataFilePath), true);
+
+        $this->assertIsArray($parsedDumpMetadata);
+        $this->assertIsArray($decodedMetadataFile);
+        $this->assertEquals($parsedDumpMetadata, $decodedMetadataFile);
+    }
+
+    #[Test]
+    public function usesPassedDisk(): void
+    {
+        $fileName = 'usesPassedDisk.sql';
+        $disk = Storage::fake('local');
+
+        $disk->assertMissing($fileName);
+        $this->storageDisk->assertMissing($fileName);
+
+        $this->artisan(sprintf('protector:export --file=%s', $fileName));
+        $disk->assertMissing($fileName);
+        $this->storageDisk->assertExists($fileName);
+
+        $this->artisan(sprintf('protector:export --file=%s --disk=local', $fileName));
+        $disk->assertExists($fileName);
+    }
+
+    #[Test]
+    public function doesNotCopyOnNoCopy(): void
+    {
+        // Delete root directory.
+        $this->localDisk->deleteDirectory('');
+        $this->assertDirectoryDoesNotExist($this->localDisk->path(''));
+
+        $this->artisan('protector:export --file=dump.sql --no-copy')->assertOk();
+
+        $this->assertDirectoryDoesNotExist($this->localDisk->path(''));
     }
 
     #[Test]

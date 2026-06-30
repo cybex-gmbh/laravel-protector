@@ -3,6 +3,7 @@
 namespace Cybex\Protector\Classes\SchemaState\MySql;
 
 use Illuminate\Database\Connection;
+use Throwable;
 
 /**
  * This is a proxy to the MySqlSchemaState class which allows us to override methods to match our own requirements.
@@ -13,6 +14,8 @@ class MySqlSchemaStateProxy extends AbstractMySqlSchemaStateProxy
 {
     /**
      * @inheritDoc
+     *
+     * @throws Throwable
      */
     public function dump(Connection $connection, $path): void
     {

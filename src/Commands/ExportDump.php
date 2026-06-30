@@ -3,13 +3,16 @@
 namespace Cybex\Protector\Commands;
 
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
+use Cybex\Protector\Exceptions\ShellAccessDeniedException;
+use Cybex\Protector\Facades\DiskHelperFacade as DiskHelper;
 use Cybex\Protector\Protector;
-use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Storage;
+use function Laravel\Prompts\info;
 
 /**
  * Class ExportDump
  */
-class ExportDump extends Command
+class ExportDump extends AbstractCommand
 {
     /**
      * The name and signature of the console command.
@@ -17,9 +20,11 @@ class ExportDump extends Command
      * @var string
      */
     protected $signature = 'protector:export
-                {--f|file= : The destination file name of the SQL export. }
                 {--c|connection= : The configured database-connection in Laravel\'s config/database.php. }
-                {--no-data : Exclude data from dump.}';
+                {--d|disk= : A disk to which the dump is written. Default is the storage disk. }
+                {--f|file= : The destination file name on the storage disk. }
+                {--no-copy : Do not create a copy of the file on the local disk. The storage disk must be available on the local filesystem. }
+                {--no-data : Exclude data from dump. }';
 
     /**
      * The console command description.
@@ -31,9 +36,34 @@ class ExportDump extends Command
     protected ?Protector $protector = null;
 
     /**
-     * Execute the console command.
+     * @throws ShellAccessDeniedException
      */
-    public function handle(): int
+    protected function executeCommand(): int
+    {
+        $this->guard();
+        $this->configureProtector();
+
+        $targetDisk = $this->option('disk') ? Storage::disk($this->option('disk')) : DiskHelper::getStorageDisk();
+
+        $this->spinner(
+            callback: fn() => $this->protector->export(targetFileName: $this->option('file'), targetDisk: $targetDisk, copy: !$this->option('no-copy')),
+            message: 'Exporting dump...'
+        );
+
+        info('Exported dump!');
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * @throws ShellAccessDeniedException
+     */
+    protected function guard(): void
+    {
+        app('protector')->validateSystemRequirements();
+    }
+
+    protected function configureProtector(): void
     {
         $protectorConfigurator = app(ProtectorConfiguratorContract::class);
 
@@ -46,12 +76,5 @@ class ExportDump extends Command
         }
 
         $this->protector = $protectorConfigurator->makeProtector();
-        $this->protector->guardRequiredFunctionsEnabled();
-
-        $filePath = $this->protector->createDump(tempFileOnly: false, fileName: $this->option('file'));
-
-        $this->info(sprintf('Dump <comment>%s</> was created on disk <comment>%s</>', $filePath, $this->protector->getDiskName()));
-
-        return self::SUCCESS;
     }
 }

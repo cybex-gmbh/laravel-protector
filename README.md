@@ -20,6 +20,7 @@ This package allows you to download, export and import your application's databa
 - Export the local database to a file
 - User authentication through Laravel Sanctum tokens
 - Transport encryption using Sodium
+- Laravel disk support
 
 ## Supported databases
 
@@ -36,7 +37,7 @@ If this should break in the future, feel free to submit a PR.
 > [!NOTE]
 > - Source and destination databases are not validated. Make sure you run compatible software versions to prevent issues.
 > - Because of different dump formats, dumps will not able to be imported into a different database engine,
-    > e.g. a MariaDB dump will fail to be imported into PostgreSQL, and vice versa.
+    e.g. a MariaDB dump will fail to be imported into PostgreSQL, and vice versa.
 
 ## Notes
 
@@ -52,6 +53,7 @@ If this should break in the future, feel free to submit a PR.
     * [Setup for importing the database of a remote server](#setup-for-importing-the-database-of-a-remote-server)
     * [Setup for collecting backups from multiple servers](#setup-for-collecting-backups-from-multiple-servers)
 * [Configuration](#configuration)
+    * [Disks](#disks)
     * [Dump metadata](#dump-metadata)
 * [Development](#development)
 
@@ -65,12 +67,45 @@ To save a copy of your local database, run
 php artisan protector:export
 ```
 
-By default, dumps are stored in `storage/app/protector` on your default project disk.
-You can configure the target disk, filename, etc. by publishing the protector config file to your project
+To configure settings, such as the file name, you can either publish the config file, or set the according environment variables found in
+the [ProtectorEnv](src/Enums/ProtectorEnv.php) class.
 
 ```bash
-artisan vendor:publish --tag=protector.config
+php artisan vendor:publish --tag=protector.config
 ```
+
+For configuring
+
+- the storage location, see the [Disks](#disks) section.
+- the metadata appended to the dump file, see the [Dump metadata](#dump-metadata) section.
+
+### Download from remote
+
+To store the newest remote dump without importing it, run
+
+```bash
+php artisan protector:download
+```
+
+To store and import in one step
+
+```bash
+php artisan protector:download --import
+```
+
+If you want to delete all files on the storage disk except the newly stored dump, run
+
+```bash
+php artisan protector:download --import --flush-storage
+```
+
+Each stored dump also has a matching metadata file with the `.meta` suffix (for example `dump.sql.meta`).
+The metadata file stores the same metadata object that is embedded in the SQL dump footer under `meta`.
+
+Interactive import reads metadata from these metadata files.
+If a metadata file is missing, the dump can still be selected, and the import command will group it as an unknown connection.
+
+Flushing will only delete files with existing `.meta` files, and will not delete files in directories.
 
 ### Import
 
@@ -82,24 +117,20 @@ php artisan protector:import
 
 #### Importing a specific source
 
-To download and import the server database in one go, run
+To download and import the server database in one go without storing the dump, run
 
 ```bash
 php artisan protector:import --remote
 ```
+
+`protector:import` cleans up the used disks after importing.
 
 When used with other options, remote will serve as fallback behavior.
 
 To import a specific database file that you downloaded earlier, run
 
 ```bash
-php artisan protector:import --file=<absolute path to database file>
-```
-
-Or just reference the database file name relative to the protector dump directory (default is `storage/app/private/protector`)
-
-```bash
-php artisan protector:import --file=<name of database file>
+php artisan protector:import --file=<relative path on Protector storage disk>
 ```
 
 To import the latest existing database file, run
@@ -116,11 +147,10 @@ If you want to run migrations after the import of the database file, run
 php artisan protector:import --migrate
 ```
 
-For automation, also consider the flush option to clean up older database files, and the force option to bypass user
-interaction.
+For automation, consider the force option to bypass user interaction.
 
 ```bash
-php artisan protector:import --remote --migrate --flush --force
+php artisan protector:import --remote --migrate --force
 ```
 
 To learn more about import options, run
@@ -137,7 +167,7 @@ Find below three common scenarios of usage. These are not mutually exclusive.
 
 If you only want to store a copy of your local database to a disk, the setup is pretty straightforward.
 
-#### Installing protector in your local Laravel project
+#### Installing Protector in your local Laravel project
 
 Install the package via composer.
 
@@ -145,27 +175,23 @@ Install the package via composer.
 composer require cybex/laravel-protector
 ```
 
-You can optionally publish the protector config to set the following options
+Almost all config options can be set via environment variables. Take a look at the [ProtectorEnv](src/Enums/ProtectorEnv.php) class for all available options.
 
-- `fileName`: the file name of the database dump
-- `baseDirectory`: where files are being stored
-- `diskName`: a dedicated Laravel disk defined in config/filesystems.php. These can point to a specific local folder or
-  a cloud file bucket like AWS S3
+You can optionally publish the Protector config to have more fine-grained control over config settings:
 
 ```bash
-artisan vendor:publish --tag=protector.config
+php artisan vendor:publish --tag=protector.config
 ```
 
 #### Local usage
 
-You can now use the artisan command to write a backup to the protector storage folder.
+You can now use the artisan command to write a backup to the Protector storage folder.
 
 ```bash
 php artisan protector:export
 ```
 
-By default, the file will be stored in storage/protector and have a timestamp in the name. You can also specify the
-filename.
+By default, the file will be stored in `storage/private/protector` and have a timestamp in the name. You can also specify the filepath.
 
 You could also automate this by
 
@@ -174,7 +200,7 @@ You could also automate this by
 - creating a Laravel Job and queueing it
 
 ```bash
-php artisan protector:export --file=storage/database.sql
+php artisan protector:export --file="database.sql"
 ```
 
 ### Setup for importing the database of a remote server
@@ -182,7 +208,7 @@ php artisan protector:export --file=storage/database.sql
 This package can run on both servers and client machines of the same software repository.
 You set up authorized developers on the server and give them the key for their local machine.
 
-#### Installing protector in your Laravel project
+#### Installing Protector in your Laravel project
 
 Install the package via composer.
 
@@ -203,7 +229,7 @@ class User extends Authenticatable
 }
 ```
 
-Publish the protector database migration and optionally modify it to work with your project.
+Publish the Protector database migration and optionally modify it to work with your project.
 
 ```bash
 php artisan vendor:publish --tag=protector.migrations
@@ -221,8 +247,7 @@ Run the migrations on the client and server repository.
 php artisan migrate
 ```
 
-You can optionally publish the protector config to set options regarding the storage, access and transmission of the
-files.
+You can use environment variables or optionally publish the Protector config to set options regarding the storage, access and transmission of the files.
 
 ```bash
 php artisan vendor:publish --tag=protector.config
@@ -270,11 +295,10 @@ The developer can then download and import the server database on their own.
 
 ### Setup for collecting backups from multiple servers
 
-You can develop a custom client that can access and store remote server backups. The servers can be different Laravel
-projects that have the protector package installed.
+You can develop a custom client that can access and store remote server backups.
+The servers can be different Laravel projects that have the Protector package installed.
 
-See the previous chapter on how to give your backup client access to all servers. The backup client will need an
-according user on each target server.
+See the previous chapter on how to give your backup client access to all servers. The backup client will need an according user on each target server.
 
 - All the backup users on the target servers will have the same public key from the client
 - For each target server, the client will store the according url and token
@@ -295,6 +319,36 @@ For example, to configure a specific auth token and dump endpoint URL:
 $protector = ProtectorConfigurator::setAuthToken($authToken)->setDumpEndpointUrl($dumpEndpointUrl)->createProtector();
 ```
 
+### Disks
+
+There are two disks, which use the `local` driver by default:
+
+- [protector_local](config/filesystems/local.php) is used for temporary files which are deleted after use
+    - writes to `storage/app/private/protector_local` by default
+- [protector_storage](config/filesystems/storage.php) is used for storing dumps and their metadata files
+    - writes to `storage/app/private/protector` by default
+
+> [!IMPORTANT]
+>
+> The `protector_local` disk must be a local disk, as certain operations require a local filesystem, such as creating or importing a database dump.
+>
+> Almost all operations go through the local disk by creating a local copy first,
+> an exception to this is passing an absolute path to import operations, such as `protector:import --file=/path/to/dump.sql`
+
+If you want to override the disk configuration, add the following to your `config/filesystems.php` file:
+
+```php
+'protector_local' => [
+    ...
+],
+
+'protector_storage' => [
+    ...
+],
+```
+
+You could for example use S3 for the storage disk.
+
 ### Dump metadata
 
 Customize the metadata appended to a dump by adding providers to the `dump.metadata.providers` array in your `config/protector.php` file:
@@ -310,10 +364,10 @@ Customize the metadata appended to a dump by adding providers to the `dump.metad
 Available metadata providers:
 
 1. `DatabaseMetadataProvider`: Will always be appended. Adds general information about the dump, such as the database connection and dumped at date.
-1. `ProtectorMetadataProvider`: Adds information about the settings set on the Protector's config.
-1. `EnvMetadataProvider`: Adds information based on an .env value. The default .env key used for this is `PROTECTOR_METADATA`.
-1. `GitMetadataProvider`: Adds information about the Git repository, such as the current branch and revision.
-1. `JsonMetadataProvider`: Adds information from a JSON file. The default file path used for this is `protector_metadata.json`.
+2. `ProtectorMetadataProvider`: Adds information about the settings set on the Protector's config.
+3. `EnvMetadataProvider`: Adds information based on an .env value. The default .env key used for this is `PROTECTOR_METADATA`.
+4. `GitMetadataProvider`: Adds information about the Git repository, such as the current branch and revision.
+5. `JsonMetadataProvider`: Adds information from a JSON file. The default file path used for this is `protector_metadata.json`.
 
 > [!NOTE]
 > You can create your own metadata providers by implementing the `Cybex\Protector\Contracts\MetadataProvider` interface.
@@ -364,8 +418,12 @@ composer install
 Specific to the example app, for demo data:
 
 ```bash
-php artisan migrate --seed
+php artisan migrate:fresh --seed
 ```
+
+> [!NOTE]
+> The example app uses the same database as the Unit tests, which might pollute the DB with data.
+> For a reproducible environment, always run the above command before executing commands in the example app.
 
 ### Testing
 
@@ -393,14 +451,25 @@ Run tests on the MySQL database:
 composer test-mysql
 ```
 
+#### Test coverage
+
+To generate coverage, you need to run the tests from the package directory.
+
+```bash
+cd ../package
+```
+
+```bash
+composer test
+```
+
 ## Contributing
 
 Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 
 ### Security
 
-If you discover any security-related issues, please email webdevelopment@cybex-online.com instead of using the issue
-tracker.
+If you discover any security-related issues, please email webdevelopment@cybex-online.com instead of using the issue tracker.
 
 ## Credits
 

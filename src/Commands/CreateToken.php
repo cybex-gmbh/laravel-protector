@@ -3,13 +3,15 @@
 namespace Cybex\Protector\Commands;
 
 use Cybex\Protector\Enums\ProtectorEnv;
-use Illuminate\Console\Command;
+use Throwable;
+use function Laravel\Prompts\info;
+use function Laravel\Prompts\intro;
 
 /**
  * Class CreateToken
  * @package Cybex\Protector\Commands;
  */
-class CreateToken extends Command
+class CreateToken extends AbstractCommand
 {
     /**
      * The name and signature of the console command.
@@ -17,8 +19,8 @@ class CreateToken extends Command
      * @var string
      */
     protected $signature = 'protector:token
-                {userId : The user id the token is created for.}
-                {--p|publicKey= : The public key for the user.}';
+                {userId : The user id the token is created for. }
+                {--p|publicKey= : The public key for the user. }';
 
     /**
      * The console command description.
@@ -28,34 +30,26 @@ class CreateToken extends Command
     protected $description = 'Creates a token for a specified user id and optionally sets the public key.';
 
     /**
-     * Execute the console command.
-     *
-     * @return int
+     * @throws Throwable
      */
-    public function handle(): int
+    protected function executeCommand(): int
     {
         $publicKey = $this->option('publicKey');
         $user = config('auth.providers.users.model')::findOrFail($this->argument('userId'));
         $user->tokens()->whereAbilities('["protector:import"]')->delete();
 
-        $this->newLine();
-
-        $this->warn(sprintf('Executing for User %s|%s (%s)', $user->id, $user->name, $user->email));
+        intro(sprintf('Executing for User %s|%s (%s)', $user->id, $user->name, $user->email));
 
         if (!$user->protector_public_key && !$publicKey) {
-            $this->error('The user doesn\'t have a protector public key and none was specified. Please provide a public key for the user.');
-
-            return self::FAILURE;
+            $this->fail('The user doesn\'t have a protector public key and none was specified. Please provide a public key for the user.');
         }
 
         if ($publicKey) {
             $user->protector_public_key = $publicKey;
             $user->save();
 
-            $this->info('Protector public key was set.');
+            info('Protector public key was set.');
         }
-
-        $this->newLine();
 
         $token = $user->createToken('protector', ['protector:import']);
 

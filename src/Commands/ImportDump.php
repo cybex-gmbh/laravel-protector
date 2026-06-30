@@ -3,39 +3,50 @@
 namespace Cybex\Protector\Commands;
 
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
-use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
+use Cybex\Protector\Exceptions\EmptyDumpDirectoryException;
 use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
+use Cybex\Protector\Exceptions\ShellAccessDeniedException;
+use Cybex\Protector\Facades\DiskHelperFacade as DiskHelper;
 use Cybex\Protector\Protector;
-use Illuminate\Console\Command;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Storage;
+use Throwable;
+use function is_null;
+use function Laravel\Prompts\confirm;
+use function Laravel\Prompts\info;
+use function Laravel\Prompts\select;
+use function Laravel\Prompts\warning;
 
 /**
  * Class ImportDump
  *
  * @package Cybex\Protector\Commands
  */
-class ImportDump extends Command
+class ImportDump extends AbstractCommand
 {
+    protected const string UNKNOWN_CONNECTION_NAME = 'unknown_connection';
+
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
     protected $signature = 'protector:import
-                {--f|file= : Either an absolute path to a file, or a filename relative to the protector dump directory. }
-                {--c|connection= : The configured database-connection in Laravel\'s config/database.php. }
                 {--allow-production : Enable importing SQL dumps on a production system. }
+                {--c|connection= : The configured database-connection in Laravel\'s config/database.php. }
+                {--d|disk= : A disk from which the dump is read. Only applicable with the --file option. Default is the storage disk. }
                 {--force : Skips confirmation prompts. Requires the file, remote or latest option. }
-                {--i|ignore-connection-filter : Ignores filter of dumps to defined connections. }
-                {--r|remote : Pull a fresh dump from the remote server as configured in the .env file. Will be used as fallback when combined with other options. }
-                {--flush : Delete all existing dumps in the dump folder when using a remote dump. }
+                {--f|file= : A file name on the storage disk. }
                 {--l|latest : Import the most recent dump available in the configured dumps directory. }
                 {--m|migrate : Run database migrations after import. }
-                {--w|no-wipe : Do not wipe the database before importing the dump. }';
+                {--no-copy : Do not create a copy of the file on the local disk. Only applicable with the --file option. The passed file must be available on a local disk. }
+                {--r|remote : Pull a fresh dump from the remote server as configured in the .env file. Will be used as fallback when combined with other options. }
+                {--no-wipe-db : Do not wipe the database before importing the dump. }';
 
     /**
      * The console command description.
@@ -45,224 +56,169 @@ class ImportDump extends Command
     protected $description = 'Imports a local or remote database dump.';
 
     protected const string DOWNLOAD_REMOTE_DUMP = 'Download remote dump';
-    protected const string IMPORT_EXISTING_LOCAL_DUMP = 'Import existing local dump';
+    protected const string IMPORT_EXISTING_LOCAL_DUMP = 'Import existing dump';
     protected Protector $protector;
+    protected Filesystem $disk;
+    protected bool $shouldImportRemoteDump = false;
 
     /**
-     * Execute the console command.
-     *
-     * @return int
+     * @throws FileNotFoundException
+     * @throws EmptyDumpDirectoryException
+     * @throws ShellAccessDeniedException
+     * @throws InvalidConnectionException
      * @throws InvalidEnvironmentException
+     * @throws Throwable
      */
-    public function handle(): int
+    protected function executeCommand(): int
     {
-        $this->newLine();
+        $this->disk = $this->option('disk') ? Storage::disk($this->option('disk')) : DiskHelper::getStorageDisk();
 
-        if (App::environment('production') && !$this->option('allow-production')) {
-            throw new InvalidEnvironmentException(
-                'Import is not allowed on production systems! Use --allow-production'
-            );
-        }
+        $this->guard();
+        $this->configureProtector();
+        $this->confirmImport();
 
-        $protectorConfigurator = app(ProtectorConfiguratorContract::class);
-
-        if ($this->option('connection')) {
-            $protectorConfigurator->setConnectionName($this->option('connection'));
-        }
-
-        $this->protector = $protectorConfigurator->makeProtector();
-        $this->protector->guardRequiredFunctionsEnabled();
-
-        $hasFile = !empty(trim($this->option('file')));
-
-        if ($this->option('force') && !($this->option('remote') || $hasFile || $this->option('latest'))) {
-            $this->error('Nothing to import. You need to specify either --remote, --file, or --latest.');
-
-            return self::FAILURE;
-        }
-
-        $dumpFilePath = match (true) {
-            $this->option('remote') => $this->getDumpFromRemote(),
-            $hasFile => $this->getDumpFromFile(),
+        $dumpSource = match (true) {
+            $this->option('remote') => $this->shouldImportRemoteDump = true,
+            $this->option('file') == true => $this->option('file'),
             $this->option('latest') => $this->getLatestDump(),
             default => $this->getDumpInteractive(),
         };
 
-        $this->prepareAndImportDumpFile($dumpFilePath);
+        if ($this->shouldImportRemoteDump) {
+            return $this->importRemoteDump();
+        }
 
-        $this->newLine();
+        $this->runImport($dumpSource);
+
+        return self::SUCCESS;
+    }
+
+    protected function importRemoteDump(): int
+    {
+        $dumpName = DiskHelper::createLocalFileName();
+
+        try {
+            $this->spinner(
+                callback: fn() => $this->protector->downloadAndImport(
+                    targetFileName: $dumpName,
+                    targetDisk: DiskHelper::getLocalDisk(),
+                    wipeDb: !$this->option('no-wipe-db'),
+                    migrate: $this->option('migrate'),
+                    allowProduction: $this->option('allow-production'),
+                ),
+                message: 'Downloading and importing...'
+            );
+
+            info('Successfully retrieved and imported remote dump.');
+        } finally {
+            DiskHelper::deleteLocalFile($dumpName);
+        }
 
         return self::SUCCESS;
     }
 
     /**
-     * Reads the remote dump file and deletes all old dumps if the flush option is set.
+     * @throws EmptyDumpDirectoryException
      */
-    protected function getDumpFromRemote(): string
+    protected function getLatestDump(): string
     {
-        $this->line(
-            sprintf('<<< Downloading dump from remote server to disk <comment>%s</comment>, path <comment>%s</comment>', $this->protector->getDiskName(), $this->protector->getDiskBaseDirectory())
-        );
+        $dumpName = $this->protector->latestDumpName();
 
-        $relativeRemoteDumpFilePath = $this->protector->getRemoteDump();
+        info(sprintf('Importing %s', $dumpName));
 
-        $this->line('>>> Successfully retrieved remote dump.');
-
-        if ($this->option('flush')) {
-            $this->protector->flush(excludeFile: $relativeRemoteDumpFilePath);
-            $this->warn(sprintf('Deleted all old files on disk %s in path %s', $this->protector->getDiskName(), $this->protector->getDiskBaseDirectory()));
-        }
-
-        return $relativeRemoteDumpFilePath;
+        return $dumpName;
     }
 
     /**
-     * Imports a dump from a specific file path.
-     * The file path may be either absolute or relative to the dump directory.
-     *
-     * @throws FileNotFoundException
+     * @throws EmptyDumpDirectoryException
+     * @throws InvalidConnectionException
      */
-    protected function getDumpFromFile(): string
-    {
-        $isAbsoluteFilePath = $this->isAbsolutePath($this->option('file'));
-
-        switch ($isAbsoluteFilePath) {
-            case true:
-                $dumpFilePath = $this->option('file');
-
-                if (!file_exists($dumpFilePath)) {
-                    throw new FileNotFoundException($dumpFilePath);
-                }
-
-                break;
-            default:
-                // This will throw an exception if the dump file was not found.
-                $dumpFilePath = $this->protector->getDumpFile($this->option('file'));
-                break;
-        }
-
-        // Might be absolute or relative at this point.
-        return $dumpFilePath;
-    }
-
-    protected function getLatestDump(): string
-    {
-        $relativeImportFilePath = $this->protector->getLatestDumpName();
-
-        $this->info(sprintf('Importing <comment>%s</comment>', $relativeImportFilePath));
-
-        return $relativeImportFilePath;
-    }
-
     protected function getDumpInteractive(): string
     {
         if ($this->userWantsRemoteDump()) {
-            return $this->getDumpFromRemote();
+            $this->shouldImportRemoteDump = true;
+
+            return self::SUCCESS;
         }
 
         return $this->chooseImportDump($this->option('connection'));
     }
 
     /**
-     * Imports a dump file.
-     * If it is stored remotely, a local temporary file is created, imported, and deleted afterward.
+     * Returns the file name of the selected dump.
+     *
+     * @throws EmptyDumpDirectoryException
+     * @throws InvalidConnectionException
      */
-    protected function prepareAndImportDumpFile(string $dumpFilePath): void
-    {
-        // We need an absolute and local file path going forward. The file path may already be absolute and local, only if called with the --file option and passed an absolute path.
-        if (!$this->isAbsolutePath($dumpFilePath)) {
-            $absoluteTempFilePath = $this->protector->createTempFilePath($dumpFilePath);
-        }
 
-        try {
-            $this->importDump($absoluteTempFilePath ?? $dumpFilePath, $this->option('force'));
-        } finally {
-            !empty($absoluteTempFilePath) && unlink($absoluteTempFilePath);
-        }
-    }
-
-    /**
-     * Returns the file path to a selected dump.
-     */
     protected function chooseImportDump(?string $connectionName): string
     {
         $connectionFiles = $this->getConnectionFiles($connectionName)->keys();
 
         if ($connectionFiles->count() === 1) {
-            $relativeImportFilePath = $connectionFiles->first();
+            $dumpName = $connectionFiles->first();
 
-            $this->info(sprintf('Using file "%s" because there are no other dumps.', $relativeImportFilePath));
-        } else {
-            $importFile = $this->choice(
-                'Which file do you want to import?',
-                $connectionFiles->toArray()
-            );
+            info(sprintf('Using file "%s" because there are no other dumps.', $dumpName));
 
-            $relativeImportFilePath = $connectionFiles->firstWhere(fn($file) => $file === $importFile);
+            return $dumpName;
         }
 
-        return $relativeImportFilePath;
+        $selectedFile = select(
+            label: 'Which file do you want to import?',
+            options: $connectionFiles,
+        );
+
+        return $connectionFiles->filter(fn($file) => $file === $selectedFile)->first();
     }
 
     /**
      * Imports the selected SQL dump.
      */
-    protected function importDump(string $absoluteImportFilePath, ?bool $optionForce): void
+    protected function runImport(string $dumpName): void
     {
-        if ($optionForce || $this->confirm(
-                sprintf(
-                    'Are you sure that you want to import the dump into the database: %s?',
-                    $this->protector->getDatabaseName()
-                )
-            )) {
+        $this->spinner(
+            callback: fn() => $this->protector->import(
+                sourceFilePath: $dumpName,
+                sourceDisk: $this->disk,
+                wipeDb: !$this->option('no-wipe-db'),
+                migrate: $this->option('migrate'),
+                allowProduction: $this->option('allow-production'),
+                copy: !$this->option('no-copy'),
+            ),
+            message: 'Importing dump...'
+        );
 
-            $this->protector->importDump($absoluteImportFilePath, options: Arr::except($this->options(), ['migrate']));
-
-            if ($this->option('migrate')) {
-                $this->call('migrate');
-            }
-
-            $this->info('Import done!');
-        } else {
-            $this->info('Import aborted');
-        }
+        info('Import done!');
     }
 
     /**
      * Returns a list of either all dumps or those for the specified connection name.
      *
-     * @throws InvalidConnectionException|EmptyBaseDirectoryException
+     * @throws InvalidConnectionException|EmptyDumpDirectoryException
      */
     protected function getConnectionFiles(?string $connectionName = null): Collection
     {
-        $sortedFiles = $this->protector->getDumpFilesWithMetadata()
-            ->sortByDesc(
-            // Supporting the legacy format.
-                fn($file) => Arr::get($file, 'meta.database.dumpedAtDate') ?? Arr::get($file, 'meta.dumpedAtDate')
-            )->filter(function ($fileInfo, $fileName) {
-                // Filter connections which are not defined in the database config file.
-                $connection = Arr::get($fileInfo, 'meta.database.connection') ?? Arr::get($fileInfo, 'meta.connection') ?: 'external_dump';
+        $sortedFiles = DiskHelper::allStorageFilesWithMetadata()
+            ->sortByDesc(fn($file) => Arr::get($file, 'meta.database.dumpedAtDate'))
+            ->filter(function ($fileInfo, $fileName) {
+                $connection = Arr::get($fileInfo, 'meta.database.connection') ?: static::UNKNOWN_CONNECTION_NAME;
 
-                if ($connection === 'external_dump' || Arr::exists(config('database.connections'), $connection)) {
+                // Filter connections which are not defined in the database config file.
+                if ($connection === static::UNKNOWN_CONNECTION_NAME || Arr::exists(config('database.connections'), $connection)) {
                     return true;
                 }
 
-                $this->warn(sprintf('Skipping file "%s" because the connection "%s" is not valid.', $fileName, $connection));
+                warning(sprintf('Skipping file "%s" because the connection "%s" is not valid.', $fileName, $connection));
 
                 return false;
             });
 
         if ($sortedFiles->isEmpty()) {
-            throw new EmptyBaseDirectoryException();
-        }
-
-        if ($this->option('ignore-connection-filter')) {
-            return $sortedFiles;
+            throw new EmptyDumpDirectoryException();
         }
 
         $filesByConnection = $sortedFiles->groupBy(
-        // Supporting the legacy format.
-            fn($file) => Arr::get($file, 'meta.database.connection') ?? Arr::get($file, 'meta.connection') ?: 'external_dump',
+            fn($file) => Arr::get($file, 'meta.database.connection') ?: static::UNKNOWN_CONNECTION_NAME,
             preserveKeys: true
         );
 
@@ -284,13 +240,13 @@ class ImportDump extends Command
      */
     protected function userWantsRemoteDump(): bool
     {
-        return match ($this->choice(
-            'Do you want to download and import a fresh dump from the server or an existing local dump?',
-            [
-                1 => static::DOWNLOAD_REMOTE_DUMP,
-                2 => static::IMPORT_EXISTING_LOCAL_DUMP,
+        return match (select(
+            label: 'Do you want to download and import a fresh dump from the server or an existing dump?',
+            options: [
+                static::DOWNLOAD_REMOTE_DUMP,
+                static::IMPORT_EXISTING_LOCAL_DUMP,
             ],
-            1
+            default: static::DOWNLOAD_REMOTE_DUMP,
         )) {
             static::DOWNLOAD_REMOTE_DUMP => true,
             default => false,
@@ -306,7 +262,7 @@ class ImportDump extends Command
         if ($connectionNames->count() === 1) {
             $connectionName = $connectionNames->firstOrFail();
 
-            $this->info(
+            info(
                 sprintf(
                     'Using connection "%s" because there are no dumps created through other connections.',
                     $connectionName
@@ -316,11 +272,102 @@ class ImportDump extends Command
             return $connectionName;
         }
 
-        return $this->choice('Import dump for which connection?', $connectionNames->toArray());
+        return select(
+            label: 'Import dump for which connection?',
+            options: $connectionNames,
+        );
     }
 
-    protected function isAbsolutePath(string $filePath): bool
+    /**
+     * @throws FileNotFoundException
+     * @throws InvalidEnvironmentException
+     * @throws ShellAccessDeniedException
+     * @throws Throwable
+     */
+    protected function guard(): void
     {
-        return str_starts_with($filePath, DIRECTORY_SEPARATOR);
+        app('protector')->validateSystemRequirements();
+        $this->validateSource();
+        $this->validateEnvironment();
+    }
+
+    /**
+     * @throws Throwable
+     */
+    protected function validateSource(): void
+    {
+        $sourceCount = count(
+            array_filter([
+                $this->option('remote'),
+                !is_null($this->option('file')),
+                $this->option('latest')
+            ])
+        );
+
+        $sourceCount > 1 && $this->fail('You can only specify one of the following options: --remote, --file, --latest.');
+
+        $this->validateFile();
+
+        if ($this->option('force') && !$sourceCount) {
+            $this->fail('Nothing to import. You need to specify either --remote, --file, or --latest.');
+        }
+
+        if (($this->option('disk') || $this->option('no-copy')) && !$this->option('file')) {
+            $this->fail('When using --disk or the --no-copy option, --file needs to be specified.');
+        }
+    }
+
+    /**
+     * @throws Throwable
+     * @throws FileNotFoundException
+     */
+    protected function validateFile(): void
+    {
+        if (!is_null($this->option('file'))) {
+            if (trim($this->option('file')) === '') {
+                $this->fail('The --file option cannot be empty. Please provide a valid file name.');
+            }
+
+            $this->disk->exists($this->option('file')) || throw new FileNotFoundException($this->option('file'));
+        }
+    }
+
+    /**
+     * @throws InvalidEnvironmentException
+     */
+    protected function validateEnvironment(): void
+    {
+        if (App::environment('production') && !$this->option('allow-production')) {
+            throw new InvalidEnvironmentException(
+                'Import is not allowed on production systems! Use --allow-production'
+            );
+        }
+    }
+
+    protected function configureProtector(): void
+    {
+        $protectorConfigurator = app(ProtectorConfiguratorContract::class);
+
+        if ($this->option('connection')) {
+            $protectorConfigurator->setConnectionName($this->option('connection'));
+        }
+
+        $this->protector = $protectorConfigurator->makeProtector();
+    }
+
+    /**
+     * @throws Throwable
+     */
+    protected function confirmImport(): void
+    {
+        if (!$this->option('force') && !confirm(
+                sprintf(
+                    'Are you sure that you want to import a dump into the database: %s?',
+                    $this->protector->getDatabaseName()
+                )
+            )
+        ) {
+            $this->fail('Import aborted.');
+        }
     }
 }

@@ -2,29 +2,24 @@
 
 namespace Cybex\Protector\Tests\Feature;
 
+use Cybex\Protector\Contracts\CrypterContract;
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
 use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\InvalidConfiguration\MissingDumpEndpointUrlException;
 use Cybex\Protector\Exceptions\InvalidConfiguration\MissingPrivateKeyException;
 use Cybex\Protector\Exceptions\InvalidConfiguration\NoAuthConfiguredException;
 use Cybex\Protector\Exceptions\InvalidConfiguration\SanctumBasicAuthConflictException;
-use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Cybex\Protector\Tests\TestCase;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 class RemoteDumpTest extends TestCase
 {
-    protected Filesystem $disk;
-
     protected string $dumpEndpointUrl;
-    protected string $baseDirectory;
 
     protected function setUp(): void
     {
@@ -35,16 +30,13 @@ class RemoteDumpTest extends TestCase
         Config::set('protector.client.dumpEndpointUrl', $this->dumpEndpointUrl);
         Config::set('protector.server.routeMiddleware', []);
         Config::set('protector.client.basicAuthCredentials', '1234:1234');
-
-        $this->disk = Storage::disk('local');
-        $this->baseDirectory = Config::get('protector.dump.baseDirectory');
     }
 
     protected function tearDown(): void
     {
         parent::tearDown();
 
-        $format = sprintf('%s%s%s.sql', $this->baseDirectory, DIRECTORY_SEPARATOR, '%s');
+        $format = '%s.sql';
 
         $path = sprintf($format, 'dump');
         $secondPath = sprintf($format, 'dumpWithGit');
@@ -53,10 +45,10 @@ class RemoteDumpTest extends TestCase
         $fifthPath = sprintf($format, 'dumpWithDifferentConnection');
         $sixthPath = sprintf($format, 'emptyDump');
 
-        $files = $this->disk->files($this->baseDirectory);
+        $files = $this->storageDisk->files();
         $files = array_diff($files, [$path, $secondPath, $thirdPath, $fourthPath, $fifthPath, $sixthPath]);
 
-        $this->disk->delete($files);
+        $this->storageDisk->delete($files);
     }
 
     #[Test]
@@ -85,7 +77,7 @@ class RemoteDumpTest extends TestCase
         Config::set('protector.client.dumpEndpointUrl', '');
 
         $this->expectException(MissingDumpEndpointUrlException::class);
-        $this->protector->getRemoteDump();
+        $this->protector->download();
     }
 
     #[Test]
@@ -95,7 +87,7 @@ class RemoteDumpTest extends TestCase
         Config::set('protector.client.privateKey', '');
 
         $this->expectException(MissingPrivateKeyException::class);
-        $this->protector->getRemoteDump();
+        $this->protector->download();
     }
 
     #[Test]
@@ -109,7 +101,7 @@ class RemoteDumpTest extends TestCase
 
         $this->expectException(FailedRemoteDatabaseFetchingException::class);
 
-        $this->protector->getRemoteDump();
+        $this->protector->download();
     }
 
     #[Test]
@@ -118,11 +110,13 @@ class RemoteDumpTest extends TestCase
         Config::set('protector.client.basicAuthCredentials', '1234:1234');
         Config::set('protector.server.routeMiddleware', []);
 
+        $dump = file_get_contents(__DIR__ . '/../dumps/dump.sql');
+
         Http::fake([
-            $this->dumpEndpointUrl => Http::response(__FUNCTION__, 200, ['Chunk-Size' => 100]),
+            $this->dumpEndpointUrl => Http::response($dump, 200, ['Chunk-Size' => 1024]),
         ]);
 
-        $this->protector->getRemoteDump();
+        $this->protector->download();
 
         Http::assertSent(function ($request) {
             return $request->hasHeader('Authorization', 'Basic ' . base64_encode('1234:1234'));
@@ -138,7 +132,7 @@ class RemoteDumpTest extends TestCase
 
         $this->expectException(FailedRemoteDatabaseFetchingException::class);
 
-        $this->protector->getRemoteDump();
+        $this->protector->download();
     }
 
     #[Test]
@@ -153,7 +147,7 @@ class RemoteDumpTest extends TestCase
                 $this->dumpEndpointUrl => Http::response([], $statusCode),
             ]);
 
-            $this->protector->getRemoteDump();
+            $this->protector->download();
         }
     }
 
@@ -166,7 +160,7 @@ class RemoteDumpTest extends TestCase
             $this->dumpEndpointUrl => Http::response([], 404),
         ]);
 
-        $this->protector->getRemoteDump();
+        $this->protector->download();
     }
 
     #[Test]
@@ -178,18 +172,18 @@ class RemoteDumpTest extends TestCase
             $this->dumpEndpointUrl => Http::response([], 500),
         ]);
 
-        $this->protector->getRemoteDump();
+        $this->protector->download();
     }
 
     #[Test]
     public function checkForSuccessfulDecryption(): void
     {
-        $message = env('PROTECTOR_DECRYPTED_MESSAGE');
-        $encryptedMessage = base64_decode(env('PROTECTOR_ENCRYPTED_MESSAGE_BASE64'));
+        $message = file_get_contents(__DIR__ . '/../dumps/dump.sql');#
         $publicKey = env('PROTECTOR_PUBLIC_KEY');
+        $encryptedMessage = app(CrypterContract::class)->encrypt($message, $publicKey);
 
         $chunkSize = strlen($message);
-        $encryptionOverhead = $this->runProtectedMethod('determineEncryptionOverhead', [$chunkSize, $publicKey]);
+        $encryptionOverhead = app(CrypterContract::class)->determineEncryptionOverhead($chunkSize, $publicKey);
 
         Http::fake([
             $this->dumpEndpointUrl => Http::response($encryptedMessage, 200, [
@@ -199,11 +193,78 @@ class RemoteDumpTest extends TestCase
             ]),
         ]);
 
-        $destinationFilepath = $this->protector->getRemoteDump();
+        $destinationFileName = $this->protector->download(targetDisk: $this->localDisk);
+        $metadataFileName = $this->diskHelper->metadataFileName($destinationFileName);
+        $decodedMetadataFile = json_decode($this->localDisk->get($metadataFileName), true);
+        $parsedDumpMetadata = $this->runProtectedMethod('getDumpMetadata', [$destinationFileName]);
 
-        $this->assertFileExists($this->disk->path($destinationFilepath));
-        $this->assertEquals($message, $this->disk->get($destinationFilepath));
+        $this->assertFileExists($this->localDisk->path($destinationFileName));
+        $this->assertFileExists($this->localDisk->path($metadataFileName));
+        $this->assertEquals($message, $this->localDisk->get($destinationFileName));
+        $this->assertIsArray($parsedDumpMetadata);
+        $this->assertIsArray($decodedMetadataFile);
+        $this->assertEquals($parsedDumpMetadata, $decodedMetadataFile);
     }
+
+    #[Test]
+    public function failOnDecryptedDumpWithoutParseableMetadata(): void
+    {
+        $payloadWithoutMetadata = 'CREATE TABLE `users` (`id` int);';
+        $publicKey = env('PROTECTOR_PUBLIC_KEY');
+        $encryptedPayload = app(CrypterContract::class)->encrypt($payloadWithoutMetadata, $publicKey);
+
+        $chunkSize = strlen($payloadWithoutMetadata);
+        $encryptionOverhead = app(CrypterContract::class)->determineEncryptionOverhead($chunkSize, $publicKey);
+
+        Http::fake([
+            $this->dumpEndpointUrl => Http::response($encryptedPayload, 200, [
+                'Sanctum-Enabled' => true,
+                'Content-Disposition' => 'attachment; filename="invalid-metadata.sql"',
+                'Chunk-Size' => $chunkSize + $encryptionOverhead,
+            ]),
+        ]);
+
+        $this->expectException(FailedRemoteDatabaseFetchingException::class);
+
+        try {
+            $this->protector->download();
+        } finally {
+            $this->assertFalse($this->storageDisk->exists('invalid-metadata.sql'));
+        }
+    }
+
+    #[Test]
+    public function nonEncryptedDownloadWorks(): void
+    {
+        Config::set('protector.server.routeMiddleware', []);
+
+        Http::fake([
+            $this->dumpEndpointUrl => Http::response(file_get_contents(__DIR__ . '/../dumps/dump.sql'), 200, ['Chunk-Size' => 1024]),
+        ]);
+
+        $downloadedFileName = $this->protector->download(targetDisk: $this->localDisk);
+        $metadataFileName = $this->diskHelper->metadataFileName($downloadedFileName);
+        $metadataFileContents = json_decode($this->localDisk->get($metadataFileName), true);
+        $parsedDumpMetadata = $this->runProtectedMethod('getDumpMetadata', [$downloadedFileName]);
+
+        $this->assertEquals([$downloadedFileName, $metadataFileName], $this->localDisk->allFiles());
+        $this->assertIsArray($parsedDumpMetadata);
+        $this->assertIsArray($metadataFileContents);
+        $this->assertEquals($parsedDumpMetadata, $metadataFileContents);
+    }
+
+    #[Test]
+    public function downloadDoesNotLeaveLocalFiles(): void
+    {
+        Http::fake([
+            $this->dumpEndpointUrl => Http::response(file_get_contents(__DIR__ . '/../dumps/dump.sql'), 200, ['Chunk-Size' => 1024]),
+        ]);
+
+        $this->protector->download();
+
+        $this->localDisk->assertDirectoryEmpty('');
+    }
+
 
     #[Test]
     public function failOnLaravelSanctumIsDisabledAndNoBasicAuthDefined(): void
@@ -268,41 +329,12 @@ class RemoteDumpTest extends TestCase
     }
 
     #[Test]
-    public function canGetConfigValueForKey(): void
-    {
-        Config::set('protector.dump.baseDirectory', __FUNCTION__);
-
-        $result = $this->protector->getDiskBaseDirectory();
-
-        $this->assertEquals(__FUNCTION__, $result);
-    }
-
-    #[Test]
-    public function canResolveBaseDirectoryFromClosure(): void
-    {
-        $functionName = __FUNCTION__;
-
-        Config::set('protector.dump.baseDirectory', fn() => $functionName);
-
-        $result = $this->protector->getDiskBaseDirectory();
-
-        $this->assertEquals($functionName, $result);
-    }
-
-    #[Test]
-    public function failDecryptingOnInvalidString(): void
-    {
-        $this->expectException(InvalidConfigurationException::class);
-        $this->protector->decryptString(base64_encode(__FUNCTION__));
-    }
-
-    #[Test]
     public function canCreateFilename(): void
     {
         $structure = '%s %d-%d-%d %d-%d %x.sql';
         config()->set('protector.dump.fileName', $structure);
 
-        $fileName = $this->protector->createFilename();
+        $fileName = $this->runProtectedMethod('createFilename');
 
         $this->assertIsString($fileName);
         $this->assertStringMatchesFormat($structure, $fileName);

@@ -2,9 +2,10 @@
 
 namespace Cybex\Protector\Tests;
 
+use Cybex\Protector\Contracts\DiskHelperContract;
 use Cybex\Protector\Protector;
 use Cybex\Protector\ProtectorServiceProvider;
-use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Filesystem\LocalFilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 use Orchestra\Testbench\TestCase as OrchestraTestCase;
 use ReflectionClass;
@@ -19,12 +20,18 @@ class TestCase extends OrchestraTestCase
      *  Protector instance.
      */
     protected Protector $protector;
+    protected DiskHelperContract $diskHelper;
+    protected LocalFilesystemAdapter $localDisk;
+    protected LocalFilesystemAdapter $storageDisk;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->protector = app('protector');
+        $this->diskHelper = app(DiskHelperContract::class);
+        $this->localDisk = $this->getLocalDisk();
+        $this->storageDisk = $this->getStorageDiskWithFiles();
     }
 
     /**
@@ -78,25 +85,29 @@ class TestCase extends OrchestraTestCase
         $property->setValue($this->protector, $value);
     }
 
-    protected function getFakeDumpDisk(): Filesystem
+    protected function getStorageDiskWithFiles(): LocalFilesystemAdapter
     {
-        $disk = $this->getDumpDisk();
-        $baseDirectory = $this->protector->getDiskBaseDirectory();
+        $disk = $this->getStorageDisk();
 
-        foreach (glob(__DIR__ . '/dumps/*.sql') as $filename) {
-            $disk->putFileAs($baseDirectory, $filename, basename($filename));
+        foreach (glob(__DIR__ . '/dumps/*.sql*') as $filename) {
+            $disk->put(basename($filename), file_get_contents($filename));
         }
 
         return $disk;
     }
 
-    protected function getDumpDisk(): Filesystem
+    protected function getStorageDisk(): LocalFilesystemAdapter
     {
-        return Storage::fake($this->protector->getDiskName());
+        return Storage::fake($this->diskHelper->getStorageDiskName());
     }
 
-    protected function clearDumpDirectory(): void
+    protected function getLocalDisk(): LocalFilesystemAdapter
     {
-        $this->getDumpDisk()->deleteDirectory($this->protector->getDiskBaseDirectory());
+        return Storage::fake($this->diskHelper->getLocalDiskName());
+    }
+
+    protected function clearLocal(): void
+    {
+        $this->getStorageDisk()->deleteDirectory('');
     }
 }

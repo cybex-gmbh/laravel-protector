@@ -2,14 +2,19 @@
 
 namespace Cybex\Protector\Classes\Metadata;
 
+use Cybex\Protector\Contracts\DiskHelperContract;
 use Cybex\Protector\Contracts\MetadataProviderContract;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Exceptions\FileNotFoundException;
+use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\Collection;
 
 class MetadataHandler
 {
-    public function __construct(protected ProtectorConfigContract $protectorConfig)
+    public function __construct(
+        protected ProtectorConfigContract $protectorConfig,
+        protected DiskHelperContract $diskHelper,
+    )
     {
     }
 
@@ -30,18 +35,18 @@ class MetadataHandler
     }
 
     /**
-     * Returns the appended metadata from a file.
+     * Returns the appended metadata from a local file.
+     *
+     * @throws FileNotFoundException
      */
-    public function getDumpMetadata(string $dumpFile): bool|array
+    public function getDumpMetadata(string $dumpFileName): bool|array
     {
-        // 'options' is only available in legacy dumps.
         $desiredMetaLines = [
-            'options',
             'meta',
         ];
 
         // We add some extra lines to be sure we get all metadata, even if there are some empty lines at the end of the file.
-        $lines = $this->tail($dumpFile, count($desiredMetaLines) + 3);
+        $lines = $this->tail($dumpFileName, count($desiredMetaLines) + 3);
 
         // Response has not enough lines.
         if (count(array_filter($lines)) < count($desiredMetaLines)) {
@@ -74,6 +79,7 @@ class MetadataHandler
 
     /**
      * The metadata provider classes can be configured on the protector instance, we make the actual provider classes here.
+     *
      * @return Collection<MetadataProviderContract>
      */
     protected function getProviders(): Collection
@@ -83,6 +89,9 @@ class MetadataHandler
             ->map($this->makeProvider(...));
     }
 
+    /**
+     * @throws BindingResolutionException
+     */
     protected function makeProvider($providerClass): MetadataProviderContract
     {
         return app()->makeWith($providerClass, ['protectorConfig' => $this->protectorConfig]);
@@ -96,7 +105,7 @@ class MetadataHandler
     protected function tail(string $file, int $lines, int $buffer = 1024): array
     {
         // Open file-handle.
-        $fileHandle = $this->protectorConfig->getDisk()->readStream($file);
+        $fileHandle = $this->diskHelper->getLocalDisk()->readStream($file);
 
         if (!is_resource($fileHandle)) {
             throw new FileNotFoundException($file);
@@ -125,6 +134,8 @@ class MetadataHandler
             // Decrease count of lines to read by the amount of new-lines given in the current chunk.
             $linesToRead -= substr_count($chunk, "\n");
         }
+
+        fclose($fileHandle);
 
         // Get the last x lines from file.
         return array_slice(explode("\n", $contents), -$lines);

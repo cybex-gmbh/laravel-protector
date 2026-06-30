@@ -4,16 +4,17 @@ namespace Cybex\Protector\Tests\Feature;
 
 use Carbon\Carbon;
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
-use Cybex\Protector\Exceptions\EmptyBaseDirectoryException;
-use Cybex\Protector\Exceptions\FailedImportException;
+use Cybex\Protector\Exceptions\EmptyDumpDirectoryException;
+use Cybex\Protector\Exceptions\FailedReadingFromDiskException;
 use Cybex\Protector\Exceptions\FailedWipeException;
-use Cybex\Protector\Exceptions\FileNotFoundException;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
 use Cybex\Protector\Exceptions\InvalidEnvironmentException;
+use Cybex\Protector\Facades\DiskHelperFacade as DiskHelper;
 use Cybex\Protector\Protector;
 use Cybex\Protector\Tests\TestCase;
-use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -21,9 +22,7 @@ class ImportDumpTest extends TestCase
 {
     protected const string DUMP_DATE = '2022-06-29 12:43:24';
 
-    protected Filesystem $disk;
-    protected static string $baseDirectory = 'dumps';
-    protected string $filePath;
+    protected string $fileName;
     protected Protector $protector;
 
     protected function setUp(): void
@@ -31,19 +30,14 @@ class ImportDumpTest extends TestCase
         parent::setUp();
 
         $this->protector = app('protector');
-
-        Config::set('protector.dump.baseDirectory', static::$baseDirectory);
-
-        $this->disk = $this->getFakeDumpDisk();
-
-        $this->filePath = __DIR__ . '/../dumps/dump.sql';
+        $this->fileName = 'dump.sql';
     }
 
     public static function provideDumpMetadata(): array
     {
         return [
             [
-                static::$baseDirectory . '/dump.sql',
+                'dump.sql',
                 [
                     'meta' => [
                         'database' => [
@@ -52,16 +46,11 @@ class ImportDumpTest extends TestCase
                             'maxPacketLength' => '8M',
                             'dumpedAtDate' => Carbon::parse(static::DUMP_DATE)->toDateTimeString(),
                         ],
-                        'git' => [
-                            'revision' => '',
-                            'branch' => '',
-                            'revisionDate' => '',
-                        ],
                     ],
                 ],
             ],
             [
-                static::$baseDirectory . '/dumpWithGit.sql',
+                'dumpWithGit.sql',
                 [
                     'meta' => [
                         'git' => [
@@ -79,19 +68,16 @@ class ImportDumpTest extends TestCase
                 ],
             ],
             [
-                static::$baseDirectory . '/dumpWithoutMetadata.sql',
+                'dumpWithoutMetadata.sql',
                 [],
             ],
             [
-                static::$baseDirectory . '/dumpWithIncorrectMetadata.sql',
+                'dumpWithIncorrectMetadata.sql',
                 false,
             ],
             [
-                static::$baseDirectory . '/legacyDump.sql',
+                'legacyDump.sql',
                 [
-                    'options' => [
-                        'no-data' => false,
-                    ],
                     'meta' => [
                         'database' => 'protector-tests',
                         'connection' => 'mysql',
@@ -109,8 +95,8 @@ class ImportDumpTest extends TestCase
     public static function provideEmptyDumpsWhenReceivingTheLatestDumpName(): array
     {
         return [
-            [static::$baseDirectory . '/dump.sql', false],
-            [static::$baseDirectory . '/secondDump.sql', true],
+            ['dump.sql', false],
+            ['dumpWithGit.sql', true],
         ];
     }
 
@@ -118,7 +104,7 @@ class ImportDumpTest extends TestCase
     {
         return [
             [[], null],
-            [[static::$baseDirectory . '/emptyDump.sql'], static::$baseDirectory . '/emptyDump.sql'],
+            [['emptyDump.sql'], 'emptyDump.sql'],
         ];
     }
 
@@ -128,7 +114,7 @@ class ImportDumpTest extends TestCase
         $this->app->detectEnvironment(fn() => 'production');
 
         $this->expectException(InvalidEnvironmentException::class);
-        $this->protector->importDump($this->filePath);
+        $this->protector->import($this->fileName);
     }
 
     #[Test]
@@ -144,8 +130,8 @@ class ImportDumpTest extends TestCase
     {
         $path = 'thisFileDoesNotExist';
 
-        $this->expectException(FileNotFoundException::class);
-        $this->protector->importDump($path);
+        $this->expectException(FailedReadingFromDiskException::class);
+        $this->protector->import($path);
     }
 
     #[Test]
@@ -157,10 +143,7 @@ class ImportDumpTest extends TestCase
         Config::set(sprintf('database.connections.%s.host', $connection), 'protector.invalid');
 
         $this->expectException(FailedWipeException::class);
-        $this->protector->importDump($this->filePath);
-
-        $this->expectException(FailedImportException::class);
-        $this->protector->importDump($this->filePath, ['no-wipe' => true]);
+        $this->protector->import($this->fileName);
     }
 
     #[Test]
@@ -168,10 +151,10 @@ class ImportDumpTest extends TestCase
     public function canReturnLatestFileName(string $expectedFileName, bool $shouldModify): void
     {
         if ($shouldModify) {
-            touch($this->disk->path($expectedFileName), time() + 60);
+            touch($this->storageDisk->path($expectedFileName), time() + 60);
         }
 
-        $fileName = $this->protector->getLatestDumpName();
+        $fileName = $this->protector->latestDumpName();
 
         $this->assertEquals($expectedFileName, $fileName);
         $this->assertIsString($fileName);
@@ -180,32 +163,92 @@ class ImportDumpTest extends TestCase
     #[Test]
     public function throwsExceptionIfNoFileExists(): void
     {
-        $this->clearDumpDirectory();
-        $this->expectException(EmptyBaseDirectoryException::class);
-        $this->protector->getLatestDumpName();
+        DiskHelper::flushStorage();
+        $this->storageDisk->delete('legacyDump.sql');
+
+        $this->expectException(EmptyDumpDirectoryException::class);
+        $this->protector->latestDumpName();
     }
 
     #[Test]
     #[DataProvider('provideDumpMetadata')]
-    public function verifyDumpDateMetadata(string $filePath, array|bool $expectedMetadata): void
+    public function verifyDumpDateMetadata(string $fileName, array|bool $expectedMetadata): void
     {
-        $this->assertEquals($expectedMetadata, $this->protector->getDumpMetadata($filePath));
+        $this->localDisk->writeStream($fileName, $this->storageDisk->readStream($fileName));
+
+        $this->assertEquals($expectedMetadata, $this->runProtectedMethod('getDumpMetadata', [$fileName]));
     }
 
     #[Test]
     public function failGetDumpMetadataOnResponseHasNotEnoughLines(): void
     {
-        $this->assertFalse($this->protector->getDumpMetadata(static::$baseDirectory . '/emptyDump.sql'));
+        $dumpName = 'emptyDump.sql';
+        $this->localDisk->writeStream($dumpName, $this->storageDisk->readStream($dumpName));
+
+        $this->assertFalse($this->runProtectedMethod('getDumpMetadata', [$dumpName]));
     }
 
     #[Test]
     #[DataProvider('provideEmptyDumpsForFlushingDumps')]
-    public function flushDumps(array $expected, ?string $excludeFromFlush): void
+    public function flushStorage(array $expected, ?string $excludeFromFlush): void
     {
-        $this->protector->flush($excludeFromFlush);
+        $allFiles = DiskHelper::allStorageFiles();
+        DiskHelper::flushStorage(excludeFile: $excludeFromFlush);
 
-        $dumpsAfterFlushing = $this->protector->getDumpFiles()->toArray();
+        $dumpsAfterFlushing = $this->protector->dumpFiles()->toArray();
 
         $this->assertEquals($expected, $dumpsAfterFlushing);
+        $this->assertContains('legacyDump.sql', $allFiles);
+    }
+
+    #[Test]
+    public function importFromExplicitCustomDiskUsesGivenName(): void
+    {
+        $customDiskName = 'custom_import_disk';
+        $customRelativeName = 'dump.sql';
+
+        Config::set(sprintf('filesystems.disks.%s', $customDiskName), [
+            'driver' => 'local',
+            'root' => storage_path('framework/testing/disks/' . $customDiskName),
+            'throw' => true,
+        ]);
+
+        $customDisk = Storage::fake($customDiskName);
+        $customDisk->put($customRelativeName, file_get_contents(__DIR__ . '/../dumps/dump.sql'));
+
+        $this->protector->import($customRelativeName, $customDisk);
+
+        $this->assertTrue($customDisk->exists($customRelativeName));
+    }
+
+    #[Test]
+    public function dumpFilesWithMetadataUseUnknownConnectionWhenMetadataFileIsMissing(): void
+    {
+        $dumpFile = 'dump.sql';
+
+        $this->storageDisk->delete($this->diskHelper->metadataFileName($dumpFile));
+
+        $dumpFilesWithMetadata = $this->diskHelper->allStorageFilesWithMetadata();
+
+        $this->assertSame([], $dumpFilesWithMetadata->get($dumpFile));
+    }
+
+    #[Test]
+    public function dumpFilesWithMetadataPreferMetadataFilePayload(): void
+    {
+        $dumpFile = 'dump.sql';
+        $metadataFilePayload = [
+            'meta' => [
+                'database' => [
+                    'connection' => 'pgsql',
+                ],
+            ],
+        ];
+
+        $this->storageDisk->put($this->diskHelper->metadataFileName($dumpFile), json_encode($metadataFilePayload, JSON_UNESCAPED_UNICODE));
+
+        $dumpFilesWithMetadata = $this->protector->dumpFilesWithMetadata();
+
+        $this->assertEquals('pgsql', Arr::get($dumpFilesWithMetadata->get($dumpFile), 'meta.database.connection'));
     }
 }

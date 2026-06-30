@@ -29,7 +29,7 @@ class MetadataTest extends TestCase
 
         Carbon::setTestNow($dumpDate);
 
-        $metadata = $this->protector->getMetadata();
+        $metadata = $this->protector->metadata();
 
         $this->assertIsArray($metadata);
         $this->assertEquals($dumpDate, $metadata['database']['dumpedAtDate']);
@@ -61,7 +61,7 @@ class MetadataTest extends TestCase
         // Mocking does not work nicely with app()->makeWith()
         app()->offsetSet(GitMetadataProvider::class, $mock);
 
-        $this->assertArrayHasKey('git', $this->protector->getMetadata());
+        $this->assertArrayHasKey('git', $this->protector->metadata());
     }
 
     #[Test]
@@ -72,7 +72,7 @@ class MetadataTest extends TestCase
         // Mocking does not work nicely with app()->makeWith()
         app()->offsetSet(GitMetadataProvider::class, $mock);
 
-        $this->assertArrayNotHasKey('git', $this->protector->getMetadata());
+        $this->assertArrayNotHasKey('git', $this->protector->metadata());
     }
 
     #[Test]
@@ -81,7 +81,7 @@ class MetadataTest extends TestCase
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [GitMetadataProvider::class]);
         File::shouldReceive('exists')->with(base_path('.git'))->andReturn(true);
 
-        $this->assertArrayHasKey('git', $this->protector->getMetadata());
+        $this->assertArrayHasKey('git', $this->protector->metadata());
     }
 
     #[Test]
@@ -90,7 +90,7 @@ class MetadataTest extends TestCase
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [GitMetadataProvider::class]);
         File::shouldReceive('exists')->with(base_path('.git'))->andReturn(false);
 
-        $this->assertArrayNotHasKey('git', $this->protector->getMetadata());
+        $this->assertArrayNotHasKey('git', $this->protector->metadata());
     }
 
     #[Test]
@@ -99,8 +99,8 @@ class MetadataTest extends TestCase
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [EnvMetadataProvider::class]);
         Config::set(static::METADATA_ENV_VALUE_CONFIG_KEY, 'test metadata');
 
-        $this->assertArrayHasKey('env', $this->protector->getMetadata());
-        $this->assertEquals('test metadata', $this->protector->getMetadata()['env']);
+        $this->assertArrayHasKey('env', $this->protector->metadata());
+        $this->assertEquals('test metadata', $this->protector->metadata()['env']);
     }
 
     #[Test]
@@ -109,7 +109,7 @@ class MetadataTest extends TestCase
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [EnvMetadataProvider::class]);
         Config::set(static::METADATA_ENV_VALUE_CONFIG_KEY);
 
-        $this->assertArrayNotHasKey('env', $this->protector->getMetadata());
+        $this->assertArrayNotHasKey('env', $this->protector->metadata());
     }
 
     #[Test]
@@ -123,8 +123,8 @@ class MetadataTest extends TestCase
         File::shouldReceive('exists')->with($filePath)->andReturn(true);
         File::shouldReceive('get')->with($filePath)->andReturn(json_encode(['foo' => 'bar']));
 
-        $this->assertArrayHasKey('jsonFile', $this->protector->getMetadata());
-        $this->assertEquals(['foo' => 'bar'], $this->protector->getMetadata()['jsonFile']);
+        $this->assertArrayHasKey('jsonFile', $this->protector->metadata());
+        $this->assertEquals(['foo' => 'bar'], $this->protector->metadata()['jsonFile']);
     }
 
     #[Test]
@@ -137,7 +137,7 @@ class MetadataTest extends TestCase
 
         File::shouldReceive('exists')->with($filePath)->andReturn(false);
 
-        $this->assertArrayNotHasKey('jsonFile', $this->protector->getMetadata());
+        $this->assertArrayNotHasKey('jsonFile', $this->protector->metadata());
     }
 
     #[Test]
@@ -146,7 +146,7 @@ class MetadataTest extends TestCase
         $metadataProviders = [TestCustomFooMetadataProvider::class];
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, $metadataProviders);
 
-        $metadata = $this->protector->getMetadata();
+        $metadata = $this->protector->metadata();
 
         $this->assertArrayHasKey('custom', $metadata);
         $this->assertEquals($metadataProviders, $metadata['custom']['foo']);
@@ -160,7 +160,7 @@ class MetadataTest extends TestCase
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [TestCustomFooMetadataProvider::class, GitMetadataProvider::class]);
         File::shouldReceive('exists')->with(base_path('.git'))->andReturn(true);
 
-        $metadata = $this->protector->getMetadata();
+        $metadata = $this->protector->metadata();
 
         $this->assertArrayHasKey('database', $metadata);
         $this->assertArrayHasKey('custom', $metadata);
@@ -174,7 +174,7 @@ class MetadataTest extends TestCase
 
         Config::set(static::METADATA_PROVIDER_CONFIG_KEY, [File::class]);
 
-        $this->protector->getMetadata();
+        $this->protector->metadata();
     }
 
     #[Test]
@@ -185,10 +185,10 @@ class MetadataTest extends TestCase
         $fooMetadataProvider = app(TestCustomFooMetadataProvider::class);
         $barMetadataProvider = app(TestCustomBarMetadataProvider::class);
 
-        $this->assertArrayHasKey($fooMetadataProvider->getKey(), $this->protector->getMetadata());
-        $this->assertArrayHasKey($barMetadataProvider->getKey(), $this->protector->getMetadata());
-        $this->assertArrayHasKey('foo', $this->protector->getMetadata()[$fooMetadataProvider->getKey()]);
-        $this->assertArrayHasKey('bar', $this->protector->getMetadata()[$barMetadataProvider->getKey()]);
+        $this->assertArrayHasKey($fooMetadataProvider->getKey(), $this->protector->metadata());
+        $this->assertArrayHasKey($barMetadataProvider->getKey(), $this->protector->metadata());
+        $this->assertArrayHasKey('foo', $this->protector->metadata()[$fooMetadataProvider->getKey()]);
+        $this->assertArrayHasKey('bar', $this->protector->metadata()[$barMetadataProvider->getKey()]);
     }
 }
 

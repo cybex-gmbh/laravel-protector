@@ -5,9 +5,7 @@ namespace Cybex\Protector;
 use Cybex\Protector\Classes\Metadata\Providers\DatabaseMetadataProvider;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Exceptions\InvalidConnectionException;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
 use ReflectionClass;
 use ReflectionParameter;
 
@@ -50,22 +48,6 @@ class ProtectorConfig extends AbstractProtectorConfig implements ProtectorConfig
         }
     }
 
-    /** {@inheritDoc} */
-    public function getBaseDirectory(): string
-    {
-        return $this->getConfigValueForKey('dump.baseDirectory') ?? '';
-    }
-
-    /** {@inheritDoc} */
-    public function getDisk(): Filesystem
-    {
-        return Storage::disk($this->getDiskName());
-    }
-
-    public function getDiskName(): string
-    {
-        return $this->getConfigValueForKey('dump.diskName', config('filesystems.default'));
-    }
 
     /** {@inheritDoc} */
     public function getConnectionConfig(): array|false

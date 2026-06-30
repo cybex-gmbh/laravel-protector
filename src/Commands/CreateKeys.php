@@ -4,13 +4,13 @@ namespace Cybex\Protector\Commands;
 
 use Cybex\Protector\Contracts\CrypterContract;
 use Cybex\Protector\Enums\ProtectorEnv;
-use Illuminate\Console\Command;
+use function Laravel\Prompts\intro;
 
 /**
  * Class CreateKeys
  * @package Cybex\Protector\Commands;
  */
-class CreateKeys extends Command
+class CreateKeys extends AbstractCommand
 {
     /**
      * The name and signature of the console command.
@@ -26,22 +26,13 @@ class CreateKeys extends Command
      */
     protected $description = 'Creates public and private crypto keys.';
 
-    /**
-     * Execute the console command.
-     *
-     * @return void
-     */
-    public function handle(): void
+    protected function executeCommand(): int
     {
         $crypter = app(CrypterContract::class);
         $privateKey = $crypter->createPrivateKey();
         $publicKey = $crypter->getPublicKeyFromPrivateKey($privateKey);
 
-        $this->newLine();
-
-        $this->info('Successfully generated crypto key pair.');
-
-        $this->newLine();
+        intro('Successfully generated crypto key pair.');
 
         $this->comment('Send the public key to server admin so that it can be stored.');
         $this->comment('Add the private key to your .env file.');
@@ -52,5 +43,7 @@ class CreateKeys extends Command
         $this->info(sprintf('%s=%s', ProtectorEnv::PRIVATE_KEY->key(), $privateKey));
 
         $this->newLine();
+
+        return self::SUCCESS;
     }
 }
