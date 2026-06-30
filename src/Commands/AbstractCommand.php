@@ -44,16 +44,10 @@ abstract class AbstractCommand extends Command
     {
         $this->newLine();
 
-        $result = spin(
+        return spin(
             callback: $callback,
             message: $message
         );
-
-        if ($this->hasOption('migrate') && $this->option('migrate')) {
-            $this->newLine();
-        }
-
-        return $result;
     }
 
     abstract protected function executeCommand(): int;
