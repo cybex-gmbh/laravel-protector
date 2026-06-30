@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Storage;
 use Throwable;
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\info;
-use function Laravel\Prompts\spin;
 use function Laravel\Prompts\warning;
 
 class DownloadDump extends AbstractCommand
@@ -42,7 +41,7 @@ class DownloadDump extends AbstractCommand
         $shouldImport = $this->option('import') && $this->confirmImport();
         $targetDisk = $this->option('disk') ? Storage::disk($this->option('disk')) : DiskHelper::getStorageDisk();
 
-        $fileName = spin(
+        $fileName = $this->spinner(
             callback: fn() => $shouldImport
                 ? $this->protector->downloadAndImport(
                     targetFileName: $this->option('file'),

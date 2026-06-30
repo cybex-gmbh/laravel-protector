@@ -20,7 +20,6 @@ use function is_null;
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\select;
-use function Laravel\Prompts\spin;
 use function Laravel\Prompts\warning;
 
 /**
@@ -99,7 +98,7 @@ class ImportDump extends AbstractCommand
         $dumpName = DiskHelper::createLocalFileName();
 
         try {
-            spin(
+            $this->spinner(
                 callback: fn() => $this->protector->downloadAndImport(
                     targetFileName: $dumpName,
                     targetDisk: DiskHelper::getLocalDisk(),
@@ -177,7 +176,7 @@ class ImportDump extends AbstractCommand
      */
     protected function runImport(string $dumpName): void
     {
-        spin(
+        $this->spinner(
             callback: fn() => $this->protector->import(
                 sourceFilePath: $dumpName,
                 sourceDisk: $this->disk,

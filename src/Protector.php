@@ -150,7 +150,6 @@ class Protector
             $output = app()->runningInConsole() ? new ConsoleOutput() : null;
 
             Artisan::call('migrate', parameters: ['--force' => $allowProduction], outputBuffer: $output);
-            $output->write("\n");
         }
     }
 

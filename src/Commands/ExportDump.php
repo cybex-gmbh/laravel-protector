@@ -8,7 +8,6 @@ use Cybex\Protector\Facades\DiskHelperFacade as DiskHelper;
 use Cybex\Protector\Protector;
 use Illuminate\Support\Facades\Storage;
 use function Laravel\Prompts\info;
-use function Laravel\Prompts\spin;
 
 /**
  * Class ExportDump
@@ -46,7 +45,7 @@ class ExportDump extends AbstractCommand
 
         $targetDisk = $this->option('disk') ? Storage::disk($this->option('disk')) : DiskHelper::getStorageDisk();
 
-        spin(
+        $this->spinner(
             callback: fn() => $this->protector->export(targetFileName: $this->option('file'), targetDisk: $targetDisk, copy: !$this->option('no-copy')),
             message: 'Exporting dump...'
         );
