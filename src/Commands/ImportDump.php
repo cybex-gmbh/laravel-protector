@@ -100,7 +100,13 @@ class ImportDump extends AbstractCommand
 
         try {
             spin(
-                callback: fn() => $this->protector->downloadAndImport(targetFileName: $dumpName, targetDisk: DiskHelper::getLocalDisk()),
+                callback: fn() => $this->protector->downloadAndImport(
+                    targetFileName: $dumpName,
+                    targetDisk: DiskHelper::getLocalDisk(),
+                    wipeDb: !$this->option('no-wipe-db'),
+                    migrate: $this->option('migrate'),
+                    allowProduction: $this->option('allow-production'),
+                ),
                 message: 'Downloading and importing...'
             );
 
