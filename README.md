@@ -418,8 +418,12 @@ composer install
 Specific to the example app, for demo data:
 
 ```bash
-php artisan migrate --seed
+php artisan migrate:fresh --seed
 ```
+
+> [!NOTE]
+> The example app uses the same database as the Unit tests, which might pollute the DB with data.
+> For a reproducible environment, always run the above command before executing commands in the example app.
 
 ### Testing
 
