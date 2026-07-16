@@ -215,38 +215,49 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Flush Configuration
+    | Automatic Flush Configuration
     |--------------------------------------------------------------------------
     |
-    | Here you may configure the deletion of temporary files on the protector_local disk.
-    | All temporary Protector files which are older than 1 day will be deleted from the disk.
-    |
-    | Normally there should be no remnants of temporary files, but unexpected errors can cause temporary files to remain on the disk.
+    | Here you may configure the automatic deletion of files.
     |
     */
-    'flush' => [
+    'automatic_flush' => [
         /*
         |--------------------------------------------------------------------------
-        | Mode
+        | Protector Local Disk
         |--------------------------------------------------------------------------
         |
-        | Here you may configure the flush mode. There are two modes available:
-        | - sync: Will run synchronously everytime a local file is deleted. May impact performance.
-        | - scheduled: Will schedule the protector:flush-local command according to the cron configuration below.
-        |   This will run in the background, but will require you to run the Laravel Scheduler https://laravel.com/docs/master/scheduling#running-the-scheduler.
+        | Here you may configure the deletion of temporary files on the protector_local disk.
+        | All temporary Protector files which are older than 1 day will be deleted from the disk.
+        |
+        | Normally there should be no remnants of temporary files, but unexpected errors can cause temporary files to remain on the disk.
+        |
         */
-        'mode' => ProtectorEnv::FLUSH_MODE->get(default: FlushMode::SYNC->value),
+        'local' => [
+            /*
+            |--------------------------------------------------------------------------
+            | Mode
+            |--------------------------------------------------------------------------
+            |
+            | Here you may configure the flush mode. There are two modes available:
+            | - sync: Will run synchronously everytime a local file is deleted. May impact performance.
+            | - schedule: Will schedule the protector:flush-local command according to the cron configuration below.
+            |   This will run in the background, but will require you to run the Laravel Scheduler https://laravel.com/docs/master/scheduling#running-the-scheduler.
+            */
+            'mode' => ProtectorEnv::FLUSH_LOCAL_MODE->get(default: FlushMode::SYNC->value),
 
-        /*
-        |--------------------------------------------------------------------------
-        | Cron
-        |--------------------------------------------------------------------------
-        |
-        | Only applicable when in 'schedule' mode.
-        | Here you may configure how often the cleanup command will be scheduled.
-        | Default is '0 0 * * *' for running every day at midnight.
-        |
-        */
-        'cron' => ProtectorEnv::FLUSH_CRON->get(default: '* * * * *'),
+            /*
+            |--------------------------------------------------------------------------
+            | Cron
+            |--------------------------------------------------------------------------
+            |
+            | Only applicable when in 'schedule' mode.
+            |
+            | Here you may configure how often the cleanup command will be scheduled.
+            | Default is '0 0 * * *' for running every day at midnight.
+            |
+            */
+            'cron' => ProtectorEnv::FLUSH_LOCAL_CRON->get(default: '0 0 * * *'),
+        ]
     ]
 ];

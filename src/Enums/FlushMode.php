@@ -9,12 +9,12 @@ enum FlushMode: string
 
     public static function getConfiguredMode(): FlushMode
     {
-        return FlushMode::from(config('protector.flush.mode'));
+        return FlushMode::from(config('protector.automatic_flush.local.mode'));
     }
 
     public static function getConfiguredCron(): string
     {
-        return config('protector.flush.cron');
+        return config('protector.automatic_flush.local.cron');
     }
 
     public function shouldSchedule(): bool

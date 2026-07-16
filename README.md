@@ -403,10 +403,10 @@ Due to this running synchronously, performance might be impacted.
 To run this asynchronously instead, you can set
 
 ```env
-PROTECTOR_FLUSH_MODE=schedule
+PROTECTOR_FLUSH_LOCAL_MODE=schedule
 ```
 
-This will schedule the deletion based on a cron expression defined with `PROTECTOR_FLUSH_CRON`, which defaults to `0 0 * * *` (every day at midnight).
+This will schedule the deletion based on a cron expression defined with `PROTECTOR_FLUSH_LOCAL_CRON`, which defaults to `0 0 * * *` (every day at midnight).
 
 > [!NOTE]
 > You need to run the [Laravel Scheduler](https://laravel.com/docs/master/scheduling#running-the-scheduler) for this.
