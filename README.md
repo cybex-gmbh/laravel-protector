@@ -288,7 +288,7 @@ php artisan protector:download --file='custom_filename.sql' --disk='custom_disk'
 ```
 
 If you want to delete all files on the Protector storage disk except the newly stored dump, use the `--flush-storage` option.
-Flushing will only delete files with existing `.meta` files, and will not delete files in directories.
+Flushing will only delete files with existing `.meta` files, and will not delete files in subdirectories of the storage disk.
 
 ```bash
 php artisan protector:download --flush-storage

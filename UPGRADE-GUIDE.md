@@ -63,7 +63,7 @@ Configuration
   If you previously relied on setting .env key names,
   you will now have to set the values directly instead.
 
-API
+Usage
 
 - Some command options have been removed or have been renamed.
 - Some methods throw different or more detailed exceptions.
@@ -189,7 +189,7 @@ The .env keys have changed to be consistent with the config keys:
     - Use `--file` instead
 - The `--file` option behaves differently
     - Absolute paths are no longer supported
-    - It will now only accept paths relative to the Protector storage disk or a disk passed with `--disk`
+    - It will now only accept file paths in the storage disk, or a disk passed with `--disk`
 - The `--i|ignore-connection-filter` option has been removed
     - There is no replacement as of now. This is only relevant for interactive importing.
 - The `--flush` option has been removed. The dump file will now always be deleted after importing
