@@ -253,7 +253,7 @@ return [
             |
             | Only applicable when in 'schedule' mode.
             |
-            | Here you may configure how often the cleanup command will be scheduled.
+            | Here you may configure how often the flush command will be scheduled.
             | Default is '0 0 * * *' for running every day at midnight.
             |
             */

@@ -34,7 +34,7 @@ Configuration
 
 Commands
 
-- Importing remote dumps using `protector:import` will now clean up downloaded files after importing.
+- Importing remote dumps using `protector:import` will now delete downloaded files after importing.
 - Various command options have been removed or renamed
 - Reformatted the output of the `protector:keys` and `protector:token` commands to easier spot relevant information.
 
@@ -56,7 +56,7 @@ API
   for all configuration options.
 - The `Protector` now fully operates on Laravel disks, which can be configured separately.
   The `protector_local` disk is used for temporary files, while the `protector_storage` disk is used for storing dumps and metadata files.
-- The `protector:import` command will now clean up downloaded files after importing.
+- The `protector:import` command will now delete downloaded files after importing.
 - A new `protector:download` command was added, which allows downloading dumps to a configured storage disk with optional import.
 - The `protector:import`, `protector:export` and `protector:download` commands and their corresponding methods
   now support an optional `--disk` option to specify the disk to use for the operation.
