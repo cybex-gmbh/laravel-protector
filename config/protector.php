@@ -7,6 +7,10 @@ use Cybex\Protector\Classes\Metadata\Providers\ProtectorMetadataProvider;
 use Cybex\Protector\Enums\FlushMode;
 use Cybex\Protector\Enums\ProtectorEnv;
 
+/**
+ *  All config values using {@link ProtectorEnv} can be set via .env keys.
+ *  Take a look at the {@link ProtectorEnv} enum for all available .env keys.
+ */
 return [
     /*
     |--------------------------------------------------------------------------
