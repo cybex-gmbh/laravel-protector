@@ -22,7 +22,7 @@ class CleanupLocalCommandTest extends TestCase
             $this->localDisk->assertExists($file);
         }
 
-        $this->artisan('protector:flush-local');
+        $this->artisan('protector:cleanup-local');
 
         $this->assertEqualsCanonicalizing($remainingFiles, $this->localDisk->files());
     }
@@ -33,7 +33,7 @@ class CleanupLocalCommandTest extends TestCase
         Config::set('protector.cleanup.local_disk.mode', ExecutionMode::SYNC->value);
         $diskHelper = DiskHelperFacade::partialMock();
 
-        $diskHelper->shouldReceive('flushOldLocalFiles')->once();
+        $diskHelper->shouldReceive('cleanupOldLocalFiles')->once();
         $diskHelper->deleteLocalFile('');
     }
 
@@ -43,7 +43,7 @@ class CleanupLocalCommandTest extends TestCase
         Config::set('protector.cleanup.local_disk.mode', ExecutionMode::SCHEDULE->value);
         $diskHelper = DiskHelperFacade::partialMock();
 
-        $diskHelper->shouldReceive('flushOldLocalFiles')->never();
+        $diskHelper->shouldReceive('cleanupOldLocalFiles')->never();
         $diskHelper->deleteLocalFile('');
     }
 

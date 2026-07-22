@@ -12,7 +12,7 @@ class CleanupStorageCommandTest extends TestCase
     {
         $this->assertContains('dump.sql', $this->storageDisk->files());
 
-        $this->artisan('protector:flush-storage');
+        $this->artisan('protector:cleanup-storage');
 
         $this->assertEquals(['legacyDump.sql'], $this->storageDisk->files());
     }

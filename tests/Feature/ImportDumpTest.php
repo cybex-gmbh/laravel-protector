@@ -100,7 +100,7 @@ class ImportDumpTest extends TestCase
         ];
     }
 
-    public static function provideEmptyDumpsForFlushingDumps(): array
+    public static function provideEmptyDumpsForCleaningUpDumps(): array
     {
         return [
             [[], null],
@@ -163,7 +163,7 @@ class ImportDumpTest extends TestCase
     #[Test]
     public function throwsExceptionIfNoFileExists(): void
     {
-        DiskHelper::flushStorage();
+        DiskHelper::cleanupStorage();
         $this->storageDisk->delete('legacyDump.sql');
 
         $this->expectException(EmptyDumpDirectoryException::class);
@@ -189,15 +189,15 @@ class ImportDumpTest extends TestCase
     }
 
     #[Test]
-    #[DataProvider('provideEmptyDumpsForFlushingDumps')]
-    public function flushStorage(array $expected, ?string $excludeFromFlush): void
+    #[DataProvider('provideEmptyDumpsForCleaningUpDumps')]
+    public function cleanupStorage(array $expected, ?string $excludeFromCleanup): void
     {
         $allFiles = DiskHelper::allStorageFiles();
-        DiskHelper::flushStorage(excludeFile: $excludeFromFlush);
+        DiskHelper::cleanupStorage(excludeFile: $excludeFromCleanup);
 
-        $dumpsAfterFlushing = $this->protector->dumpFiles()->toArray();
+        $dumpsAfterCleanup = $this->protector->dumpFiles()->toArray();
 
-        $this->assertEquals($expected, $dumpsAfterFlushing);
+        $this->assertEquals($expected, $dumpsAfterCleanup);
         $this->assertContains('legacyDump.sql', $allFiles);
     }
 

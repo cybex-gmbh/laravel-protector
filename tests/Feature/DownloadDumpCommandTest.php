@@ -76,7 +76,7 @@ class DownloadDumpCommandTest extends TestCase
     }
 
     #[Test]
-    public function flushRunsAfterImportAndIsSkippedWhenImportFails(): void
+    public function cleanupRunsAfterImportAndIsSkippedWhenImportFails(): void
     {
         $existingDumpPath = 'existing_dump.sql';
         $existingMetadataPath = $this->diskHelper->metadataFileName($existingDumpPath);
@@ -97,7 +97,7 @@ class DownloadDumpCommandTest extends TestCase
         $this->expectException(FailedImportException::class);
 
         try {
-            $this->artisan('protector:download --import --force --flush-storage');
+            $this->artisan('protector:download --import --force --cleanup-storage');
         } finally {
             $this->assertTrue($this->storageDisk->exists($existingDumpPath));
             $this->assertTrue($this->storageDisk->exists($existingMetadataPath));

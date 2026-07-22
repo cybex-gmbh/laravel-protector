@@ -287,11 +287,11 @@ To store the dump on a different disk with a specific file name:
 php artisan protector:download --file='custom_filename.sql' --disk='custom_disk'
 ```
 
-If you want to delete all files on the Protector storage disk except the newly stored dump, use the `--flush-storage` option.
-Flushing will only delete files with existing `.meta` files, and will not delete files in subdirectories of the storage disk.
+If you want to delete all files on the Protector storage disk except the newly stored dump, use the `--cleanup-storage` option.
+The cleanup will only delete files with existing `.meta` files, and will not delete files in subdirectories of the storage disk.
 
 ```bash
-php artisan protector:download --flush-storage
+php artisan protector:download --cleanup-storage
 ```
 
 For more information on the available options:
@@ -414,7 +414,7 @@ This will schedule the deletion based on a cron expression defined with `CLEANUP
 To manually delete all temporary files older than 1 day on the `protector_local` disk:
 
 ```bash
-php artisan protector:flush-local
+php artisan protector:cleanup-local
 ```
 
 #### protector_storage
@@ -422,13 +422,13 @@ php artisan protector:flush-local
 Either use the dedicated command
 
 ```bash
-php artisan protector:flush-storage
+php artisan protector:cleanup-storage
 ```
 
-or flush when downloading a new dump
+or cleanup when downloading a new dump
 
 ```bash
-php artisan protector:download --flush-storage
+php artisan protector:download --cleanup-storage
 ```
 
 ## Development

@@ -193,8 +193,8 @@ The .env keys have changed to be consistent with the config keys:
 - The `--i|ignore-connection-filter` option has been removed
     - There is no replacement as of now. This is only relevant for interactive importing.
 - The `--flush` option has been removed. The dump file will now always be deleted after importing
-    - If you need the old behaviour, use `php artisan protector:download --import --flush-storage` instead
-    - The new `--flush-storage` will only delete files which have a corresponding `.meta` file, and will not delete files inside directories
+    - If you need the old behaviour, use `php artisan protector:download --import --cleanup-storage` instead
+    - The new `--cleanup-storage` will only delete files which have a corresponding `.meta` file, and will not delete files inside directories
 - The `--no-wipe` option has been renamed and can no longer be called with `-w`
     - Use `--no-wipe-db` instead
 

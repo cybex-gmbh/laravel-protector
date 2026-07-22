@@ -45,7 +45,7 @@ return [
         |
         | Here you may configure the cleanup mode. There are two modes available:
         | - sync: Will run synchronously everytime a local file is deleted. May impact performance.
-        | - schedule: Will schedule the protector:flush-local command according to the cron expression below.
+        | - schedule: Will schedule the protector:cleanup-local command according to the cron expression below.
         |   This will run in the background, but will require you to run the Laravel Scheduler https://laravel.com/docs/master/scheduling#running-the-scheduler.
         */
         'mode' => ProtectorEnv::CLEANUP_LOCAL_DISK_MODE->get(default: ExecutionMode::SYNC->value),
@@ -57,7 +57,7 @@ return [
         |
         | Only applicable when in 'schedule' mode.
         |
-        | Here you may configure a cron expression for how often the flush command will be scheduled.
+        | Here you may configure a cron expression for how often the cleanup command will be scheduled.
         | Default is '0 0 * * *' for running every day at midnight.
         |
         */

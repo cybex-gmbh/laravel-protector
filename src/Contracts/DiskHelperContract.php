@@ -66,7 +66,7 @@ interface DiskHelperContract
 
     /**
      * This will delete a dump file including its .meta file on the local disk.
-     * Additionally, if the flush mode is set to sync, it will delete temporary files older than 1 day.
+     * Additionally, if the cleanup execution mode is set to sync, it will delete temporary files older than 1 day.
      */
     public function deleteLocalFile(string $name): void;
 
@@ -81,12 +81,12 @@ interface DiskHelperContract
      *
      * @param string|null $excludeFile The relative file path on the storage disk to exclude from deletion.
      */
-    public function flushStorage(?string $excludeFile = null): void;
+    public function cleanupStorage(?string $excludeFile = null): void;
 
     /**
      * Deletes all files on the protector_local disk which are older than 1 day.
      */
-    public function flushOldLocalFiles(): void;
+    public function cleanupOldLocalFiles(): void;
 
     public function createLocalFileName(): string;
 

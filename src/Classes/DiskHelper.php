@@ -206,7 +206,7 @@ class DiskHelper implements DiskHelperContract
     /**
      * @inheritDoc
      */
-    public function flushStorage(?string $excludeFile = null): void
+    public function cleanupStorage(?string $excludeFile = null): void
     {
         $this->deleteDumpAndMetaFiles(
             names: $this->dumpFiles(excludeFile: $excludeFile),
@@ -216,7 +216,7 @@ class DiskHelper implements DiskHelperContract
     /**
      * @inheritDoc
      */
-    public function flushOldLocalFiles(): void
+    public function cleanupOldLocalFiles(): void
     {
         $filesToDelete = collect($this->filesystem->files($this->getLocalDisk()->path('')))
             ->filter($this->isLocalTempFile(...))

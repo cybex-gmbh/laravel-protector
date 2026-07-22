@@ -5,7 +5,7 @@ namespace Cybex\Protector\Commands;
 use Cybex\Protector\Facades\DiskHelperFacade as DiskHelper;
 
 /**
- * Class FlushStorage
+ * Class CleanupLocal
  *
  * @package Cybex\Protector\Commands;
  */
@@ -16,7 +16,7 @@ class CleanupLocal extends AbstractCommand
      *
      * @var string
      */
-    protected $signature = 'protector:flush-local';
+    protected $signature = 'protector:cleanup-local';
 
     /**
      * The console command description.
@@ -27,7 +27,7 @@ class CleanupLocal extends AbstractCommand
 
     protected function executeCommand(): int
     {
-        DiskHelper::flushOldLocalFiles();
+        DiskHelper::cleanupOldLocalFiles();
 
         return self::SUCCESS;
     }

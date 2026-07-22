@@ -135,7 +135,7 @@ class ImportDumpCommandTest extends TestCase
     #[Test]
     public function failChooseImportDumpOnNoFilesInDumpDirectory(): void
     {
-        DiskHelper::flushStorage();
+        DiskHelper::cleanupStorage();
         $this->storageDisk->delete('legacyDump.sql');
 
         $this->expectException(EmptyDumpDirectoryException::class);
@@ -148,7 +148,7 @@ class ImportDumpCommandTest extends TestCase
     #[Test]
     public function chooseImportDumpWithOnlyOneFileInDumpDirectory(): void
     {
-        DiskHelper::flushStorage(excludeFile: 'dump.sql');
+        DiskHelper::cleanupStorage(excludeFile: 'dump.sql');
         $this->storageDisk->delete('legacyDump.sql');
 
         $this->assertCount(1, $this->protector->dumpFiles());
