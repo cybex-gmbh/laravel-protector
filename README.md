@@ -90,7 +90,7 @@ composer require cybex/laravel-protector
 
 Almost all config options can be set via environment variables. Take a look at the [ProtectorEnv](src/Enums/ProtectorEnv.php) class for all available options.
 
-You can optionally publish the Protector config to have more fine-grained control over config settings:
+You can optionally publish the Protector config files to have more fine-grained control over config settings:
 
 ```bash
 php artisan vendor:publish --tag=protector.config
@@ -306,7 +306,7 @@ Like the import and export commands, a `--force` option is available to bypass u
 
 ### Protector instances
 
-The `protector.php` config file sets initial settings for the `Protector` instance.
+The Protector config files set initial settings for the `Protector` instance.
 
 Generally, you should keep the `Protector` singleton instance as is.
 To create a new instance with different settings, use the `ProtectorConfigurator` class.
@@ -349,7 +349,7 @@ You could for example use S3 for the storage disk.
 
 ### Dump metadata
 
-Customize the metadata appended to a dump by adding providers to the `dump.metadata.providers` array in your `config/protector.php` file:
+Customize the metadata appended to a dump by adding providers to the `metadata.providers` array in your `config/protector/dump.php` file:
 
 ```php
 'providers' => [
@@ -387,7 +387,7 @@ Available metadata providers:
 >       '{gitRepo: $repo, gitBranch: $branch, gitRevision: $revision, buildDate: $buildDate}' > protector_metadata.json
 > ```
 
-### Flushing Protector disks
+### Cleanup of Protector disks
 
 #### protector_local
 
@@ -403,10 +403,10 @@ Due to this running synchronously, performance might be impacted.
 To run this asynchronously instead, you can set
 
 ```env
-PROTECTOR_FLUSH_LOCAL_MODE=schedule
+CLEANUP_LOCAL_DISK_MODE=schedule
 ```
 
-This will schedule the deletion based on a cron expression defined with `PROTECTOR_FLUSH_LOCAL_CRON`, which defaults to `0 0 * * *` (every day at midnight).
+This will schedule the deletion based on a cron expression defined with `CLEANUP_LOCAL_DISK_SCHEDULE`, which defaults to `0 0 * * *` (every day at midnight).
 
 > [!NOTE]
 > You need to run the [Laravel Scheduler](https://laravel.com/docs/master/scheduling#running-the-scheduler) for this.

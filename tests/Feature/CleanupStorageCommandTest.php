@@ -5,7 +5,7 @@ namespace Cybex\Protector\Tests\Feature;
 use Cybex\Protector\Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 
-class FlushStorageCommandTest extends TestCase
+class CleanupStorageCommandTest extends TestCase
 {
     #[Test]
     public function deletesAllValidFiles(): void

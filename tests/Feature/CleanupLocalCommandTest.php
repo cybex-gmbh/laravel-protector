@@ -2,14 +2,14 @@
 
 namespace Cybex\Protector\Tests\Feature;
 
-use Cybex\Protector\Enums\FlushMode;
+use Cybex\Protector\Enums\ExecutionMode;
 use Cybex\Protector\Facades\DiskHelperFacade;
 use Cybex\Protector\Tests\TestCase;
 use Illuminate\Support\Facades\Config;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 
-class FlushLocalCommandTest extends TestCase
+class CleanupLocalCommandTest extends TestCase
 {
     #[Test]
     #[DataProvider('provideFilesWithTimestamps')]
@@ -30,7 +30,7 @@ class FlushLocalCommandTest extends TestCase
     #[Test]
     public function ensureDeletedInSyncWhenEnabled(): void
     {
-        Config::set('protector.automatic_flush.local.mode', FlushMode::SYNC->value);
+        Config::set('protector.cleanup.local_disk.mode', ExecutionMode::SYNC->value);
         $diskHelper = DiskHelperFacade::partialMock();
 
         $diskHelper->shouldReceive('flushOldLocalFiles')->once();
@@ -40,7 +40,7 @@ class FlushLocalCommandTest extends TestCase
     #[Test]
     public function ensureNotDeletedInSyncWhenDisabled(): void
     {
-        Config::set('protector.automatic_flush.local.mode', FlushMode::SCHEDULE->value);
+        Config::set('protector.cleanup.local_disk.mode', ExecutionMode::SCHEDULE->value);
         $diskHelper = DiskHelperFacade::partialMock();
 
         $diskHelper->shouldReceive('flushOldLocalFiles')->never();

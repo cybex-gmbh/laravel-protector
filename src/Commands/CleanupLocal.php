@@ -9,25 +9,25 @@ use Cybex\Protector\Facades\DiskHelperFacade as DiskHelper;
  *
  * @package Cybex\Protector\Commands;
  */
-class FlushStorage extends AbstractCommand
+class CleanupLocal extends AbstractCommand
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'protector:flush-storage';
+    protected $signature = 'protector:flush-local';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Deletes all files on the protector_storage disk which have a corresponding .meta file.';
+    protected $description = 'Deletes all of the Protector\'s temporary files on the protector_local disk which are older than 1 day.';
 
     protected function executeCommand(): int
     {
-        DiskHelper::flushStorage();
+        DiskHelper::flushOldLocalFiles();
 
         return self::SUCCESS;
     }
