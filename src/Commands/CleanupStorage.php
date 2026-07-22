@@ -3,6 +3,7 @@
 namespace Cybex\Protector\Commands;
 
 use Cybex\Protector\Facades\DiskHelperFacade as DiskHelper;
+use function Laravel\Prompts\info;
 
 /**
  * Class CleanupStorage
@@ -28,6 +29,8 @@ class CleanupStorage extends AbstractCommand
     protected function executeCommand(): int
     {
         DiskHelper::cleanupStorage();
+
+        info('Success!');
 
         return self::SUCCESS;
     }

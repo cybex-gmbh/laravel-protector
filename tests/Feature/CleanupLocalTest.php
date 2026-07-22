@@ -2,6 +2,7 @@
 
 namespace Cybex\Protector\Tests\Feature;
 
+use Cybex\Protector\Commands\CleanupLocal;
 use Cybex\Protector\Enums\ExecutionMode;
 use Cybex\Protector\Facades\DiskHelperFacade;
 use Cybex\Protector\Tests\TestCase;
@@ -9,7 +10,7 @@ use Illuminate\Support\Facades\Config;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 
-class CleanupLocalCommandTest extends TestCase
+class CleanupLocalTest extends TestCase
 {
     #[Test]
     #[DataProvider('provideFilesWithTimestamps')]
@@ -22,7 +23,7 @@ class CleanupLocalCommandTest extends TestCase
             $this->localDisk->assertExists($file);
         }
 
-        $this->artisan('protector:cleanup-local');
+        $this->artisan(CleanupLocal::class);
 
         $this->assertEqualsCanonicalizing($remainingFiles, $this->localDisk->files());
     }

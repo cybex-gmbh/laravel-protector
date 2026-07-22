@@ -23,24 +23,23 @@ enum ExecutionMode: string
         };
     }
 
-    public function execute(string $commandClass, ?string $schedule = null): void
+    public function execute(string $invokable, ?string $schedule = null): void
     {
         match ($this) {
-            self::SYNC => $this->executeSync($commandClass),
-            self::SCHEDULE => $this->executeSchedule($commandClass, $schedule)
+            self::SYNC => $this->executeSync($invokable),
+            self::SCHEDULE => $this->executeSchedule($invokable, $schedule)
         };
     }
 
-    protected function executeSync(string $command): void
+    protected function executeSync(string $invokable): void
     {
-        Artisan::call($command);
+        app()->call($invokable);
     }
 
-    protected function executeSchedule(string $command, string $schedule): void
+    protected function executeSchedule(string $invokable, string $schedule): void
     {
         Artisan::resolveConsoleSchedule()
-            ->command($command)
-            ->cron($schedule)
-            ->runInBackground();
+            ->call($invokable)
+            ->cron($schedule);
     }
 }

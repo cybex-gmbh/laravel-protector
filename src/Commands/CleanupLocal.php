@@ -2,7 +2,8 @@
 
 namespace Cybex\Protector\Commands;
 
-use Cybex\Protector\Facades\DiskHelperFacade as DiskHelper;
+use Cybex\Protector\Classes\Cleanup\CleanupLocalInvokable;
+use function Laravel\Prompts\info;
 
 /**
  * Class CleanupLocal
@@ -27,7 +28,9 @@ class CleanupLocal extends AbstractCommand
 
     protected function executeCommand(): int
     {
-        DiskHelper::cleanupOldLocalFiles();
+        app()->call(CleanupLocalInvokable::class);
+
+        info('Success!');
 
         return self::SUCCESS;
     }

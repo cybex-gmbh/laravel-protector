@@ -191,7 +191,7 @@ class DiskHelper implements DiskHelperContract
 
         $mode = ExecutionMode::fromConfig();
         if (!$mode->shouldSchedule()) {
-            $mode->execute(config('protector.cleanup.local_disk.command'));
+            $mode->execute(config('protector.cleanup.local_disk.invokable'));
         }
     }
 
