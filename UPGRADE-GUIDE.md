@@ -6,8 +6,8 @@
 - [GitHub diff](https://github.com/cybex-gmbh/laravel-protector/compare/v3.2.1...v4.0.0)
 
 > [!IMPORTANT]
-> The `protector.php` config structure and keys have changed.
-> If you have previously published the config file, you need to re-publish it and adjust the configuration accordingly.
+> The `protector.php` config structure and keys have changed. The config file has been split into multiple files.
+> If you have previously published the config file, you need to re-publish and adjust the configuration files accordingly.
 >
 > `.env` keys have changed, check the [ProtectorEnv](src/Enums/ProtectorEnv.php) enum for all keys.
 
@@ -110,9 +110,10 @@ Migrate to MariaDB or PostgreSQL to continue receiving updates and support.
 >
 > Impact: App will crash, published `protector.php` config files will no longer work
 
+The `protector.php` config file has been split into multiple files.
 Config keys have been renamed or removed.
 If you have previously published the config file,
-you need to re-publish it and adjust the configuration accordingly.
+you need to re-publish and adjust the configuration files accordingly.
 
 | Old                                      | New                                          |
 |------------------------------------------|----------------------------------------------|

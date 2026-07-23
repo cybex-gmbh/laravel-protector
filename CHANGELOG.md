@@ -20,6 +20,7 @@ System
 
 Configuration
 
+- The configuration file has been split into multiple files.
 - Config keys and `.env` keys have been renamed and restructured.
 - Disk handling has been extended and is now configured via the `filesystems.php` config file.
 - Restructured the `Protector` class by splitting it into `Protector` and `ProtectorConfig`. Configuration can no longer be accessed after the `Protector` instance has been
