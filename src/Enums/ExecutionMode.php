@@ -2,7 +2,7 @@
 
 namespace Cybex\Protector\Enums;
 
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
 enum ExecutionMode: string
 {
@@ -38,8 +38,6 @@ enum ExecutionMode: string
 
     protected function executeSchedule(string $invokable, string $schedule): void
     {
-        Artisan::resolveConsoleSchedule()
-            ->call($invokable)
-            ->cron($schedule);
+        Schedule::call($invokable)->cron($schedule);
     }
 }

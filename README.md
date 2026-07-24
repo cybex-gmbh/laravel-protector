@@ -51,8 +51,8 @@ This package allows you to download, export and import your application's databa
 
 The Protector always operates on two local disks, which can be configured separately:
 
-All operations that require file handling, such as creating or importing a database dump,
-will create a local copy on the `protector_local` disk for processing, and delete it afterwards.
+All operations that require file handling, such as creating or importing a database dump, will create a local copy on the `protector_local` disk for processing, and delete it
+afterwards.
 
 See the [Configuration](#disks-1) section for more details on disk configuration.
 
@@ -65,13 +65,13 @@ Protector supports the following databases:
 | MariaDB    | `mariadb` | `mariadb-dump` | `mariadb`   |
 | PostgreSQL | `pgsql`   | `pg_dump`      | `psql`      |
 
-MySQL is no longer officially supported, but the Protector still has capabilities to work with Laravel's `mysql` driver.
-If this should break in the future, feel free to submit a PR.
+MySQL is no longer officially supported, but the Protector still has capabilities to work with Laravel's `mysql` driver. If this should break in the future, feel free to submit a
+PR.
 
 > [!NOTE]
 > - Source and destination databases are not validated. Make sure you run compatible software versions to prevent issues.
-> - Because of different dump formats, dumps will not able to be imported into a different database engine,
-    e.g. a MariaDB dump will fail to be imported into PostgreSQL, and vice versa.
+> - Because of different dump formats, dumps will not able to be imported into a different database engine, e.g. a MariaDB dump will fail to be imported into PostgreSQL, and vice
+    versa.
 
 ## Setup
 
@@ -106,8 +106,8 @@ See the [Usage](#usage) section for how to export your local database to a file 
 
 ### Importing or storing the database of a remote server
 
-This package can run on both servers and client machines of the same software repository.
-You set up authorized developers on the server and give them the key for their local machine.
+This package can run on both servers and client machines of the same software repository. You set up authorized developers on the server and give them the key for their local
+machine.
 
 In your User model class, add the following trait:
 
@@ -182,8 +182,7 @@ The developer can then download and import the server database on their own.
 
 ### Setup for collecting backups from multiple servers
 
-You can develop a custom client that can access and store remote server backups.
-The servers can be different Laravel projects that have the Protector package installed.
+You can develop a custom client that can access and store remote server backups. The servers can be different Laravel projects that have the Protector package installed.
 
 See the previous chapter on how to give your backup client access to all servers.
 
@@ -195,11 +194,11 @@ See the previous chapter on how to give your backup client access to all servers
 
 ### General information
 
-Each stored dump also has a matching metadata file with the `.meta` suffix (for example `dump.sql.meta`).
-The metadata file stores the same metadata object that is embedded in the SQL dump footer under `meta`.
+Each stored dump also has a matching metadata file with the `.meta` suffix (for example `dump.sql.meta`). The metadata file stores the same metadata object that is embedded in the
+SQL dump footer under `meta`.
 
-Interactive import reads metadata from these metadata files to prevent downloading the whole dump file.
-If a metadata file is missing, the dump can still be selected, and the import command will group it as an unknown connection.
+Interactive import reads metadata from these metadata files to prevent downloading the whole dump file. If a metadata file is missing, the dump can still be selected, and the
+import command will group it as an unknown connection.
 
 ### Export
 
@@ -241,8 +240,7 @@ To import a specific dump file (optionally on a specific disk):
 php artisan protector:import --file='custom_filename.sql' --disk='custom_disk'
 ```
 
-You could also automate this similar to the export command,
-for this you want to use the `--force` option to bypass user interaction.
+You could also automate this similar to the export command, for this you want to use the `--force` option to bypass user interaction.
 
 For example, to import the latest dump without interaction and migrate afterwards:
 
@@ -287,8 +285,8 @@ To store the dump on a different disk with a specific file name:
 php artisan protector:download --file='custom_filename.sql' --disk='custom_disk'
 ```
 
-If you want to delete all files on the Protector storage disk except the newly stored dump, use the `--cleanup-storage` option.
-The cleanup will only delete files with existing `.meta` files, and will not delete files in subdirectories of the storage disk.
+If you want to delete all files on the Protector storage disk except the newly stored dump, use the `--cleanup-storage` option. The cleanup will only delete files with existing
+`.meta` files, and will not delete files in subdirectories of the storage disk.
 
 ```bash
 php artisan protector:download --cleanup-storage
@@ -308,9 +306,8 @@ Like the import and export commands, a `--force` option is available to bypass u
 
 The Protector config files set initial settings for the `Protector` instance.
 
-Generally, you should keep the `Protector` singleton instance as is.
-To create a new instance with different settings, use the `ProtectorConfigurator` class.
-For all available configuration options, take a look at the [ProtectorConfiguratorContract](src/Contracts/ProtectorConfiguratorContract.php).
+Generally, you should keep the `Protector` singleton instance as is. To create a new instance with different settings, use the `ProtectorConfigurator` class. For all available
+configuration options, take a look at the [ProtectorConfiguratorContract](src/Contracts/ProtectorConfiguratorContract.php).
 
 For example, to configure a specific auth token and dump endpoint URL:
 
@@ -391,11 +388,9 @@ Available metadata providers:
 
 #### protector_local
 
-Normally there should be no remnants of temporary files.
-In case of unexpected errors, such as when the PHP process is killed, temporary files might remain on the disk.
+Normally there should be no remnants of temporary files. In case of unexpected errors, such as when the PHP process is killed, temporary files might remain on the disk.
 
-The Protector will automatically delete these files on every operation involving the local disk.
-Due to this running synchronously, performance might be impacted.
+The Protector will automatically delete these files on every operation involving the local disk. Due to this running synchronously, performance might be impacted.
 
 > [!NOTE]
 > Only files older than 1 day will be deleted, to prevent deleting files that are currently being processed.
@@ -403,10 +398,10 @@ Due to this running synchronously, performance might be impacted.
 To run this asynchronously instead, you can set
 
 ```env
-CLEANUP_LOCAL_DISK_MODE=schedule
+PROTECTOR_CLEANUP_LOCAL_DISK_MODE=schedule
 ```
 
-This will schedule the deletion based on a cron expression defined with `CLEANUP_LOCAL_DISK_SCHEDULE`, which defaults to `0 0 * * *` (every day at midnight).
+This will schedule the deletion based on a cron expression defined with `PROTECTOR_CLEANUP_LOCAL_DISK_SCHEDULE`, which defaults to `0 0 * * *` (every day at midnight).
 
 > [!NOTE]
 > You need to run the [Laravel Scheduler](https://laravel.com/docs/master/scheduling#running-the-scheduler) for this.
