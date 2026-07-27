@@ -16,8 +16,8 @@
 This upgrade guide will be split into three main sections targeting different user groups:
 
 - General
-- Usage only through commands
-- Usage of the package through code (e.g., using the `Protector` facade)
+- Usage through commands
+- Usage through code (e.g., using the `Protector` facade)
 
 #### Table of Contents
 
@@ -59,7 +59,7 @@ Configuration
 - Disk handling has been extended and is now configured via the `filesystems.php` config file.
 - `Protector` instances can no longer be reconfigured during runtime. Create new instances using the `ProtectorConfigurator` class.
 - The Protector dump endpoint route name has been changed.
-- To support config caching, .env key names can no longer be changed during runtime.
+- To support config caching, .env key names can no longer be changed.
   If you previously relied on setting .env key names,
   you will now have to set the values directly instead.
 
@@ -73,7 +73,7 @@ Usage
   Importing legacy dumps with old metadata is still supported.
   However, if you have code that relies on the old metadata structure,
   you will need to adjust it to work with the new structure.
-- The Protector will no longer create dumps in directories.
+- The Protector will no longer create dumps in subdirectories.
 
 ### General
 
@@ -190,7 +190,7 @@ The .env keys have changed to be consistent with the config keys:
     - Use `--file` instead
 - The `--file` option behaves differently
     - Absolute paths are no longer supported
-    - It will now only accept file paths in the storage disk, or a disk passed with `--disk`
+    - It will now only accept file paths in the storage disk, or in a given disk, passed with `--disk`
 - The `--i|ignore-connection-filter` option has been removed
     - There is no replacement as of now. This is only relevant for interactive importing.
 - The `--flush` option has been removed. The dump file will now always be deleted after importing
@@ -239,9 +239,9 @@ ProtectorConfigurator::setAuthToken('my-auth-token')->makeProtector();
 
 Additionally, these options can now be configured per-instance:
 
-- Chunk Size
-- Http Timeout
-- Basic Auth Credentials
+- Chunk Size: `setChunkSize()`
+- Http Timeout: `setHttpTimeout()`
+- Basic Auth Credentials: `setBasicAuthCredentials()`
 
 #### Renamed methods and changed signatures
 

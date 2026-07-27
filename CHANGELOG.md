@@ -26,12 +26,12 @@ Configuration
 - Restructured the `Protector` class by splitting it into `Protector` and `ProtectorConfig`. Configuration can no longer be accessed after the `Protector` instance has been
   created.
 - Configured `Protector` instances are now created through the new `ProtectorConfigurator` class.
-- The Protector now operates on two disk
+- The Protector now operates on two disks
     - local disk for temporary file handling, such as decryption or import
     - storage disk for storing dumps
     - by default, for all operations, the Protector will create copies on the local disk for processing, and delete it afterwards
 - The Protector dump endpoint route name has been changed.
-- To support config caching, .env key names can no longer be changed during runtime.
+- To support config caching, .env key names can no longer be changed.
 
 Commands
 
@@ -46,7 +46,7 @@ API
 - Some methods have been removed.
 - Dump metadata structure has changed from a flat array to a hierarchical structure grouped by [MetadataProviders](README.md#dump-metadata).
 - Metadata files (`.meta`) are written alongside dumps and used by the interactive import, to avoid downloading database dump files just for metadata.
-- The Protector will no longer allow creating dumps in directories.
+- The Protector will no longer allow creating dumps in subdirectories.
 
 ### Features
 
@@ -55,7 +55,7 @@ API
 - The metadata which is appended at the end of a dump file can now be customized, see the [Dump Metadata README section](README.md#dump-metadata) for more information.
 - More options can now be configured per Protector instance via `ProtectorConfigurator`, see the [ProtectorConfiguratorContract](src/Contracts/ProtectorConfiguratorContract.php)
   for all configuration options.
-- The `Protector` now fully operates on Laravel disks, which can be configured separately.
+- The Protector now fully operates on Laravel disks, which can be configured separately.
   The `protector_local` disk is used for temporary files, while the `protector_storage` disk is used for storing dumps and metadata files.
 - The `protector:import` command will now delete downloaded files after importing.
 - A new `protector:download` command was added, which allows downloading dumps to a configured storage disk with optional import.

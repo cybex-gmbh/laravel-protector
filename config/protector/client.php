@@ -22,7 +22,6 @@ return [
     |
     | This value will be used as the endpoint for retrieving remote dumps.
     | The dump endpoint URL will be given to you by a server admin.
-    | The .env key name should not be changed.
     |
     */
     'dumpEndpointUrl' => ProtectorEnv::DUMP_ENDPOINT_URL->get(),
@@ -34,7 +33,6 @@ return [
     |
     | This value will be used to authenticate requests for retrieving remote dumps.
     | The auth token will be given to you by a server admin.
-    | The .env key name should not be changed.
     |
     */
     'authToken' => ProtectorEnv::AUTH_TOKEN->get(),
@@ -46,7 +44,6 @@ return [
     |
     | This value will be used to decrypt a remote database dump.
     | The private key is retrieved by running "php artisan protector:keys". The public key should be transmitted to a server admin.
-    | The .env key name should not be changed.
     |
     */
     'privateKey' => ProtectorEnv::PRIVATE_KEY->get(),

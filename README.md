@@ -88,7 +88,10 @@ Install the package via composer.
 composer require cybex/laravel-protector
 ```
 
-Almost all config options can be set via environment variables. Take a look at the [ProtectorEnv](src/Enums/ProtectorEnv.php) class for all available options.
+The Protector will work out of the box using the default configuration.
+
+If you want to customize something, almost all config options can be set via environment variables. Take a look at the [ProtectorEnv](src/Enums/ProtectorEnv.php) class for all
+available options.
 
 You can optionally publish the Protector config files to have more fine-grained control over config settings:
 
