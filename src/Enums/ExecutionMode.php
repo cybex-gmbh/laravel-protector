@@ -2,13 +2,14 @@
 
 namespace Cybex\Protector\Enums;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schedule;
+use Throwable;
 
 enum ExecutionMode: string
 {
     case SCHEDULE = 'schedule';
     case SYNC = 'sync';
-
 
     public static function fromConfig(): ExecutionMode
     {
@@ -23,21 +24,33 @@ enum ExecutionMode: string
         };
     }
 
-    public function execute(string $invokable, ?string $schedule = null): void
+    public function run(string $invokable, ?string $schedule = null): bool
     {
-        match ($this) {
-            self::SYNC => $this->executeSync($invokable),
-            self::SCHEDULE => $this->executeSchedule($invokable, $schedule)
+        $success = match ($this) {
+            self::SYNC => $this->execute($invokable),
+            self::SCHEDULE => $this->schedule($invokable, $schedule)
         };
+
+        if (!$success) {
+            Log::error("Failed to run cleanup invokable: {$invokable} in mode: {$this->value}");
+        }
+
+        return $success;
     }
 
-    protected function executeSync(string $invokable): void
+    protected function execute(string $invokable): bool
     {
-        app()->call($invokable);
+        return app()->call($invokable);
     }
 
-    protected function executeSchedule(string $invokable, string $schedule): void
+    protected function schedule(string $invokable, string $schedule): bool
     {
-        Schedule::call($invokable)->cron($schedule);
+        try {
+            Schedule::call($invokable)->cron($schedule);
+        } catch (Throwable $t) {
+            return false;
+        }
+
+        return true;
     }
 }

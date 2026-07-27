@@ -86,7 +86,7 @@ interface DiskHelperContract
     /**
      * Deletes all files on the protector_local disk which are older than 1 day.
      */
-    public function cleanupOldLocalFiles(): void;
+    public function cleanupOldLocalFiles(): bool;
 
     public function createLocalFileName(): string;
 

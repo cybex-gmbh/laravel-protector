@@ -6,8 +6,8 @@ use Cybex\Protector\Facades\DiskHelperFacade as DiskHelper;
 
 class CleanupLocalInvokable
 {
-    public function __invoke(): void
+    public function __invoke(): bool
     {
-        DiskHelper::cleanupOldLocalFiles();
+        return DiskHelper::cleanupOldLocalFiles();
     }
 }

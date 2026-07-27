@@ -190,8 +190,9 @@ class DiskHelper implements DiskHelperContract
         $this->deleteDumpAndMetaFiles($name, $this->getLocalDisk());
 
         $mode = ExecutionMode::fromConfig();
+
         if (!$mode->shouldSchedule()) {
-            $mode->execute(config('protector.cleanup.local_disk.invokable'));
+            $mode->run(config('protector.cleanup.local_disk.invokable'));
         }
     }
 
@@ -216,14 +217,14 @@ class DiskHelper implements DiskHelperContract
     /**
      * @inheritDoc
      */
-    public function cleanupOldLocalFiles(): void
+    public function cleanupOldLocalFiles(): bool
     {
         $filesToDelete = collect($this->filesystem->files($this->getLocalDisk()->path('')))
             ->filter($this->isLocalTempFile(...))
             ->filter($this->isOlderThanOneDay(...))
             ->map->getFilename();
 
-        $this->deleteDumpAndMetaFiles(
+        return $this->deleteDumpAndMetaFiles(
             names: $filesToDelete,
             disk: $this->getLocalDisk());
     }
@@ -329,13 +330,13 @@ class DiskHelper implements DiskHelperContract
         return [$dumpFileName => $this->getMetadataFileContents($dumpFileName) ?? []];
     }
 
-    protected function deleteDumpAndMetaFiles(string|array|Collection $names, Filesystem $disk): void
+    protected function deleteDumpAndMetaFiles(string|array|Collection $names, Filesystem $disk): bool
     {
         $filesToDelete = collect($names)
             ->flatMap($this->getDumpAndMetadataFile(...))
             ->toArray();
 
-        $disk->delete($filesToDelete);
+        return $disk->delete($filesToDelete);
     }
 
     protected function getDumpAndMetadataFile(string $fileName): array

@@ -110,7 +110,7 @@ class ProtectorServiceProvider extends ServiceProvider
             $mode = ExecutionMode::from($target['mode']);
 
             if ($mode->shouldSchedule()) {
-                $mode->execute($target['invokable'], $target['schedule']);
+                $mode->run($target['invokable'], $target['schedule']);
             }
         }
     }
