@@ -2,11 +2,15 @@
 
 namespace Cybex\Protector;
 
+use Cybex\Protector\Classes\Config\ProtectorConfig;
+use Cybex\Protector\Classes\Config\ProtectorConfigurator;
 use Cybex\Protector\Classes\DiskHelper;
 use Cybex\Protector\Classes\SchemaState\MariaDb\MariaDbSchemaStateProxy;
 use Cybex\Protector\Classes\SchemaState\MySql\MySqlSchemaStateProxy;
 use Cybex\Protector\Classes\SchemaState\Postgres\PostgresSchemaStateProxy;
 use Cybex\Protector\Classes\SodiumCrypter;
+use Cybex\Protector\Commands\CleanupLocal;
+use Cybex\Protector\Commands\CleanupStorage;
 use Cybex\Protector\Commands\CreateKeys;
 use Cybex\Protector\Commands\CreateToken;
 use Cybex\Protector\Commands\DownloadDump;
@@ -17,6 +21,7 @@ use Cybex\Protector\Contracts\DiskHelperContract;
 use Cybex\Protector\Contracts\ProtectorConfigContract;
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
 use Cybex\Protector\Contracts\SchemaStateProxyContract;
+use Cybex\Protector\Enums\ExecutionMode;
 use Cybex\Protector\Exceptions\UnsupportedDatabaseException;
 use Illuminate\Database\Schema\MariaDbSchemaState;
 use Illuminate\Database\Schema\MySqlSchemaState;
@@ -36,8 +41,11 @@ class ProtectorServiceProvider extends ServiceProvider
     {
         $this->registerRoutes();
         $this->registerCommands();
+
         $this->publishConfigs();
         $this->publishMigrations();
+
+        $this->scheduleTasks();
     }
 
     /**
@@ -66,6 +74,8 @@ class ProtectorServiceProvider extends ServiceProvider
     protected function registerCommands(): void
     {
         $this->commands([
+            CleanupLocal::class,
+            CleanupStorage::class,
             CreateKeys::class,
             CreateToken::class,
             DownloadDump::class,
@@ -76,9 +86,11 @@ class ProtectorServiceProvider extends ServiceProvider
 
     protected function publishConfigs(): void
     {
-        $this->publishes([
-            __DIR__ . '/../config/protector.php' => config_path('protector.php'),
-        ], ['protector', 'protector.config']);
+        foreach (['cleanup', 'client', 'dump', 'server'] as $config) {
+            $this->publishes([
+                sprintf('%s/../config/protector/%s.php', __DIR__, $config) => config_path(sprintf('protector/%s.php', $config)),
+            ], ['protector', 'protector.config', sprintf('protector.config.%s', $config)]);
+        }
     }
 
     protected function publishMigrations(): void
@@ -92,9 +104,23 @@ class ProtectorServiceProvider extends ServiceProvider
         $this->publishes([$stub => $target], ['protector', 'protector.migrations']);
     }
 
+    protected function scheduleTasks(): void
+    {
+        foreach (config('protector.cleanup') as $target) {
+            $mode = ExecutionMode::from($target['mode']);
+
+            if ($mode->shouldSchedule()) {
+                $mode->run($target['invokable'], $target['schedule']);
+            }
+        }
+    }
+
     protected function mergeProtectorConfig(): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/protector.php', 'protector');
+        $this->mergeConfigFrom(__DIR__ . '/../config/protector/cleanup.php', 'protector.cleanup');
+        $this->mergeConfigFrom(__DIR__ . '/../config/protector/client.php', 'protector.client');
+        $this->mergeConfigFrom(__DIR__ . '/../config/protector/dump.php', 'protector.dump');
+        $this->mergeConfigFrom(__DIR__ . '/../config/protector/server.php', 'protector.server');
     }
 
     protected function mergeDiskConfig(): void

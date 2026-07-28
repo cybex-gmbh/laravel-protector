@@ -2,8 +2,8 @@
 
 namespace Cybex\Protector\Facades;
 
+use Cybex\Protector\Classes\Config\ProtectorConfigurator;
 use Cybex\Protector\Contracts\ProtectorConfiguratorContract;
-use Cybex\Protector\ProtectorConfigurator;
 use Illuminate\Support\Facades\Facade;
 
 /**

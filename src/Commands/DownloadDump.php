@@ -13,13 +13,18 @@ use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\warning;
 
+/**
+ * Class DownloadDump
+ *
+ * @package Cybex\Protector\Commands
+ */
 class DownloadDump extends AbstractCommand
 {
     protected $signature = 'protector:download
                 {--allow-production : Enable importing SQL dumps on a production system. }
                 {--c|connection= : The configured database-connection in Laravel\'s config/database.php. Only works with the --import option. }
                 {--d|disk= : A disk to which the dump is written. Default is the storage disk. }
-                {--flush-storage : Delete all existing dumps which have a .meta file, except the newly downloaded dump. Only applies to the Protector storage disk, not a disk passed with --disk. }
+                {--cleanup-storage : Delete all existing dumps which have a .meta file, except the newly downloaded dump. Only applies to the Protector storage disk, not a disk passed with --disk. }
                 {--force : Skips confirmation prompts for import. }
                 {--f|file= : The destination file name on the storage disk. }
                 {--import : Import the downloaded dump after download. }
@@ -57,8 +62,8 @@ class DownloadDump extends AbstractCommand
         info('Successfully downloaded dump to disk.');
         $shouldImport && info('Import done!');
 
-        if ($this->option('flush-storage')) {
-            $this->flushStorage(excludeFile: $fileName);
+        if ($this->option('cleanup-storage')) {
+            $this->cleanupStorage(excludeFile: $fileName);
         }
 
         return self::SUCCESS;
@@ -75,8 +80,8 @@ class DownloadDump extends AbstractCommand
             );
         }
 
-        if ($this->option('disk') && $this->option('flush-storage')) {
-            $this->fail('The --flush-storage option cannot be used with the --disk option.');
+        if ($this->option('disk') && $this->option('cleanup-storage')) {
+            $this->fail('The --cleanup-storage option cannot be used with the --disk option.');
         }
     }
 
@@ -104,10 +109,10 @@ class DownloadDump extends AbstractCommand
         return $shouldImport;
     }
 
-    protected function flushStorage(string $excludeFile): void
+    protected function cleanupStorage(string $excludeFile): void
     {
-        DiskHelper::flushStorage(excludeFile: $excludeFile);
+        DiskHelper::cleanupStorage(excludeFile: $excludeFile);
 
-        warning('Storage directory has been flushed. Downloaded dump was retained.');
+        warning('Storage directory has been cleaned up. Downloaded dump was retained.');
     }
 }

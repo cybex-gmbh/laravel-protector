@@ -5,30 +5,79 @@
 - [Release Notes](CHANGELOG.md#v400---2026-xx-xx)
 - [GitHub diff](https://github.com/cybex-gmbh/laravel-protector/compare/v3.2.1...v4.0.0)
 
-#### Overview (see below for details):
+> [!IMPORTANT]
+> The `protector.php` config structure and keys have changed. The config file has been split into multiple files.
+> If you have previously published the config file, you need to re-publish and adjust the configuration files accordingly.
+>
+> `.env` keys have changed, check the [ProtectorEnv](src/Enums/ProtectorEnv.php) enum for all keys.
+
+### Overview
+
+This upgrade guide will be split into three main sections targeting different user groups:
+
+- General
+- Usage through commands
+- Usage through code (e.g., using the `Protector` facade)
+
+#### Table of Contents
+
+- [Overview](#overview)
+    - [Table of Contents](#table-of-contents)
+    - [Summary](#summary)
+- [General](#general)
+    - [Minimum PHP and Laravel version](#minimum-php-and-laravel-version)
+    - [MySQL support dropped](#mysql-support-dropped)
+    - [Renamed or removed config keys](#renamed-or-removed-config-keys)
+    - [Disk handling](#disk-handling)
+    - [Renamed or removed .env keys](#renamed-or-removed-env-keys)
+- [Command Usage](#command-usage)
+    - [php artisan protector:import](#php-artisan-protectorimport)
+    - [php artisan protector:export](#php-artisan-protectorexport)
+- [Code Usage](#code-usage)
+    - [Protector configuration refactoring](#protector-configuration-refactoring)
+    - [Renamed methods and changed signatures](#renamed-methods-and-changed-signatures)
+    - [Removed methods](#removed-methods)
+    - [Thrown exceptions](#thrown-exceptions)
+    - [Protector::getMetaData()](#protectorgetmetadata)
+    - [Protector::getDumpMetaData()](#protectorgetdumpmetadata)
+    - [Protector::getLatestDumpName()](#protectorgetlatestdumpname)
+    - [Setting .env key names during runtime](#setting-env-key-names-during-runtime)
+    - [Protector dump endpoint route name](#protector-dump-endpoint-route-name)
+    - [HasConfiguration trait](#hasconfiguration-trait)
+
+#### Summary
+
+System
 
 - The minimum required PHP version is now 8.4.
 - The minimum required Laravel version is now 12.1.1.
-- Laravel 9, 10, and 11 are no longer supported.
 - MySQL is no longer officially supported.
-- Some config and .env keys have been renamed.
+
+Configuration
+
+- Config keys and `.env` keys have been renamed and restructured.
+- Disk handling has been extended and is now configured via the `filesystems.php` config file.
 - `Protector` instances can no longer be reconfigured during runtime. Create new instances using the `ProtectorConfigurator` class.
 - The Protector dump endpoint route name has been changed.
-- Dump metadata has received a new structure. Legacy dumps with old metadata can still be imported.
-  However, if you have code that relies on the old metadata structure, you will need to adjust it to work with the new structure.
-- To support config caching, .env key names can no longer be changed during runtime.
-  If you previously relied on setting .env key names, you will now have to set the values directly instead.
-- Some functions throw different or more detailed exceptions.
-- The `protector:import` command no longer supports the `--dump`, `--ignore-connection-filter` and `--flush` option.
-  The `--no-wipe` option has been renamed to `--no-wipe-db` and can no longer be called with `-w`.
-- The dump file handling APIs and disk config structure changed.
-- The Protector will no longer allow creating dumps in directories.
+- To support config caching, .env key names can no longer be changed.
+  If you previously relied on setting .env key names,
+  you will now have to set the values directly instead.
 
-> [!IMPORTANT]
-> The `protector.php` config structure and keys have changed.
-> If you have previously published the config file, you should re-publish it and adjust the configuration accordingly.
+Usage
 
-### Minimum PHP and Laravel version
+- Some command options have been removed or have been renamed.
+- Some methods throw different or more detailed exceptions.
+- Some method names and signatures have changed.
+- Some methods have been removed.
+- Dump metadata has received a new structure.
+  Importing legacy dumps with old metadata is still supported.
+  However, if you have code that relies on the old metadata structure,
+  you will need to adjust it to work with the new structure.
+- The Protector will no longer create dumps in subdirectories.
+
+### General
+
+#### Minimum PHP and Laravel version
 
 > [!NOTE]
 > Likelihood of impact: high
@@ -36,9 +85,10 @@
 > Impact: Apps running on PHP versions below 8.4 and Laravel versions below 12.1.1
 > will not be able to use this version of the package.
 
-You need to update your system to PHP 8.4 or higher and Laravel 12.1.1 or higher, as these are now the minimum required versions.
+You need to update your system to PHP 8.4 or higher and Laravel 12.1.1 or higher,
+as these are now the minimum required versions.
 
-### MySQL support dropped
+#### MySQL support dropped
 
 > [!NOTE]
 > Likelihood of impact: high
@@ -48,17 +98,22 @@ You need to update your system to PHP 8.4 or higher and Laravel 12.1.1 or higher
 Due to the lack of support for the mysql-client (it's aliasing to mariadb)
 in recent Linux distribution versions, official MySQL support has been dropped.
 
-We will no longer run dedicated tests for MySQL. The package might still work with MySQL databases, but it might break in the future.
+We will no longer run dedicated tests for MySQL.
+The package might still work with MySQL databases, but it might break in the future.
+
 Migrate to MariaDB or PostgreSQL to continue receiving updates and support.
 
-### Renamed or removed config keys
+#### Renamed or removed config keys
 
 > [!NOTE]
 > Likelihood of impact: high
 >
-> Impact: App may crash, published `protector.php` config files will no longer work
+> Impact: App will crash, published `protector.php` config files will no longer work
 
-Config keys have been renamed or removed. If you have previously published the config file, you need to re-publish it and adjust the configuration accordingly.
+The `protector.php` config file has been split into multiple files.
+Config keys have been renamed or removed.
+If you have previously published the config file,
+you need to re-publish and adjust the configuration files accordingly.
 
 | Old                                      | New                                          |
 |------------------------------------------|----------------------------------------------|
@@ -73,7 +128,7 @@ Config keys have been renamed or removed. If you have previously published the c
 | `protector.routeMiddleware`              | `protector.server.routeMiddleware`           |
 | `protector.chunkSize`                    | `protector.server.chunkSize`                 |
 
-### Disk handling
+#### Disk handling
 
 > [!NOTE]
 > Likelihood of impact: high
@@ -99,7 +154,7 @@ If you want to overwrite the default, you can add the following disks to your `c
 ]
 ```
 
-### Renamed .env keys
+#### Renamed or removed .env keys
 
 > [!NOTE]
 > Likelihood of impact: high
@@ -108,51 +163,55 @@ If you want to overwrite the default, you can add the following disks to your `c
 
 The .env keys have changed to be consistent with the config keys:
 
-| Old                             | New                                           |
-|---------------------------------|-----------------------------------------------|
-| `PROTECTOR_AUTH_TOKEN`          | `PROTECTOR_CLIENT_AUTH_TOKEN`                 |
-| `PROTECTOR_BASE_DIRECTORY`      | `PROTECTOR_DUMP_DISKS_STORAGE_BASE_DIRECTORY` |
-| `PROTECTOR_CHUNK_SIZE`          | `PROTECTOR_SERVER_CHUNK_SIZE`                 |
-| `PROTECTOR_DISK_NAME`           | `PROTECTOR_DUMP_DISKS_STORAGE_DISK`           |
-| `PROTECTOR_DUMP_ENDPOINT_ROUTE` | `PROTECTOR_SERVER_DUMP_ENDPOINT_ROUTE`        |
-| `PROTECTOR_HTTP_TIMEOUT`        | `PROTECTOR_CLIENT_HTTP_TIMEOUT`               |
-| `PROTECTOR_MAX_PACKET_LENGTH`   | `PROTECTOR_DUMP_MAX_PACKET_LENGTH`            |
-| `PROTECTOR_PRIVATE_KEY`         | `PROTECTOR_CLIENT_PRIVATE_KEY`                |
-| `PROTECTOR_SERVER_URL`          | `PROTECTOR_CLIENT_DUMP_ENDPOINT_URL`          |
+| Old                             | New                                          |
+|---------------------------------|----------------------------------------------|
+| `PROTECTOR_BASE_DIRECTORY`      | removed, see [disk handling](#disk-handling) |
+| `PROTECTOR_DISK_NAME`           | removed, see [disk handling](#disk-handling) |
+| `PROTECTOR_MAX_PACKET_LENGTH`   | `PROTECTOR_DUMP_MAX_PACKET_LENGTH`           |
+| `PROTECTOR_AUTH_TOKEN`          | `PROTECTOR_CLIENT_AUTH_TOKEN`                |
+| `PROTECTOR_PRIVATE_KEY`         | `PROTECTOR_CLIENT_PRIVATE_KEY`               |
+| `PROTECTOR_SERVER_URL`          | `PROTECTOR_CLIENT_DUMP_ENDPOINT_URL`         |
+| `PROTECTOR_HTTP_TIMEOUT`        | `PROTECTOR_CLIENT_HTTP_TIMEOUT`              |
+| `PROTECTOR_DUMP_ENDPOINT_ROUTE` | `PROTECTOR_SERVER_DUMP_ENDPOINT_ROUTE`       |
+| `PROTECTOR_CHUNK_SIZE`          | `PROTECTOR_SERVER_CHUNK_SIZE`                |
 
-### Protector dump endpoint route name
+### Command Usage
+
+#### php artisan protector:import
 
 > [!NOTE]
-> Likelihood of impact: low
+> Likelihood of impact: high
 >
-> Impact: Using the route name for calls like `route('protectorDumpEndpointRoute')` will fail
+> Impact: Command usage has changed and might behave different
 
-The route name has been changed to `protector.server.dump` to align it with the overall naming scheme and allow wildcard addressing.
+- Dump files will no longer be retained after importing
+    - If you want the old behaviour, use `php artisan protector:download --import` instead
+- The `--dump` option has been removed
+    - Use `--file` instead
+- The `--file` option behaves differently
+    - Absolute paths are no longer supported
+    - It will now only accept file paths in the storage disk, or in a given disk, passed with `--disk`
+- The `--i|ignore-connection-filter` option has been removed
+    - There is no replacement as of now. This is only relevant for interactive importing.
+- The `--flush` option has been removed. The dump file will now always be deleted after importing
+    - If you need the old behaviour, use `php artisan protector:download --import --cleanup-storage` instead
+    - The new `--cleanup-storage` will only delete files which have a corresponding `.meta` file, and will not delete files inside directories
+- The `--no-wipe` option has been renamed and can no longer be called with `-w`
+    - Use `--no-wipe-db` instead
 
-### php artisan protector:import
+#### php artisan protector:export
 
 > [!NOTE]
 > Likelihood of impact: low
 >
 > Impact: Command usage has changed and might behave different
 
-- Dump files will no longer be retained after importing
-    - If you want the old behaviour, use `php artisan protector:download --import` instead
+- The `--file` option no longer accepts directories
+    - If you need to export a file into a specific directory, configure a disk which uses the directory as root
 
-- The `--dump` option has been removed
-    - There is no replacement, the Protector now fully operates on disks and will not allow absolute file paths anymore
+### Code Usage
 
-- The `--i|ignore-connection-filter` option has been removed
-    - There is no replacement as of now. This is only relevant for interactive importing
-
-- The `--flush` option has been removed. The dump file will now always be deleted after importing
-    - If you need the old behaviour, use `php artisan protector:download --import --flush-storage` instead
-    - The new `--flush-storage` will only delete files which have a corresponding `.meta` file, and will not delete files inside directories
-
-- The `--no-wipe` option has been renamed and can no longer be called with `-w`
-    - Use `--no-wipe-db` instead
-
-### Protector configuration refactoring
+#### Protector configuration refactoring
 
 > [!NOTE]
 > Likelihood of impact: high
@@ -171,17 +230,18 @@ Some methods have been renamed:
 - `withMaxPacketLength()` -> `setMaxPacketLength()`
 - `withDumpEndpointUrl()` -> `setDumpEndpointUrl()`
 
-`Protector` instances can no longer be reconfigured during runtime. Create new instances using the `ProtectorConfigurator` class.
+`Protector` instances can no longer be reconfigured during runtime.
+Create new instances using the `ProtectorConfigurator` class.
 
 ```php
-ProtectorConfigurator::setAuthToken('my-auth-token')->createProtector();
+ProtectorConfigurator::setAuthToken('my-auth-token')->makeProtector();
 ```
 
 Additionally, these options can now be configured per-instance:
 
-- Chunk Size
-- Http Timeout
-- Basic Auth Credentials
+- Chunk Size: `setChunkSize()`
+- Http Timeout: `setHttpTimeout()`
+- Basic Auth Credentials: `setBasicAuthCredentials()`
 
 #### Renamed methods and changed signatures
 
@@ -192,17 +252,17 @@ Additionally, these options can now be configured per-instance:
 
 The following methods were renamed and might have changed signatures:
 
-| Old                                         | Replacement                          |
-|---------------------------------------------|--------------------------------------|
-| `Protector::construct()`                    | Changed signature                    |
-| `Protector::createDump()`                   | `Protector::export()`                |
-| `Protector::generateFileDownloadResponse()` | Changed signature                    |
-| `Protector::getDumpFiles()`                 | `Protector::dumpFiles()`             |
-| `Protector::getDumpMetaData`                | `Protector::dumpFilesWithMetadata()` |
-| `Protector::getLatestDumpName()`            | `Protector::latestDumpName()`        |
-| `Protector::getMetaData()`                  | `Protector::metadata()`              |
-| `Protector::getRemoteDump()`                | `Protector::download()`              |
-| `Protector::importDump()`                   | `Protector::import()`                |
+| Old                                         | Replacement                                                                  |
+|---------------------------------------------|------------------------------------------------------------------------------|
+| `Protector::construct()`                    | Changed signature, use `ProtectorConfigurator`                               |
+| `Protector::createDump()`                   | `Protector::export()`, changed signature                                     |
+| `Protector::generateFileDownloadResponse()` | Changed signature                                                            |
+| `Protector::getDumpFiles()`                 | `Protector::dumpFiles()`                                                     |
+| `Protector::getDumpMetaData`                | `Protector::dumpFilesWithMetadata()`, see [below](#protectorgetdumpmetadata) |
+| `Protector::getLatestDumpName()`            | `Protector::latestDumpName()`, see [below](#protectorgetlatestdumpname)      |
+| `Protector::getMetaData()`                  | `Protector::metadata()`, see [below](#protectorgetmetadata)                  |
+| `Protector::getRemoteDump()`                | `Protector::download()`, changed signature                                   |
+| `Protector::importDump()`                   | `Protector::import()`, changed signature                                     |
 
 #### Removed methods
 
@@ -219,21 +279,31 @@ The following methods were removed:
 - `Protector::flush()`
 - `Protector::getBaseDirectory()`
 - `Protector::getDisk()`
-- `Protector::getDumpFile()`
 - `Protector::isUnderGitVersionControl()`
 - `Protector::prepareFileDownloadResponse()`
+
+#### Thrown exceptions
+
+> [!NOTE]
+> Likelihood of impact: medium
+>
+> Impact: Exceptions might fail to be caught
+
+Some methods now throw different or more detailed exceptions.
+
+Please refer to the `@throws` section of method docblocks for details on which exceptions are thrown.
 
 #### Protector::getMetaData()
 
 > [!NOTE]
-> Likelihood of impact: low
+> Likelihood of impact: medium
 >
 > Impact: Calls to Protector::getMetaData() will fail
 
 The method was renamed from `getMetaData()` to `metadata()`.
 
 Calls to `Protector::metadata()` will no longer return a flat metadata array.
-Instead, they will return a keyed array based on the configured MetadataProviders.
+Instead, they will return a keyed array based on the configured [MetadataProviders](README.md#dump-metadata).
 
 Previously, `getMetaData()` returned:
 
@@ -263,47 +333,60 @@ Now, `metadata()` returns (assuming the default configuration is used and the pr
 ]
 ```
 
-### Protector::getDumpMetaData()
+#### Protector::getDumpMetaData()
 
 > [!NOTE]
 > Likelihood of impact: low
 >
 > Impact: Calls to Protector::getDumpMetaData() will fail
 
-The method was removed. Use `Protector::dumpFilesWithMetadata()` instead, which returns an array of dump files with their corresponding metadata.
+The method was removed.
+Use `Protector::dumpFilesWithMetadata()` instead, which returns an array of dump files with their corresponding metadata.
 
 This makes use of `.meta` files to prevent downloading whole dumps just to access the metadata.
 
-### Setting .env key names during runtime
+#### Protector::getLatestDumpName()
+
+> [!NOTE]
+> Likelihood of impact: low
+>
+> Impact: Renamed, error handling based on the `FileNotFoundException` will no longer work
+
+The method has been renamed from `getLatestDumpName()` to `latestDumpName()`.
+
+The method now throws an `EmptyDumpDirectoryException` instead of a `FileNotFoundException` when no dumps are found in the base directory.
+
+#### Setting .env key names during runtime
 
 > [!NOTE]
 > Likelihood of impact: low
 >
 > Impact: Calls to `Protector::withAuthTokenKeyName()` and `Protector::withPrivateKeyName()` will fail
 
-This feature has been removed due to issues with config caching. Calls to `env()` will return `null` when the config was cached using `php artisan config:cache`,
-`php artisan optimize` or similar.
+This feature has been removed due to issues with config caching.
+Calls to `env()` will return `null` when the config was cached using `php artisan config:cache`, `php artisan optimize` or similar.
 
 Therefore, the following methods are no longer available:
 
 - `Protector::withAuthTokenKeyName()`
 - `Protector::withPrivateKeyName()`
 
-If you need to set the values for the auth token or the private key during runtime, use the following methods on the `ProtectorConfigurator` instead:
+If you need to set the values for the auth token or the private key during runtime,
+use the following methods on the `ProtectorConfigurator` instead:
 
 - `setPrivateKey()`
 - `setAuthToken()`
 
-### Protector::getLatestDumpName()
+#### Protector dump endpoint route name
 
 > [!NOTE]
 > Likelihood of impact: low
 >
-> Impact: Error handling based on the `FileNotFoundException` will no longer work
+> Impact: Using the route name for calls like `route('protectorDumpEndpointRoute')` will fail
 
-The method now throws a `EmptyDumpDirectoryException` instead of a `FileNotFoundException` when no dumps are found in the base directory.
+The route name has been changed to `protector.server.dump` to align it with the overall naming scheme and allow wildcard addressing.
 
-### HasConfiguration trait
+#### HasConfiguration trait
 
 > [!NOTE]
 > Likelihood of impact: low

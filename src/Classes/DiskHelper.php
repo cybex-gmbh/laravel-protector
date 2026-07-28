@@ -4,6 +4,7 @@ namespace Cybex\Protector\Classes;
 
 use Cybex\Protector\Contracts\CrypterContract;
 use Cybex\Protector\Contracts\DiskHelperContract;
+use Cybex\Protector\Enums\ExecutionMode;
 use Cybex\Protector\Exceptions\EmptyDumpDirectoryException;
 use Cybex\Protector\Exceptions\EmptyFileWrittenException;
 use Cybex\Protector\Exceptions\FailedReadingFromDiskException;
@@ -12,10 +13,12 @@ use Cybex\Protector\Exceptions\FailedWritingMetadataFileException;
 use Cybex\Protector\Exceptions\FailedWritingToDiskException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
 use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Filesystem\Filesystem as LocalFilesystem;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Psr\Http\Message\StreamInterface;
+use SplFileInfo;
 use Throwable;
 
 class DiskHelper implements DiskHelperContract
@@ -23,6 +26,11 @@ class DiskHelper implements DiskHelperContract
     protected const string LOCAL_DISK_NAME = 'protector_local';
     protected const string STORAGE_DISK_NAME = 'protector_storage';
     protected const string METADATA_FILE_SUFFIX = '.meta';
+    protected const string LOCAL_TEMP_FILE_PREFIX = 'protector_';
+
+    public function __construct(protected LocalFilesystem $filesystem)
+    {
+    }
 
     public function getLocalDisk(): Filesystem
     {
@@ -180,6 +188,12 @@ class DiskHelper implements DiskHelperContract
     public function deleteLocalFile(string $name): void
     {
         $this->deleteDumpAndMetaFiles($name, $this->getLocalDisk());
+
+        $mode = ExecutionMode::fromConfig();
+
+        if (!$mode->shouldSchedule()) {
+            $mode->run(config('protector.cleanup.local_disk.invokable'));
+        }
     }
 
     /**
@@ -193,17 +207,31 @@ class DiskHelper implements DiskHelperContract
     /**
      * @inheritDoc
      */
-    public function flushStorage(?string $excludeFile = null): void
+    public function cleanupStorage(?string $excludeFile = null): void
     {
-        // Only delete files which have a .meta file and are not in a directory.
         $this->deleteDumpAndMetaFiles(
             names: $this->dumpFiles(excludeFile: $excludeFile),
             disk: $this->getStorageDisk());
     }
 
+    /**
+     * @inheritDoc
+     */
+    public function cleanupOldLocalFiles(): bool
+    {
+        $filesToDelete = collect($this->filesystem->files($this->getLocalDisk()->path('')))
+            ->filter($this->isLocalTempFile(...))
+            ->filter($this->isOlderThanOneDay(...))
+            ->map->getFilename();
+
+        return $this->deleteDumpAndMetaFiles(
+            names: $filesToDelete,
+            disk: $this->getLocalDisk());
+    }
+
     public function createLocalFileName(): string
     {
-        return sprintf('%s.sql', uniqid('protector_', true));
+        return sprintf('%s.sql', uniqid(static::LOCAL_TEMP_FILE_PREFIX, true));
     }
 
     public function getDownloadDestinationFileName(string $contentDispositionHeader): string
@@ -222,6 +250,7 @@ class DiskHelper implements DiskHelperContract
 
     public function dumpFiles(?string $excludeFile = null): Collection
     {
+        // Only retrieve files which have a .meta file and are not in a directory.
         return collect($this->getStorageDisk()->files())
             ->filter($this->metadataFileExists(...))
             ->reject($this->isMetadataFile(...))
@@ -301,17 +330,27 @@ class DiskHelper implements DiskHelperContract
         return [$dumpFileName => $this->getMetadataFileContents($dumpFileName) ?? []];
     }
 
-    protected function deleteDumpAndMetaFiles(string|array|Collection $names, Filesystem $disk): void
+    protected function deleteDumpAndMetaFiles(string|array|Collection $names, Filesystem $disk): bool
     {
         $filesToDelete = collect($names)
             ->flatMap($this->getDumpAndMetadataFile(...))
             ->toArray();
 
-        $disk->delete($filesToDelete);
+        return $disk->delete($filesToDelete);
     }
 
     protected function getDumpAndMetadataFile(string $fileName): array
     {
         return [$fileName, $this->metadataFileName($fileName)];
+    }
+
+    protected function isLocalTempFile(SplFileInfo $file): bool
+    {
+        return str_starts_with($file->getFilename(), static::LOCAL_TEMP_FILE_PREFIX);
+    }
+
+    protected function isOlderThanOneDay(SplFileInfo $file): bool
+    {
+        return $file->getMTime() < now()->subDay()->timestamp;
     }
 }

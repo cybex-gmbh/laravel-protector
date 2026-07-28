@@ -1,6 +1,6 @@
 <?php
 
-namespace Cybex\Protector;
+namespace Cybex\Protector\Classes\Config;
 
 use Cybex\Protector\Classes\Metadata\Providers\DatabaseMetadataProvider;
 use Cybex\Protector\Contracts\ProtectorConfigContract;

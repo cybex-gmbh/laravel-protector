@@ -1,6 +1,6 @@
 <?php
 
-namespace Cybex\Protector;
+namespace Cybex\Protector\Classes\Config;
 
 abstract class AbstractProtectorConfig
 {

@@ -41,7 +41,7 @@ class ImportDump extends AbstractCommand
                 {--c|connection= : The configured database-connection in Laravel\'s config/database.php. }
                 {--d|disk= : A disk from which the dump is read. Only applicable with the --file option. Default is the storage disk. }
                 {--force : Skips confirmation prompts. Requires the file, remote or latest option. }
-                {--f|file= : A file name on the storage disk. }
+                {--f|file= : A file path on the storage disk. }
                 {--l|latest : Import the most recent dump available in the configured dumps directory. }
                 {--m|migrate : Run database migrations after import. }
                 {--no-copy : Do not create a copy of the file on the local disk. Only applicable with the --file option. The passed file must be available on a local disk. }
