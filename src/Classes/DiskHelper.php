@@ -12,6 +12,7 @@ use Cybex\Protector\Exceptions\FailedRemoteDatabaseFetchingException;
 use Cybex\Protector\Exceptions\FailedWritingMetadataFileException;
 use Cybex\Protector\Exceptions\FailedWritingToDiskException;
 use Cybex\Protector\Exceptions\InvalidConfigurationException;
+use GuzzleHttp\Psr7\StreamWrapper;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Filesystem\Filesystem as LocalFilesystem;
 use Illuminate\Support\Collection;
@@ -137,7 +138,9 @@ class DiskHelper implements DiskHelperContract
     ): void
     {
         try {
-            while (!$stream->eof() && ($chunk = $stream->read($chunkSize)) !== '') {
+            $resource = StreamWrapper::getResource($stream);
+
+            while (!feof($resource) && ($chunk = stream_get_contents($resource, $chunkSize)) !== '') {
                 if ($shouldEncrypt) {
                     $chunk = app(CrypterContract::class)->decrypt($chunk, $privateKey);
 
